@@ -1,0 +1,91 @@
+
+namespace dd.wls;
+
+/// Each ID represents a String evaluator
+/// Each evaluator ID should be UNIQUE!
+/// IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry)
+enum StringEvaluators : byte {
+    COMPONENT,
+
+    PROCESS_EXE,
+    PROCESS_EXE_FULL_PATH,
+    PROCESS_BASEDIR_PATH,
+    PROCESS_ARGV,
+    PROCESS_CWD,
+
+    RUNTIME_LANGUAGE,
+    /// for python the .py/shebang file, 
+    RUNTIME_ENTRY_POINT_FILE,
+    /// for java jar file
+    RUNTIME_ENTRY_POINT_JAR,
+    /// for java the main class
+    RUNTIME_ENTRY_POINT_CLASS,
+    RUNTIME_ENTRY_POINT_PACKAGE,
+    RUNTIME_ENTRY_POINT_MODULE,
+    /// for java source file
+    RUNTIME_ENTRY_POINT_SOURCE,
+    RUNTIME_DOPTION,
+    RUNTIME_VERSION,
+
+    LIBC_FLAVOR,
+    LIBC_VERSION,
+
+    MACHINE_ARCHITECTURE,
+
+    HOST_NAME,
+    HOST_IP,
+
+    OS,
+    OS_DISTRO,
+    OS_DISTRO_VERSION,
+    OS_DISTRO_CODENAME,
+    OS_KERNEL_VERSION,
+    OS_KERNEL_NAME,
+    OS_USER,
+    OS_USER_GROUP,
+
+    CONTAINER_IMAGE,
+    CONTAINER_ID,
+
+    /// Represents the count of String evaluators.
+    /// This is used to ensure that the enum is always in sync with the number of evaluators.
+    /// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
+    STR_EVAL_COUNT
+}
+
+
+/// Each ID represents a Numeric evaluator
+/// Each evaluator ID should be UNIQUE!
+/// The numeric evaluators are the same for signed and unsigned types.
+/// IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry)
+enum NumericEvaluators : byte {
+    JAVA_HEAP,
+
+    RUNTIME_VERSION_MAJOR,
+    RUNTIME_VERSION_MINOR,
+    RUNTIME_VERSION_PATCH,
+
+    OS_DISTRO_VERSION_MAJOR,
+    OS_DISTRO_VERSION_MINOR,
+    OS_DISTRO_VERSION_PATCH,
+    OS_KERNEL_VERSION_MAJOR,
+    OS_KERNEL_VERSION_MINOR,
+    OS_KERNEL_VERSION_PATCH,
+
+    LIBC_VERSION_MAJOR,
+    LIBC_VERSION_MINOR,
+    LIBC_VERSION_PATCH,
+
+
+    /// Represents the count of Numeric evaluators.
+    /// This is used to ensure that the enum is always in sync with the number of evaluators.
+    /// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
+    NUM_EVAL_COUNT
+}
+
+// /// Unused - for future dev.
+// enum GenericEvaluator: byte {
+//     SOME_MULTI_ARGS_EVALUATOR,
+
+//     GEN_EVAL_COUNT
+// }

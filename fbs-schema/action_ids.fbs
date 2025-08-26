@@ -1,0 +1,13 @@
+namespace dd.wls;
+
+/// Each Action should have an ID associated with it - it should be unique! 
+/// IMPORTANT! When adding a new action make sure you add it as the last one (just before the ACTIONS_COUNT entry)
+enum ActionId : byte {
+  INJECT_DENY,
+  INJECT_ALLOW,
+  ENABLE_SDK,
+  ENABLE_PROFILER,
+  SET_ENVAR,
+
+  ACTIONS_COUNT
+}

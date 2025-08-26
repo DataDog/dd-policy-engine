@@ -1,0 +1,43 @@
+FROM alpine:3.22
+
+
+ARG GO_VER="1.24.4"
+
+RUN apk update && apk add musl-dev gcc make python3 patchelf bash clang18-extra-tools ruff
+
+# for some reason clang-format installation dir is not included in PATH
+ENV PATH="$PATH:/usr/lib/llvm18/bin/"
+ARG TARGETPLATFORM
+RUN echo "TARGETPLATFORM: '$TARGETPLATFORM'"
+RUN echo `echo $TARGETPLATFORM | cut -d "/" -f 2 `
+
+# Download & Install GO
+RUN wget https://go.dev/dl/go$GO_VER.linux-`echo $TARGETPLATFORM | cut -d "/" -f 2 `.tar.gz
+RUN tar -C /usr/local -xzf ./go$GO_VER.linux-`echo $TARGETPLATFORM | cut -d "/" -f 2 `.tar.gz
+ENV PATH="$PATH:/usr/local/go/bin"
+# verify go installed succesfully (othwerwise the docker build will fail)
+RUN go version
+
+# Install go
+ENV GOPATH=/go/path GOCACHE=/go/cache GOBIN=/go/bin
+RUN go install golang.org/x/tools/cmd/goimports@latest
+RUN go install honnef.co/go/tools/cmd/staticcheck@latest
+RUN go install github.com/matryer/moq@latest
+
+ENV PATH="$PATH:/go/bin/"
+
+# Make sure all "make" commands won't try to run a new Docker container
+ENV IN_DOCKER=true
+
+# Add flatcc
+RUN apk update && apk add cmake ninja-build git clang-dev
+ARG FLATCC_COMMIT_ID=47af7e6
+RUN cd ~ && git clone https://github.com/dvidelabs/flatcc.git && cd flatcc && git reset --hard $FLATCC_COMMIT_ID && scripts/initbuild.sh make-concurrent && ./scripts/build.sh
+RUN cp ~/flatcc/bin/flatcc /usr/bin/
+RUN cp -r ~/flatcc/include/flatcc /usr/include/
+
+# Add flatbuffers
+RUN apk add flatbuffers flatbuffers-dev
+
+# Add gcovr
+RUN apk add gcovr
