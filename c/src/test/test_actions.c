@@ -12,8 +12,8 @@
 
 #include <dd/policies/policies.h>
 
-#include "../schema/actions_reader.h"
-#include "../wire/dd_types.h"
+#include "actions_reader.h"
+#include "wire/dd_types.h"
 
 #include <stddef.h>
 #include <stdint.h>

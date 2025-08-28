@@ -4,7 +4,7 @@
 #include <dd/policies/eval_ctx.h>
 #include <dd/policies/evaluator_default.h>
 
-#include "../eval_ctx.h"
+#include "eval_ctx.h"
 
 /**
  * @brief A string comparison evaluator that checks if the evaluated string
