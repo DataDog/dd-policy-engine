@@ -45,11 +45,11 @@ static inline dd_ns(ActionId_enum_t) dd_action_to_wire(enum plcs_actions v) {
   static const int map[ACTIONS__COUNT] = {
       [INJECT_DENY] = dd_ns(ActionId_INJECT_DENY), [INJECT_ALLOW] = dd_ns(ActionId_INJECT_ALLOW),
       [ENABLE_SDK] = dd_ns(ActionId_ENABLE_SDK),   [ENABLE_PROFILER] = dd_ns(ActionId_ENABLE_PROFILER),
-      [SET_ENVAR] = dd_ns(ActionId_SET_ENVAR),
+      [SET_ENVAR] = dd_ns(ActionId_SET_ENVAR), [REEXEC] = dd_ns(ActionId_REEXEC)
   };
   _Static_assert(
       ACTIONS__COUNT == dd_ns(ActionId_ACTIONS_COUNT),
-      "update dd_action_to_wire & plcs_actions mappings when enum changes"
+      "update dd_action_to_wire & plcs_actions mappings when ActionId enum changes"
   );
   return (dd_ns(ActionId_enum_t))((unsigned)v < ACTIONS__COUNT ? map[v] : -1);
 }

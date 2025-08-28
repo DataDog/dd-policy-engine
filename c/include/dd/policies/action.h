@@ -15,6 +15,7 @@ typedef enum plcs_actions {
   ENABLE_SDK = 2,
   ENABLE_PROFILER = 3,
   SET_ENVAR = 4,
+  REEXEC = 5,
   ACTIONS__COUNT
 } plcs_actions;
 

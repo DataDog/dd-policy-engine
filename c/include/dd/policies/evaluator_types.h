@@ -64,6 +64,9 @@ typedef enum plcs_string_evaluators {
   STR_EVAL_OS_USER_GROUP = 27,
   STR_EVAL_CONTAINER_IMAGE = 28,
   STR_EVAL_CONTAINER_ID = 29,
+  STR_EVAL_ALWAYS_TRUE = 30,
+  STR_EVAL_ALWAYS_FALSE = 31,
+  STR_EVAL_ALWAYS_ABSTAIN = 32,
   STR_EVAL__COUNT
 } plcs_string_evaluators;
 

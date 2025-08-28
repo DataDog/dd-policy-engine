@@ -43,7 +43,7 @@ static inline dd_ns(EvaluationResult_enum_t) dd_evalresult_to_wire(enum plcs_eva
   };
   _Static_assert(
       EVAL_RESULT__COUNT == dd_ns(EvaluationResult_EVAL_RESULT_COUNT),
-      "update dd_evalresult_to_wire & plcs_evaluation_result mappings when enum changes"
+      "update dd_evalresult_to_wire & plcs_evaluation_result mappings when EvaluationResult enum changes"
   );
   return (dd_ns(EvaluationResult_enum_t))((unsigned)v < EVAL_RESULT__COUNT ? map[v] : -1);
 }

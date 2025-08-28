@@ -3,7 +3,7 @@
   "definitions": {
     "dd_wls_ActionId" : {
       "type" : "string",
-      "enum": ["INJECT_DENY", "INJECT_ALLOW", "ENABLE_SDK", "ENABLE_PROFILER", "SET_ENVAR", "ACTIONS_COUNT"]
+      "enum": ["INJECT_DENY", "INJECT_ALLOW", "ENABLE_SDK", "ENABLE_PROFILER", "SET_ENVAR", "REEXEC", "ACTIONS_COUNT"]
     },
     "dd_wls_ActionMax" : {
       "type" : "string",
@@ -15,7 +15,7 @@
     },
     "dd_wls_StringEvaluators" : {
       "type" : "string",
-      "enum": ["COMPONENT", "PROCESS_EXE", "PROCESS_EXE_FULL_PATH", "PROCESS_BASEDIR_PATH", "PROCESS_ARGV", "PROCESS_CWD", "RUNTIME_LANGUAGE", "RUNTIME_ENTRY_POINT_FILE", "RUNTIME_ENTRY_POINT_JAR", "RUNTIME_ENTRY_POINT_CLASS", "RUNTIME_ENTRY_POINT_PACKAGE", "RUNTIME_ENTRY_POINT_MODULE", "RUNTIME_ENTRY_POINT_SOURCE", "RUNTIME_DOPTION", "RUNTIME_VERSION", "LIBC_FLAVOR", "LIBC_VERSION", "MACHINE_ARCHITECTURE", "HOST_NAME", "HOST_IP", "OS", "OS_DISTRO", "OS_DISTRO_VERSION", "OS_DISTRO_CODENAME", "OS_KERNEL_VERSION", "OS_KERNEL_NAME", "OS_USER", "OS_USER_GROUP", "CONTAINER_IMAGE", "CONTAINER_ID", "STR_EVAL_COUNT"]
+      "enum": ["COMPONENT", "PROCESS_EXE", "PROCESS_EXE_FULL_PATH", "PROCESS_BASEDIR_PATH", "PROCESS_ARGV", "PROCESS_CWD", "RUNTIME_LANGUAGE", "RUNTIME_ENTRY_POINT_FILE", "RUNTIME_ENTRY_POINT_JAR", "RUNTIME_ENTRY_POINT_CLASS", "RUNTIME_ENTRY_POINT_PACKAGE", "RUNTIME_ENTRY_POINT_MODULE", "RUNTIME_ENTRY_POINT_SOURCE", "RUNTIME_DOPTION", "RUNTIME_VERSION", "LIBC_FLAVOR", "LIBC_VERSION", "MACHINE_ARCHITECTURE", "HOST_NAME", "HOST_IP", "OS", "OS_DISTRO", "OS_DISTRO_VERSION", "OS_DISTRO_CODENAME", "OS_KERNEL_VERSION", "OS_KERNEL_NAME", "OS_USER", "OS_USER_GROUP", "CONTAINER_IMAGE", "CONTAINER_ID", "ALWAYS_TRUE", "ALWAYS_FALSE", "ALWAYS_ABSTAIN", "STR_EVAL_COUNT"]
     },
     "dd_wls_NumericEvaluators" : {
       "type" : "string",
@@ -35,7 +35,7 @@
     },
     "dd_wls_NodeType" : {
       "type" : "string",
-      "enum": ["NONE", "EvaluatorNode", "https://github.com/DataDog/dd-policy-engine/blob/main/c/src/wire/evaluator_types.h"]
+      "enum": ["NONE", "EvaluatorNode", "CompositeNode"]
     },
     "dd_wls_Action" : {
       "type" : "object",

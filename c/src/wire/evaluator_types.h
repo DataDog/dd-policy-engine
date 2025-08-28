@@ -62,7 +62,7 @@ static inline dd_ns(CmpTypeNUM_enum_t) dd_numcmp_to_wire(enum plcs_numeric_compa
   };
   _Static_assert(
       NUM_CMP__COUNT == dd_ns(CmpTypeNUM_CMP_COUNT),
-      "update dd_numcmp_to_wire & plcs_numeric_comparator mappings when you modify CmpTypeSTR"
+      "update dd_numcmp_to_wire & plcs_numeric_comparator mappings when you modify CmpTypeNUM"
   );
   return (dd_ns(CmpTypeNUM_enum_t))((unsigned)v < NUM_CMP__COUNT ? map[v] : -1);
 }
@@ -100,10 +100,13 @@ static inline dd_ns(StringEvaluators_enum_t) dd_streval_to_wire(enum plcs_string
       [STR_EVAL_OS_USER_GROUP] = dd_ns(StringEvaluators_OS_USER_GROUP),
       [STR_EVAL_CONTAINER_IMAGE] = dd_ns(StringEvaluators_CONTAINER_IMAGE),
       [STR_EVAL_CONTAINER_ID] = dd_ns(StringEvaluators_CONTAINER_ID),
+      [STR_EVAL_ALWAYS_TRUE] = dd_ns(StringEvaluators_ALWAYS_TRUE),
+      [STR_EVAL_ALWAYS_FALSE] = dd_ns(StringEvaluators_ALWAYS_FALSE),
+      [STR_EVAL_ALWAYS_ABSTAIN] = dd_ns(StringEvaluators_ALWAYS_ABSTAIN)
   };
   _Static_assert(
       STR_EVAL__COUNT == dd_ns(StringEvaluators_STR_EVAL_COUNT),
-      "update dd_streval_to_wire & plcs_string_evaluators mappings when you modify CmpTypeSTR"
+      "update dd_streval_to_wire & plcs_string_evaluators mappings when you modify StringEvaluators"
   );
   return (dd_ns(StringEvaluators_enum_t))((unsigned)v < STR_EVAL__COUNT ? map[v] : -1);
 }
@@ -126,7 +129,7 @@ static inline dd_ns(NumericEvaluators_enum_t) dd_numeval_to_wire(enum plcs_numer
   };
   _Static_assert(
       NUM_EVAL__COUNT == dd_ns(NumericEvaluators_NUM_EVAL_COUNT),
-      "update dd_numeval_to_wire & plcs_numeric_evaluators mappings when you modify CmpTypeSTR"
+      "update dd_numeval_to_wire & plcs_numeric_evaluators mappings when you modify NumericEvaluators"
   );
   return (dd_ns(NumericEvaluators_enum_t))((unsigned)v < NUM_EVAL__COUNT ? map[v] : -1);
 }
