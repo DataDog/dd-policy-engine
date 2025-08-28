@@ -8,6 +8,11 @@ enum ActionId : byte {
   ENABLE_SDK,
   ENABLE_PROFILER,
   SET_ENVAR,
+  /// string values should be: <prefix> <postfix>
+  /// for example to turn "someapp arg1 arg2" into "wrapper_bin wrapper_arg wrapper_arg2 someapp arg1 arg2 --anotherarg=1 --anotherarg2 anotherval"
+  /// you should pass {"wrapper_bin wrapper_arg wrapper_arg2", "--anotherarg=1 --anotherarg2 anotherval"}
+  /// its on the action implementation to seperate these into execve arguments
+  REEXEC,
 
   ACTIONS_COUNT
 }

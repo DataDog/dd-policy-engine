@@ -14,25 +14,40 @@ enum StringEvaluators : byte {
     PROCESS_CWD,
 
     RUNTIME_LANGUAGE,
-    /// for python the .py/shebang file, 
+    /// [python, node] the [.py/shebang, .js] file, 
     RUNTIME_ENTRY_POINT_FILE,
-    /// for java jar file
+    /// Used to evaluate the jar file passed to the JVM
     RUNTIME_ENTRY_POINT_JAR,
-    /// for java the main class
+    /// Used to evaluate the class passed to the JVM
     RUNTIME_ENTRY_POINT_CLASS,
+    /// Used to evaluate the class passed to the JVM
     RUNTIME_ENTRY_POINT_PACKAGE,
+    
     RUNTIME_ENTRY_POINT_MODULE,
-    /// for java source file
+    /// Used to evalute the source file passed to the JVM
     RUNTIME_ENTRY_POINT_SOURCE,
+    /// Used to evaluate different Doptions passed to the JVM
     RUNTIME_DOPTION,
+    /// Used to evaluate the runtime version
+    /// Remember current implementation will only support string comparisons!
+    /// For a numeric comparison look at the NumericEvaluators!
     RUNTIME_VERSION,
 
+    /// Used to evaluate the flavors (glibc, musl, etc.)
     LIBC_FLAVOR,
+    /// Used to evaluate the libc version
+    /// Remember current implementation will only support string comparisons!
+    /// For a numeric comparison look at the NumericEvaluators!
     LIBC_VERSION,
 
+    /// Used to evaluate the architecture (x86_64, amd64, aarch64, etc.)
     MACHINE_ARCHITECTURE,
 
+    /// Used to evaluate the hostname
+    /// NOTE: the correctness of the hotname really depends heavily on the component implementing this evaluator!
     HOST_NAME,
+    /// Used to evaluate the IP
+    /// NOTE: the correctness of the hotname really depends heavily on the component implementing this evaluator!
     HOST_IP,
 
     OS,
@@ -46,6 +61,12 @@ enum StringEvaluators : byte {
 
     CONTAINER_IMAGE,
     CONTAINER_ID,
+
+    /// When you want to pass a true, false or abstain value to an 
+    /// action without evaluating anything, these can be used
+    ALWAYS_TRUE,
+    ALWAYS_FALSE,
+    ALWAYS_ABSTAIN,
 
     /// Represents the count of String evaluators.
     /// This is used to ensure that the enum is always in sync with the number of evaluators.
@@ -83,9 +104,3 @@ enum NumericEvaluators : byte {
     NUM_EVAL_COUNT
 }
 
-// /// Unused - for future dev.
-// enum GenericEvaluator: byte {
-//     SOME_MULTI_ARGS_EVALUATOR,
-
-//     GEN_EVAL_COUNT
-// }
