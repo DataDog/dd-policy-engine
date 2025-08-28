@@ -1,4 +1,4 @@
 *.bin
-dd-compile-policy
+/dd-compile-policy
 schema/dd/wls
 !schema/dd/json.go
