@@ -3,7 +3,7 @@ PREFIX ?= $(CURDIR)
 POLICIES_ROOT := $(PREFIX)/..
 
 SCHEMA_DIR := $(POLICIES_ROOT)/fbs-schema
-SCHEMA_OUTPUT_DIR := $(PREFIX)/schema/
+SCHEMA_OUTPUT_DIR := $(PREFIX)/schema
 EXAMPLES := examples/example_writer examples/example_generate_c_header_buffer examples/example_json_to_hardcoded_injector_policies
 
 .PHONY=$(EXAMPLES) clean
@@ -22,7 +22,7 @@ examples: $(EXAMPLES)
 
 clean:
 	@echo "[i] Cleaning up GO artifacts"
-	find $(SCHEMA_OUTPUT_DIR)/dd/wls -type f ! -name 'json.go' -delete
+	-find $(SCHEMA_OUTPUT_DIR)/dd/wls -type f ! -name 'json.go' -delete
 	@rm -rf $(addsuffix /out,$(EXAMPLES))
 
 

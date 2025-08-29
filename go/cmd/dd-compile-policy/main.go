@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
-
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/urfave/cli/v2"
 )
@@ -48,6 +47,7 @@ func Compile() cli.ActionFunc {
 		if !c.IsSet("input-json") || !c.IsSet("output") {
 			return fmt.Errorf("usage: dd-compile-policy compile --input-json <input-json-string> --output <output>")
 		}
+
 		var jsonPolicies wls.PoliciesJSON
 		err := json.Unmarshal([]byte(c.String("input-json")), &jsonPolicies)
 		if err != nil {
