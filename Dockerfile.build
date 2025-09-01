@@ -5,7 +5,8 @@ ARG GO_VER="1.24.4"
 ARG CLANG_VERSION=18
 
 RUN apk update \
- && apk add musl-dev gcc make python3 patchelf bash clang${CLANG_VERSION} clang${CLANG_VERSION}-extra-tools ruff ninja-build git
+ && apk add musl-dev gcc make python3 patchelf bash clang${CLANG_VERSION} clang${CLANG_VERSION}-extra-tools clang${CLANG_VERSION}-rtlib \
+    ruff ninja-build git
 
 # for some reason clang-format installation dir is not included in PATH
 ENV PATH="$PATH:/usr/lib/llvm18/bin/"

@@ -36,6 +36,19 @@
       }
     },
     {
+      "name": "msvc-ci",
+      "displayName": "Windows CI",
+      "inherits": "msvc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "DD_POLICY_ENABLE_STATIC_CRT": "ON"
+      },
+      "environment": {
+        "ADDITIONAL_C_FLAGS": "-std=c17"
+      }
+    },
+    {
       "name": "clang-dev",
       "displayName": "Clang Development",
       "inherits": "clang-base",
