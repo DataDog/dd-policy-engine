@@ -30,6 +30,8 @@ jobs:
         run: make test-build
         working-directory: c
         env:
+          CC: clang
+          CXX: clang
           CMAKE_PRESET: clang-ci
       - run: ctest --test-dir build --output-junit junit.xml
         working-directory: c
@@ -44,12 +46,11 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Setup MSVC
         uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
-      - name: Install Dependency Manager
+      - name: Install Dependency Manager and Dependencies
         run: |
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
           Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-      - name: Install Dependencies
-        run: scoop install main/cmake@4.0.1 main/ninja main/vcpkg main/flatc
+          scoop install main/cmake@4.0.1 main/ninja main/vcpkg main/flatc
       - run: cmake -B build --preset msvc-ci
 
   coverage:
@@ -61,6 +62,9 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: make coverage
         working-directory: c
+        env:
+          CC: clang
+          CXX: clang
       # - name: Upload coverage reports to Codecov
       #   uses: codecov/codecov-action@v4.0.1
       #   with:
