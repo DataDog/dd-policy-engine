@@ -55,7 +55,8 @@ jobs:
       - name: Install Dependencies
         run: | 
           scoop install main/cmake@4.0.1 main/ninja main/vcpkg main/flatc
-          scoop prefix vcpkg >> $Env:VCPKG_ROOT
+          $vcpkgPath = scoop prefix vcpkg
+          echo "VCPKG_ROOT=$vcpkgPath" >> $env:GITHUB_ENV
       - name: Build
         run: |
           cmake -B build --preset msvc-ci .
