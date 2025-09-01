@@ -53,7 +53,7 @@ jobs:
       - run: cmake -B build --preset msvc-ci
 
   coverage:
-    needs: build
+    needs: build-linux
     runs-on: ubuntu-22.04
     container:
       image: datadog/docker-library:dd-policy-engine-ce3b8e5
