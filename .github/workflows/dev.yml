@@ -13,7 +13,7 @@ jobs:
       - run: make fmt-check
 
   # TODO: Add MSVC and GCC compilers
-  build:
+  build-linux:
     needs: checks
     runs-on: ubuntu-22.04
     container:
@@ -34,20 +34,39 @@ jobs:
       - run: ctest --test-dir build --output-junit junit.xml
         working-directory: c
 
-  # coverage:
-  #   needs: build
-  #   runs-on: ubuntu-22.04
-  #   container:
-  #     image: datadog/docker-library:dd-policy-engine-9e46011f
-  #   steps:
-  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-  #     - run: make coverage
-  #     - name: Upload coverage reports to Codecov
-  #       uses: codecov/codecov-action@v4.0.1
-  #       with:
-  #         files: coverage.lcov
-  #         name: github-actions
-  #         token: ${{ secrets.CODECOV_TOKEN }}
-  #         slug: DataDog/dd-policy-engine
-  #         os: alpine
-  #         fail_ci_if_error: true
+  build-windows:
+    needs: checks
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
+      - name: Install Dependency Manager
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+      - name: Install Dependencies
+        run: scoop install main/cmake@4.0.1 main/ninja main/vcpkg main/flatc
+      - run: cmake -B build --preset msvc-ci
+
+  coverage:
+    needs: build
+    runs-on: ubuntu-22.04
+    container:
+      image: datadog/docker-library:dd-policy-engine-ce3b8e5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: make coverage
+        working-directory: c
+      # - name: Upload coverage reports to Codecov
+      #   uses: codecov/codecov-action@v4.0.1
+      #   with:
+      #     files: coverage.lcov
+      #     name: github-actions
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     slug: DataDog/dd-policy-engine
+      #     os: alpine
+      #     fail_ci_if_error: true
