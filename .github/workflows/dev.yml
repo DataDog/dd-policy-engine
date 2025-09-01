@@ -17,7 +17,7 @@ jobs:
     needs: checks
     runs-on: ubuntu-22.04
     container:
-      image: datadog/docker-library:dd-policy-engine-9e46011f
+      image: datadog/docker-library:dd-policy-engine-ce3b8e5
     env:
       IN_DOCKER: "true"
       DD_ENV: ci
