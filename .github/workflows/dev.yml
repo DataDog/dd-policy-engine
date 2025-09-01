@@ -1,0 +1,49 @@
+name: Development
+on: [push, workflow_dispatch]
+
+jobs:
+  checks:
+    runs-on: ubuntu-22.04
+    container:
+      image: datadog/docker-library:dd-policy-engine-ce3b8e5
+    env:
+      IN_DOCKER: "true"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: make fmt-check
+
+  # TODO: Add MSVC and GCC compilers
+  # build:
+  #   needs: checks
+  #   runs-on: ubuntu-22.04
+  #   container:
+  #     image: datadog/docker-library:dd-policy-engine-9e46011f
+  #   env:
+  #     DD_ENV: ci
+  #     DD_API_KEY: ${{ secrets.DD_API_KEY_CI_APP }}
+  #     DD_SERVICE: dd-policy-engine
+  #     DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+  #   steps:
+  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  #     - name: Build
+  #       run: make
+  #       env:
+  #         CMAKE_PRESET: clang-ci
+  #
+  # coverage:
+  #   needs: build
+  #   runs-on: ubuntu-22.04
+  #   container:
+  #     image: datadog/docker-library:dd-policy-engine-9e46011f
+  #   steps:
+  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  #     - run: make coverage
+  #     - name: Upload coverage reports to Codecov
+  #       uses: codecov/codecov-action@v4.0.1
+  #       with:
+  #         files: coverage.lcov
+  #         name: github-actions
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+  #         slug: DataDog/dd-policy-engine
+  #         os: alpine
+  #         fail_ci_if_error: true
