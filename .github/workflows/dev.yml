@@ -51,7 +51,12 @@ jobs:
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
           Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
           scoop install main/cmake@4.0.1 main/ninja main/vcpkg main/flatc
-      - run: cmake -B build --preset msvc-ci
+      - name: Build
+        run: |
+          cmake -B build --preset msvc-ci .
+          cmake --build build -j
+      - name: Run tests
+        run: ctest --test-dir build --output-junit junit.xml
 
   coverage:
     needs: build-linux
