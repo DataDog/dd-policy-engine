@@ -36,6 +36,7 @@ jobs:
       - run: ctest --test-dir build --output-junit junit.xml
         working-directory: c
 
+  # TODO: add arch and vs versions
   build-windows:
     needs: checks
     runs-on: windows-2022
@@ -46,11 +47,13 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Setup MSVC
         uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
-      - name: Install Dependency Manager and Dependencies
+      - name: Install Dependency Manager (scoop)
         run: |
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
           Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-          scoop install main/cmake@4.0.1 main/ninja main/vcpkg main/flatc
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+      - name: Install Dependencies
+        run: scoop install main/cmake@4.0.1 main/ninja main/vcpkg main/flatc
       - name: Build
         run: |
           cmake -B build --preset msvc-ci .
