@@ -18,8 +18,6 @@
 #define flatbuffers_extension "bin"
 #endif
 
-
-
 /**  Represents an 'optional' Boolean results where RESULT_ABSTAIN is a *dont care* result.
  *  For more details about the *dont care* results please refer the RFC\Documentation. */
 typedef int8_t dd_wls_EvaluationResult_enum_t;
@@ -28,28 +26,31 @@ __flatbuffers_define_integer_type(dd_wls_EvaluationResult, dd_wls_EvaluationResu
 #define dd_wls_EvaluationResult_RESULT_FALSE ((dd_wls_EvaluationResult_enum_t)INT8_C(0))
 #define dd_wls_EvaluationResult_RESULT_ABSTAIN ((dd_wls_EvaluationResult_enum_t)INT8_C(-1))
 
-static inline const char *dd_wls_EvaluationResult_name(dd_wls_EvaluationResult_enum_t value)
-{
-    switch (value) {
-    case dd_wls_EvaluationResult_RESULT_TRUE: return "RESULT_TRUE";
-    case dd_wls_EvaluationResult_RESULT_FALSE: return "RESULT_FALSE";
-    case dd_wls_EvaluationResult_RESULT_ABSTAIN: return "RESULT_ABSTAIN";
-    default: return "";
-    }
+    static inline const char *dd_wls_EvaluationResult_name(dd_wls_EvaluationResult_enum_t value) {
+  switch (value) {
+    case dd_wls_EvaluationResult_RESULT_TRUE:
+      return "RESULT_TRUE";
+    case dd_wls_EvaluationResult_RESULT_FALSE:
+      return "RESULT_FALSE";
+    case dd_wls_EvaluationResult_RESULT_ABSTAIN:
+      return "RESULT_ABSTAIN";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_EvaluationResult_is_known_value(dd_wls_EvaluationResult_enum_t value)
-{
-    switch (value) {
-    case dd_wls_EvaluationResult_RESULT_TRUE: return 1;
-    case dd_wls_EvaluationResult_RESULT_FALSE: return 1;
-    case dd_wls_EvaluationResult_RESULT_ABSTAIN: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_EvaluationResult_is_known_value(dd_wls_EvaluationResult_enum_t value) {
+  switch (value) {
+    case dd_wls_EvaluationResult_RESULT_TRUE:
+      return 1;
+    case dd_wls_EvaluationResult_RESULT_FALSE:
+      return 1;
+    case dd_wls_EvaluationResult_RESULT_ABSTAIN:
+      return 1;
+    default:
+      return 0;
+  }
 }
-
-
-
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* EVALUATION_RESULT_READER_H */

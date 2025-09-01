@@ -21,7 +21,6 @@
 #define flatbuffers_extension "bin"
 #endif
 
-
 typedef const struct dd_wls_Action_table *dd_wls_Action_table_t;
 typedef struct dd_wls_Action_table *dd_wls_Action_mutable_table_t;
 typedef const flatbuffers_uoffset_t *dd_wls_Action_vec_t;
@@ -46,40 +45,40 @@ __flatbuffers_define_integer_type(dd_wls_ActionMax, dd_wls_ActionMax_enum_t, 16)
  *  This is used to ensure that the action values do not exceed this limit. */
 #define dd_wls_ActionMax_ACTION_VALUES_MAX ((dd_wls_ActionMax_enum_t)INT16_C(255))
 
-static inline const char *dd_wls_ActionMax_name(dd_wls_ActionMax_enum_t value)
-{
-    switch (value) {
-    case dd_wls_ActionMax_ACTION_VALUES_MAX: return "ACTION_VALUES_MAX";
-    default: return "";
-    }
+    static inline const char *dd_wls_ActionMax_name(dd_wls_ActionMax_enum_t value) {
+  switch (value) {
+    case dd_wls_ActionMax_ACTION_VALUES_MAX:
+      return "ACTION_VALUES_MAX";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_ActionMax_is_known_value(dd_wls_ActionMax_enum_t value)
-{
-    switch (value) {
-    case dd_wls_ActionMax_ACTION_VALUES_MAX: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_ActionMax_is_known_value(dd_wls_ActionMax_enum_t value) {
+  switch (value) {
+    case dd_wls_ActionMax_ACTION_VALUES_MAX:
+      return 1;
+    default:
+      return 0;
+  }
 }
-
-
 
 /**  Represents an action taken post evaluation */
-struct dd_wls_Action_table { uint8_t unused__; };
+struct dd_wls_Action_table {
+  uint8_t unused__;
+};
 
 static inline size_t dd_wls_Action_vec_len(dd_wls_Action_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_Action_table_t dd_wls_Action_vec_at(dd_wls_Action_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_Action_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_Action)
+    __flatbuffers_vec_len(vec) static inline dd_wls_Action_table_t
+    dd_wls_Action_vec_at(dd_wls_Action_vec_t vec, size_t i)
+        __flatbuffers_offset_vec_at(dd_wls_Action_table_t, vec, i, 0) __flatbuffers_table_as_root(dd_wls_Action)
 
-/**  An enum representing the type of action to take. */
-__flatbuffers_define_scalar_field(0, dd_wls_Action, action, dd_wls_ActionId, dd_wls_ActionId_enum_t, INT8_C(0))
-/**  For debugging purposes a description string can be passed  */
-__flatbuffers_define_string_field(1, dd_wls_Action, description, 0)
-/**  Each action defines the values it accepts\supports. */
-__flatbuffers_define_vector_field(2, dd_wls_Action, values, flatbuffers_string_vec_t, 0)
-
+    /**  An enum representing the type of action to take. */
+    __flatbuffers_define_scalar_field(0, dd_wls_Action, action, dd_wls_ActionId, dd_wls_ActionId_enum_t, INT8_C(0))
+    /**  For debugging purposes a description string can be passed  */
+    __flatbuffers_define_string_field(1, dd_wls_Action, description, 0)
+    /**  Each action defines the values it accepts\supports. */
+    __flatbuffers_define_vector_field(2, dd_wls_Action, values, flatbuffers_string_vec_t, 0)
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* ACTIONS_READER_H */

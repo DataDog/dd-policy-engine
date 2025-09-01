@@ -18,8 +18,6 @@
 #define flatbuffers_extension "bin"
 #endif
 
-
-
 /**  These are the supported boolean operators when evaluating multiple conditions */
 typedef int8_t dd_wls_BoolOperation_enum_t;
 __flatbuffers_define_integer_type(dd_wls_BoolOperation, dd_wls_BoolOperation_enum_t, 8)
@@ -27,28 +25,31 @@ __flatbuffers_define_integer_type(dd_wls_BoolOperation, dd_wls_BoolOperation_enu
 #define dd_wls_BoolOperation_BOOL_NOT ((dd_wls_BoolOperation_enum_t)INT8_C(1))
 #define dd_wls_BoolOperation_BOOL_OR ((dd_wls_BoolOperation_enum_t)INT8_C(2))
 
-static inline const char *dd_wls_BoolOperation_name(dd_wls_BoolOperation_enum_t value)
-{
-    switch (value) {
-    case dd_wls_BoolOperation_BOOL_AND: return "BOOL_AND";
-    case dd_wls_BoolOperation_BOOL_NOT: return "BOOL_NOT";
-    case dd_wls_BoolOperation_BOOL_OR: return "BOOL_OR";
-    default: return "";
-    }
+    static inline const char *dd_wls_BoolOperation_name(dd_wls_BoolOperation_enum_t value) {
+  switch (value) {
+    case dd_wls_BoolOperation_BOOL_AND:
+      return "BOOL_AND";
+    case dd_wls_BoolOperation_BOOL_NOT:
+      return "BOOL_NOT";
+    case dd_wls_BoolOperation_BOOL_OR:
+      return "BOOL_OR";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_BoolOperation_is_known_value(dd_wls_BoolOperation_enum_t value)
-{
-    switch (value) {
-    case dd_wls_BoolOperation_BOOL_AND: return 1;
-    case dd_wls_BoolOperation_BOOL_NOT: return 1;
-    case dd_wls_BoolOperation_BOOL_OR: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_BoolOperation_is_known_value(dd_wls_BoolOperation_enum_t value) {
+  switch (value) {
+    case dd_wls_BoolOperation_BOOL_AND:
+      return 1;
+    case dd_wls_BoolOperation_BOOL_NOT:
+      return 1;
+    case dd_wls_BoolOperation_BOOL_OR:
+      return 1;
+    default:
+      return 0;
+  }
 }
-
-
-
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* BOOLEAN_OPERATION_READER_H */

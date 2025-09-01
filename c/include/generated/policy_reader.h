@@ -24,7 +24,6 @@
 #define flatbuffers_extension "bin"
 #endif
 
-
 typedef const struct dd_wls_Policy_table *dd_wls_Policy_table_t;
 typedef struct dd_wls_Policy_table *dd_wls_Policy_mutable_table_t;
 typedef const flatbuffers_uoffset_t *dd_wls_Policy_vec_t;
@@ -58,39 +57,39 @@ typedef flatbuffers_uoffset_t *dd_wls_Policies_mutable_vec_t;
 #define dd_wls_Policies_file_extension "bin"
 #endif
 
-
-
 /**  Represents a policy that contains rules and actions.
- *  The rules are represented as a tree structure where each node can be a leaf (with an evaluator) or a root (with child nodes). */
-struct dd_wls_Policy_table { uint8_t unused__; };
+ *  The rules are represented as a tree structure where each node can be a leaf (with an evaluator) or a root (with
+ * child nodes). */
+struct dd_wls_Policy_table {
+  uint8_t unused__;
+};
 
 static inline size_t dd_wls_Policy_vec_len(dd_wls_Policy_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_Policy_table_t dd_wls_Policy_vec_at(dd_wls_Policy_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_Policy_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_Policy)
+    __flatbuffers_vec_len(vec) static inline dd_wls_Policy_table_t
+    dd_wls_Policy_vec_at(dd_wls_Policy_vec_t vec, size_t i)
+        __flatbuffers_offset_vec_at(dd_wls_Policy_table_t, vec, i, 0) __flatbuffers_table_as_root(dd_wls_Policy)
 
-/**  The policy can have a description for debugging purposes. */
-__flatbuffers_define_string_field(0, dd_wls_Policy, description, 0)
-/**  The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers.  */
-__flatbuffers_define_table_field(1, dd_wls_Policy, rules, dd_wls_NodeTypeWrapper_table_t, 0)
-/**  The actions are taken post evaluation of the policy. */
-__flatbuffers_define_vector_field(2, dd_wls_Policy, actions, dd_wls_Action_vec_t, 0)
+    /**  The policy can have a description for debugging purposes. */
+    __flatbuffers_define_string_field(0, dd_wls_Policy, description, 0)
+    /**  The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers.  */
+    __flatbuffers_define_table_field(1, dd_wls_Policy, rules, dd_wls_NodeTypeWrapper_table_t, 0)
+    /**  The actions are taken post evaluation of the policy. */
+    __flatbuffers_define_vector_field(2, dd_wls_Policy, actions, dd_wls_Action_vec_t, 0)
 
-/**  Represents a collection of policies.
- *  This allows for concatenation of policies from different sources.
- *  The policies are stored in a vector of Policy.
- *  This is also the root type of the FlatBuffer schema!!! */
-struct dd_wls_Policies_table { uint8_t unused__; };
+    /**  Represents a collection of policies.
+     *  This allows for concatenation of policies from different sources.
+     *  The policies are stored in a vector of Policy.
+     *  This is also the root type of the FlatBuffer schema!!! */
+    struct dd_wls_Policies_table {
+  uint8_t unused__;
+};
 
 static inline size_t dd_wls_Policies_vec_len(dd_wls_Policies_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_Policies_table_t dd_wls_Policies_vec_at(dd_wls_Policies_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_Policies_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_Policies)
+    __flatbuffers_vec_len(vec) static inline dd_wls_Policies_table_t
+    dd_wls_Policies_vec_at(dd_wls_Policies_vec_t vec, size_t i)
+        __flatbuffers_offset_vec_at(dd_wls_Policies_table_t, vec, i, 0) __flatbuffers_table_as_root(dd_wls_Policies)
 
-__flatbuffers_define_vector_field(0, dd_wls_Policies, policies, dd_wls_Policy_vec_t, 0)
-
+            __flatbuffers_define_vector_field(0, dd_wls_Policies, policies, dd_wls_Policy_vec_t, 0)
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* POLICY_READER_H */

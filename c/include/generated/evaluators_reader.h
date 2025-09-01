@@ -21,7 +21,6 @@
 #define flatbuffers_extension "bin"
 #endif
 
-
 typedef const struct dd_wls_StrEvaluator_table *dd_wls_StrEvaluator_table_t;
 typedef struct dd_wls_StrEvaluator_table *dd_wls_StrEvaluator_mutable_table_t;
 typedef const flatbuffers_uoffset_t *dd_wls_StrEvaluator_vec_t;
@@ -85,28 +84,38 @@ __flatbuffers_define_integer_type(dd_wls_CmpTypeNUM, dd_wls_CmpTypeNUM_enum_t, 8
 #define dd_wls_CmpTypeNUM_CMP_LT ((dd_wls_CmpTypeNUM_enum_t)INT8_C(3))
 #define dd_wls_CmpTypeNUM_CMP_LTE ((dd_wls_CmpTypeNUM_enum_t)INT8_C(4))
 
-static inline const char *dd_wls_CmpTypeNUM_name(dd_wls_CmpTypeNUM_enum_t value)
-{
-    switch (value) {
-    case dd_wls_CmpTypeNUM_CMP_EQ: return "CMP_EQ";
-    case dd_wls_CmpTypeNUM_CMP_GT: return "CMP_GT";
-    case dd_wls_CmpTypeNUM_CMP_GTE: return "CMP_GTE";
-    case dd_wls_CmpTypeNUM_CMP_LT: return "CMP_LT";
-    case dd_wls_CmpTypeNUM_CMP_LTE: return "CMP_LTE";
-    default: return "";
-    }
+    static inline const char *dd_wls_CmpTypeNUM_name(dd_wls_CmpTypeNUM_enum_t value) {
+  switch (value) {
+    case dd_wls_CmpTypeNUM_CMP_EQ:
+      return "CMP_EQ";
+    case dd_wls_CmpTypeNUM_CMP_GT:
+      return "CMP_GT";
+    case dd_wls_CmpTypeNUM_CMP_GTE:
+      return "CMP_GTE";
+    case dd_wls_CmpTypeNUM_CMP_LT:
+      return "CMP_LT";
+    case dd_wls_CmpTypeNUM_CMP_LTE:
+      return "CMP_LTE";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_CmpTypeNUM_is_known_value(dd_wls_CmpTypeNUM_enum_t value)
-{
-    switch (value) {
-    case dd_wls_CmpTypeNUM_CMP_EQ: return 1;
-    case dd_wls_CmpTypeNUM_CMP_GT: return 1;
-    case dd_wls_CmpTypeNUM_CMP_GTE: return 1;
-    case dd_wls_CmpTypeNUM_CMP_LT: return 1;
-    case dd_wls_CmpTypeNUM_CMP_LTE: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_CmpTypeNUM_is_known_value(dd_wls_CmpTypeNUM_enum_t value) {
+  switch (value) {
+    case dd_wls_CmpTypeNUM_CMP_EQ:
+      return 1;
+    case dd_wls_CmpTypeNUM_CMP_GT:
+      return 1;
+    case dd_wls_CmpTypeNUM_CMP_GTE:
+      return 1;
+    case dd_wls_CmpTypeNUM_CMP_LT:
+      return 1;
+    case dd_wls_CmpTypeNUM_CMP_LTE:
+      return 1;
+    default:
+      return 0;
+  }
 }
 
 /**  These are the supported comparison operators for String evaluators:
@@ -121,34 +130,41 @@ __flatbuffers_define_integer_type(dd_wls_CmpTypeSTR, dd_wls_CmpTypeSTR_enum_t, 8
 #define dd_wls_CmpTypeSTR_CMP_CONTAINS ((dd_wls_CmpTypeSTR_enum_t)INT8_C(2))
 #define dd_wls_CmpTypeSTR_CMP_EXACT ((dd_wls_CmpTypeSTR_enum_t)INT8_C(3))
 
-static inline const char *dd_wls_CmpTypeSTR_name(dd_wls_CmpTypeSTR_enum_t value)
-{
-    switch (value) {
-    case dd_wls_CmpTypeSTR_CMP_PREFIX: return "CMP_PREFIX";
-    case dd_wls_CmpTypeSTR_CMP_SUFFIX: return "CMP_SUFFIX";
-    case dd_wls_CmpTypeSTR_CMP_CONTAINS: return "CMP_CONTAINS";
-    case dd_wls_CmpTypeSTR_CMP_EXACT: return "CMP_EXACT";
-    default: return "";
-    }
+    static inline const char *dd_wls_CmpTypeSTR_name(dd_wls_CmpTypeSTR_enum_t value) {
+  switch (value) {
+    case dd_wls_CmpTypeSTR_CMP_PREFIX:
+      return "CMP_PREFIX";
+    case dd_wls_CmpTypeSTR_CMP_SUFFIX:
+      return "CMP_SUFFIX";
+    case dd_wls_CmpTypeSTR_CMP_CONTAINS:
+      return "CMP_CONTAINS";
+    case dd_wls_CmpTypeSTR_CMP_EXACT:
+      return "CMP_EXACT";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_CmpTypeSTR_is_known_value(dd_wls_CmpTypeSTR_enum_t value)
-{
-    switch (value) {
-    case dd_wls_CmpTypeSTR_CMP_PREFIX: return 1;
-    case dd_wls_CmpTypeSTR_CMP_SUFFIX: return 1;
-    case dd_wls_CmpTypeSTR_CMP_CONTAINS: return 1;
-    case dd_wls_CmpTypeSTR_CMP_EXACT: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_CmpTypeSTR_is_known_value(dd_wls_CmpTypeSTR_enum_t value) {
+  switch (value) {
+    case dd_wls_CmpTypeSTR_CMP_PREFIX:
+      return 1;
+    case dd_wls_CmpTypeSTR_CMP_SUFFIX:
+      return 1;
+    case dd_wls_CmpTypeSTR_CMP_CONTAINS:
+      return 1;
+    case dd_wls_CmpTypeSTR_CMP_EXACT:
+      return 1;
+    default:
+      return 0;
+  }
 }
-
 
 /**  EvaluatorType is a union of all the evaluators supported by the policy engine.
  *  NOTE: StrArrEvaluator is not supported yet, but it is reserved for future use. */
 typedef uint8_t dd_wls_EvaluatorType_union_type_t;
 __flatbuffers_define_integer_type(dd_wls_EvaluatorType, dd_wls_EvaluatorType_union_type_t, 8)
-__flatbuffers_define_union(flatbuffers_, dd_wls_EvaluatorType)
+    __flatbuffers_define_union(flatbuffers_, dd_wls_EvaluatorType)
 /**  Represents a String evaluator
  *  Each evaluator has an ID, a comparison type and a value to compare against. */
 #define dd_wls_EvaluatorType_NONE ((dd_wls_EvaluatorType_union_type_t)UINT8_C(0))
@@ -156,79 +172,129 @@ __flatbuffers_define_union(flatbuffers_, dd_wls_EvaluatorType)
 #define dd_wls_EvaluatorType_NumEvaluator ((dd_wls_EvaluatorType_union_type_t)UINT8_C(2))
 #define dd_wls_EvaluatorType_UNumEvaluator ((dd_wls_EvaluatorType_union_type_t)UINT8_C(3))
 
-static inline const char *dd_wls_EvaluatorType_type_name(dd_wls_EvaluatorType_union_type_t type)
-{
-    switch (type) {
-    case dd_wls_EvaluatorType_NONE: return "NONE";
-    case dd_wls_EvaluatorType_StrEvaluator: return "StrEvaluator";
-    case dd_wls_EvaluatorType_NumEvaluator: return "NumEvaluator";
-    case dd_wls_EvaluatorType_UNumEvaluator: return "UNumEvaluator";
-    default: return "";
-    }
+        static inline const char *dd_wls_EvaluatorType_type_name(dd_wls_EvaluatorType_union_type_t type) {
+  switch (type) {
+    case dd_wls_EvaluatorType_NONE:
+      return "NONE";
+    case dd_wls_EvaluatorType_StrEvaluator:
+      return "StrEvaluator";
+    case dd_wls_EvaluatorType_NumEvaluator:
+      return "NumEvaluator";
+    case dd_wls_EvaluatorType_UNumEvaluator:
+      return "UNumEvaluator";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_EvaluatorType_is_known_type(dd_wls_EvaluatorType_union_type_t type)
-{
-    switch (type) {
-    case dd_wls_EvaluatorType_NONE: return 1;
-    case dd_wls_EvaluatorType_StrEvaluator: return 1;
-    case dd_wls_EvaluatorType_NumEvaluator: return 1;
-    case dd_wls_EvaluatorType_UNumEvaluator: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_EvaluatorType_is_known_type(dd_wls_EvaluatorType_union_type_t type) {
+  switch (type) {
+    case dd_wls_EvaluatorType_NONE:
+      return 1;
+    case dd_wls_EvaluatorType_StrEvaluator:
+      return 1;
+    case dd_wls_EvaluatorType_NumEvaluator:
+      return 1;
+    case dd_wls_EvaluatorType_UNumEvaluator:
+      return 1;
+    default:
+      return 0;
+  }
 }
 
+struct dd_wls_StrEvaluator_table {
+  uint8_t unused__;
+};
 
-struct dd_wls_StrEvaluator_table { uint8_t unused__; };
+static inline size_t dd_wls_StrEvaluator_vec_len(dd_wls_StrEvaluator_vec_t vec) __flatbuffers_vec_len(vec
+) static inline dd_wls_StrEvaluator_table_t dd_wls_StrEvaluator_vec_at(dd_wls_StrEvaluator_vec_t vec, size_t i)
+    __flatbuffers_offset_vec_at(dd_wls_StrEvaluator_table_t, vec, i, 0) __flatbuffers_table_as_root(dd_wls_StrEvaluator)
 
-static inline size_t dd_wls_StrEvaluator_vec_len(dd_wls_StrEvaluator_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_StrEvaluator_table_t dd_wls_StrEvaluator_vec_at(dd_wls_StrEvaluator_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_StrEvaluator_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_StrEvaluator)
+    /**  The ID is a unique identifier for the evaluator. */
+    __flatbuffers_define_scalar_field(
+        0,
+        dd_wls_StrEvaluator,
+        id,
+        dd_wls_StringEvaluators,
+        dd_wls_StringEvaluators_enum_t,
+        INT8_C(0)
+    )
+    /**  The comparison type is used to determine how to compare the value against the evaluator's value. */
+    __flatbuffers_define_scalar_field(
+        1,
+        dd_wls_StrEvaluator,
+        cmp,
+        dd_wls_CmpTypeSTR,
+        dd_wls_CmpTypeSTR_enum_t,
+        INT8_C(0)
+    )
+    /**  The value is the value to compare against. */
+    __flatbuffers_define_string_field(2, dd_wls_StrEvaluator, value, 0)
 
-/**  The ID is a unique identifier for the evaluator. */
-__flatbuffers_define_scalar_field(0, dd_wls_StrEvaluator, id, dd_wls_StringEvaluators, dd_wls_StringEvaluators_enum_t, INT8_C(0))
-/**  The comparison type is used to determine how to compare the value against the evaluator's value. */
-__flatbuffers_define_scalar_field(1, dd_wls_StrEvaluator, cmp, dd_wls_CmpTypeSTR, dd_wls_CmpTypeSTR_enum_t, INT8_C(0))
-/**  The value is the value to compare against. */
-__flatbuffers_define_string_field(2, dd_wls_StrEvaluator, value, 0)
-
-/**  Represents a String evaluator that can accept multiple values.
- *  Represents an unsigned Numeric evaluator
- *  This evaluator is used for unsigned numeric comparisons. */
-struct dd_wls_UNumEvaluator_table { uint8_t unused__; };
+    /**  Represents a String evaluator that can accept multiple values.
+     *  Represents an unsigned Numeric evaluator
+     *  This evaluator is used for unsigned numeric comparisons. */
+    struct dd_wls_UNumEvaluator_table {
+  uint8_t unused__;
+};
 
 static inline size_t dd_wls_UNumEvaluator_vec_len(dd_wls_UNumEvaluator_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_UNumEvaluator_table_t dd_wls_UNumEvaluator_vec_at(dd_wls_UNumEvaluator_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_UNumEvaluator_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_UNumEvaluator)
+    __flatbuffers_vec_len(vec) static inline dd_wls_UNumEvaluator_table_t
+    dd_wls_UNumEvaluator_vec_at(dd_wls_UNumEvaluator_vec_t vec, size_t i)
+        __flatbuffers_offset_vec_at(dd_wls_UNumEvaluator_table_t, vec, i, 0)
+            __flatbuffers_table_as_root(dd_wls_UNumEvaluator)
 
-/**  Each evaluator has an ID, a comparison type and a value to compare against. */
-__flatbuffers_define_scalar_field(0, dd_wls_UNumEvaluator, id, dd_wls_NumericEvaluators, dd_wls_NumericEvaluators_enum_t, INT8_C(0))
-/**  The comparison type is used to determine how to compare the value against the evaluator's value. */
-__flatbuffers_define_scalar_field(1, dd_wls_UNumEvaluator, cmp, dd_wls_CmpTypeNUM, dd_wls_CmpTypeNUM_enum_t, INT8_C(0))
-/**  The value is an unsigned long. */
-__flatbuffers_define_scalar_field(2, dd_wls_UNumEvaluator, value, flatbuffers_uint64, uint64_t, UINT64_C(0))
+    /**  Each evaluator has an ID, a comparison type and a value to compare against. */
+    __flatbuffers_define_scalar_field(
+        0,
+        dd_wls_UNumEvaluator,
+        id,
+        dd_wls_NumericEvaluators,
+        dd_wls_NumericEvaluators_enum_t,
+        INT8_C(0)
+    )
+    /**  The comparison type is used to determine how to compare the value against the evaluator's value. */
+    __flatbuffers_define_scalar_field(
+        1,
+        dd_wls_UNumEvaluator,
+        cmp,
+        dd_wls_CmpTypeNUM,
+        dd_wls_CmpTypeNUM_enum_t,
+        INT8_C(0)
+    )
+    /**  The value is an unsigned long. */
+    __flatbuffers_define_scalar_field(2, dd_wls_UNumEvaluator, value, flatbuffers_uint64, uint64_t, UINT64_C(0))
 
-/**  Represents a signed Numeric evaluator
- *  This evaluator is used for signed numeric comparisons. */
-struct dd_wls_NumEvaluator_table { uint8_t unused__; };
+    /**  Represents a signed Numeric evaluator
+     *  This evaluator is used for signed numeric comparisons. */
+    struct dd_wls_NumEvaluator_table {
+  uint8_t unused__;
+};
 
-static inline size_t dd_wls_NumEvaluator_vec_len(dd_wls_NumEvaluator_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_NumEvaluator_table_t dd_wls_NumEvaluator_vec_at(dd_wls_NumEvaluator_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_NumEvaluator_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_NumEvaluator)
+static inline size_t dd_wls_NumEvaluator_vec_len(dd_wls_NumEvaluator_vec_t vec) __flatbuffers_vec_len(vec
+) static inline dd_wls_NumEvaluator_table_t dd_wls_NumEvaluator_vec_at(dd_wls_NumEvaluator_vec_t vec, size_t i)
+    __flatbuffers_offset_vec_at(dd_wls_NumEvaluator_table_t, vec, i, 0) __flatbuffers_table_as_root(dd_wls_NumEvaluator)
 
-/**  Each evaluator has an ID, a comparison type and a value to compare against. */
-__flatbuffers_define_scalar_field(0, dd_wls_NumEvaluator, id, dd_wls_NumericEvaluators, dd_wls_NumericEvaluators_enum_t, INT8_C(0))
-/**  The comparison type is used to determine how to compare the value against the evaluator's value. */
-__flatbuffers_define_scalar_field(1, dd_wls_NumEvaluator, cmp, dd_wls_CmpTypeNUM, dd_wls_CmpTypeNUM_enum_t, INT8_C(0))
-/**  The value is a signed long. */
-__flatbuffers_define_scalar_field(2, dd_wls_NumEvaluator, value, flatbuffers_int64, int64_t, INT64_C(0))
-
+    /**  Each evaluator has an ID, a comparison type and a value to compare against. */
+    __flatbuffers_define_scalar_field(
+        0,
+        dd_wls_NumEvaluator,
+        id,
+        dd_wls_NumericEvaluators,
+        dd_wls_NumericEvaluators_enum_t,
+        INT8_C(0)
+    )
+    /**  The comparison type is used to determine how to compare the value against the evaluator's value. */
+    __flatbuffers_define_scalar_field(
+        1,
+        dd_wls_NumEvaluator,
+        cmp,
+        dd_wls_CmpTypeNUM,
+        dd_wls_CmpTypeNUM_enum_t,
+        INT8_C(0)
+    )
+    /**  The value is a signed long. */
+    __flatbuffers_define_scalar_field(2, dd_wls_NumEvaluator, value, flatbuffers_int64, int64_t, INT64_C(0))
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* EVALUATORS_READER_H */

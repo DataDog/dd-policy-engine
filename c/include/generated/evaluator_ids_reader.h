@@ -18,8 +18,6 @@
 #define flatbuffers_extension "bin"
 #endif
 
-
-
 /**  Each ID represents a String evaluator
  *  Each evaluator ID should be UNIQUE!
  *  IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry) */
@@ -50,66 +48,114 @@ __flatbuffers_define_integer_type(dd_wls_StringEvaluators, dd_wls_StringEvaluato
 #define dd_wls_StringEvaluators_CONTAINER_ID ((dd_wls_StringEvaluators_enum_t)INT8_C(22))
 #define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(23))
 
-static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_enum_t value)
-{
-    switch (value) {
-    case dd_wls_StringEvaluators_COMPONENT: return "COMPONENT";
-    case dd_wls_StringEvaluators_PROCESS_EXE_PATH: return "PROCESS_EXE_PATH";
-    case dd_wls_StringEvaluators_PROCESS_BASEDIR_PATH: return "PROCESS_BASEDIR_PATH";
-    case dd_wls_StringEvaluators_PROCESS_CWD: return "PROCESS_CWD";
-    case dd_wls_StringEvaluators_RUNTIME_LANGUAGE: return "RUNTIME_LANGUAGE";
-    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_FILE: return "RUNTIME_ENTRY_POINT_FILE";
-    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_CLASS: return "RUNTIME_ENTRY_POINT_CLASS";
-    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_PACKAGE: return "RUNTIME_ENTRY_POINT_PACKAGE";
-    case dd_wls_StringEvaluators_RUNTIME_VERSION: return "RUNTIME_VERSION";
-    case dd_wls_StringEvaluators_LIBC_FLAVOR: return "LIBC_FLAVOR";
-    case dd_wls_StringEvaluators_LIBC_VERSION: return "LIBC_VERSION";
-    case dd_wls_StringEvaluators_MACHINE_ARCHITECTURE: return "MACHINE_ARCHITECTURE";
-    case dd_wls_StringEvaluators_HOST_NAME: return "HOST_NAME";
-    case dd_wls_StringEvaluators_HOST_IP: return "HOST_IP";
-    case dd_wls_StringEvaluators_OS: return "OS";
-    case dd_wls_StringEvaluators_OS_DISTRO: return "OS_DISTRO";
-    case dd_wls_StringEvaluators_OS_DISTRO_VERSION: return "OS_DISTRO_VERSION";
-    case dd_wls_StringEvaluators_OS_DISTRO_CODENAME: return "OS_DISTRO_CODENAME";
-    case dd_wls_StringEvaluators_OS_KERNEL_VERSION: return "OS_KERNEL_VERSION";
-    case dd_wls_StringEvaluators_OS_USER: return "OS_USER";
-    case dd_wls_StringEvaluators_OS_USER_GROUP: return "OS_USER_GROUP";
-    case dd_wls_StringEvaluators_CONTAINER_IMAGE: return "CONTAINER_IMAGE";
-    case dd_wls_StringEvaluators_CONTAINER_ID: return "CONTAINER_ID";
-    case dd_wls_StringEvaluators_STR_EVAL_COUNT: return "STR_EVAL_COUNT";
-    default: return "";
-    }
+    static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_enum_t value) {
+  switch (value) {
+    case dd_wls_StringEvaluators_COMPONENT:
+      return "COMPONENT";
+    case dd_wls_StringEvaluators_PROCESS_EXE_PATH:
+      return "PROCESS_EXE_PATH";
+    case dd_wls_StringEvaluators_PROCESS_BASEDIR_PATH:
+      return "PROCESS_BASEDIR_PATH";
+    case dd_wls_StringEvaluators_PROCESS_CWD:
+      return "PROCESS_CWD";
+    case dd_wls_StringEvaluators_RUNTIME_LANGUAGE:
+      return "RUNTIME_LANGUAGE";
+    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_FILE:
+      return "RUNTIME_ENTRY_POINT_FILE";
+    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_CLASS:
+      return "RUNTIME_ENTRY_POINT_CLASS";
+    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_PACKAGE:
+      return "RUNTIME_ENTRY_POINT_PACKAGE";
+    case dd_wls_StringEvaluators_RUNTIME_VERSION:
+      return "RUNTIME_VERSION";
+    case dd_wls_StringEvaluators_LIBC_FLAVOR:
+      return "LIBC_FLAVOR";
+    case dd_wls_StringEvaluators_LIBC_VERSION:
+      return "LIBC_VERSION";
+    case dd_wls_StringEvaluators_MACHINE_ARCHITECTURE:
+      return "MACHINE_ARCHITECTURE";
+    case dd_wls_StringEvaluators_HOST_NAME:
+      return "HOST_NAME";
+    case dd_wls_StringEvaluators_HOST_IP:
+      return "HOST_IP";
+    case dd_wls_StringEvaluators_OS:
+      return "OS";
+    case dd_wls_StringEvaluators_OS_DISTRO:
+      return "OS_DISTRO";
+    case dd_wls_StringEvaluators_OS_DISTRO_VERSION:
+      return "OS_DISTRO_VERSION";
+    case dd_wls_StringEvaluators_OS_DISTRO_CODENAME:
+      return "OS_DISTRO_CODENAME";
+    case dd_wls_StringEvaluators_OS_KERNEL_VERSION:
+      return "OS_KERNEL_VERSION";
+    case dd_wls_StringEvaluators_OS_USER:
+      return "OS_USER";
+    case dd_wls_StringEvaluators_OS_USER_GROUP:
+      return "OS_USER_GROUP";
+    case dd_wls_StringEvaluators_CONTAINER_IMAGE:
+      return "CONTAINER_IMAGE";
+    case dd_wls_StringEvaluators_CONTAINER_ID:
+      return "CONTAINER_ID";
+    case dd_wls_StringEvaluators_STR_EVAL_COUNT:
+      return "STR_EVAL_COUNT";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_StringEvaluators_is_known_value(dd_wls_StringEvaluators_enum_t value)
-{
-    switch (value) {
-    case dd_wls_StringEvaluators_COMPONENT: return 1;
-    case dd_wls_StringEvaluators_PROCESS_EXE_PATH: return 1;
-    case dd_wls_StringEvaluators_PROCESS_BASEDIR_PATH: return 1;
-    case dd_wls_StringEvaluators_PROCESS_CWD: return 1;
-    case dd_wls_StringEvaluators_RUNTIME_LANGUAGE: return 1;
-    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_FILE: return 1;
-    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_CLASS: return 1;
-    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_PACKAGE: return 1;
-    case dd_wls_StringEvaluators_RUNTIME_VERSION: return 1;
-    case dd_wls_StringEvaluators_LIBC_FLAVOR: return 1;
-    case dd_wls_StringEvaluators_LIBC_VERSION: return 1;
-    case dd_wls_StringEvaluators_MACHINE_ARCHITECTURE: return 1;
-    case dd_wls_StringEvaluators_HOST_NAME: return 1;
-    case dd_wls_StringEvaluators_HOST_IP: return 1;
-    case dd_wls_StringEvaluators_OS: return 1;
-    case dd_wls_StringEvaluators_OS_DISTRO: return 1;
-    case dd_wls_StringEvaluators_OS_DISTRO_VERSION: return 1;
-    case dd_wls_StringEvaluators_OS_DISTRO_CODENAME: return 1;
-    case dd_wls_StringEvaluators_OS_KERNEL_VERSION: return 1;
-    case dd_wls_StringEvaluators_OS_USER: return 1;
-    case dd_wls_StringEvaluators_OS_USER_GROUP: return 1;
-    case dd_wls_StringEvaluators_CONTAINER_IMAGE: return 1;
-    case dd_wls_StringEvaluators_CONTAINER_ID: return 1;
-    case dd_wls_StringEvaluators_STR_EVAL_COUNT: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_StringEvaluators_is_known_value(dd_wls_StringEvaluators_enum_t value) {
+  switch (value) {
+    case dd_wls_StringEvaluators_COMPONENT:
+      return 1;
+    case dd_wls_StringEvaluators_PROCESS_EXE_PATH:
+      return 1;
+    case dd_wls_StringEvaluators_PROCESS_BASEDIR_PATH:
+      return 1;
+    case dd_wls_StringEvaluators_PROCESS_CWD:
+      return 1;
+    case dd_wls_StringEvaluators_RUNTIME_LANGUAGE:
+      return 1;
+    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_FILE:
+      return 1;
+    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_CLASS:
+      return 1;
+    case dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_PACKAGE:
+      return 1;
+    case dd_wls_StringEvaluators_RUNTIME_VERSION:
+      return 1;
+    case dd_wls_StringEvaluators_LIBC_FLAVOR:
+      return 1;
+    case dd_wls_StringEvaluators_LIBC_VERSION:
+      return 1;
+    case dd_wls_StringEvaluators_MACHINE_ARCHITECTURE:
+      return 1;
+    case dd_wls_StringEvaluators_HOST_NAME:
+      return 1;
+    case dd_wls_StringEvaluators_HOST_IP:
+      return 1;
+    case dd_wls_StringEvaluators_OS:
+      return 1;
+    case dd_wls_StringEvaluators_OS_DISTRO:
+      return 1;
+    case dd_wls_StringEvaluators_OS_DISTRO_VERSION:
+      return 1;
+    case dd_wls_StringEvaluators_OS_DISTRO_CODENAME:
+      return 1;
+    case dd_wls_StringEvaluators_OS_KERNEL_VERSION:
+      return 1;
+    case dd_wls_StringEvaluators_OS_USER:
+      return 1;
+    case dd_wls_StringEvaluators_OS_USER_GROUP:
+      return 1;
+    case dd_wls_StringEvaluators_CONTAINER_IMAGE:
+      return 1;
+    case dd_wls_StringEvaluators_CONTAINER_ID:
+      return 1;
+    case dd_wls_StringEvaluators_STR_EVAL_COUNT:
+      return 1;
+    default:
+      return 0;
+  }
 }
 
 /**  Each ID represents a Numeric evaluator
@@ -133,50 +179,75 @@ __flatbuffers_define_integer_type(dd_wls_NumericEvaluators, dd_wls_NumericEvalua
 #define dd_wls_NumericEvaluators_LIBC_VERSION_PATCH ((dd_wls_NumericEvaluators_enum_t)INT8_C(12))
 #define dd_wls_NumericEvaluators_NUM_EVAL_COUNT ((dd_wls_NumericEvaluators_enum_t)INT8_C(13))
 
-static inline const char *dd_wls_NumericEvaluators_name(dd_wls_NumericEvaluators_enum_t value)
-{
-    switch (value) {
-    case dd_wls_NumericEvaluators_JAVA_HEAP: return "JAVA_HEAP";
-    case dd_wls_NumericEvaluators_RUNTIME_VERSION_MAJOR: return "RUNTIME_VERSION_MAJOR";
-    case dd_wls_NumericEvaluators_RUNTIME_VERSION_MINOR: return "RUNTIME_VERSION_MINOR";
-    case dd_wls_NumericEvaluators_RUNTIME_VERSION_PATCH: return "RUNTIME_VERSION_PATCH";
-    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_MAJOR: return "OS_DISTRO_VERSION_MAJOR";
-    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_MINOR: return "OS_DISTRO_VERSION_MINOR";
-    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_PATCH: return "OS_DISTRO_VERSION_PATCH";
-    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_MAJOR: return "OS_KERNEL_VERSION_MAJOR";
-    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_MINOR: return "OS_KERNEL_VERSION_MINOR";
-    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_PATCH: return "OS_KERNEL_VERSION_PATCH";
-    case dd_wls_NumericEvaluators_LIBC_VERSION_MAJOR: return "LIBC_VERSION_MAJOR";
-    case dd_wls_NumericEvaluators_LIBC_VERSION_MINOR: return "LIBC_VERSION_MINOR";
-    case dd_wls_NumericEvaluators_LIBC_VERSION_PATCH: return "LIBC_VERSION_PATCH";
-    case dd_wls_NumericEvaluators_NUM_EVAL_COUNT: return "NUM_EVAL_COUNT";
-    default: return "";
-    }
+    static inline const char *dd_wls_NumericEvaluators_name(dd_wls_NumericEvaluators_enum_t value) {
+  switch (value) {
+    case dd_wls_NumericEvaluators_JAVA_HEAP:
+      return "JAVA_HEAP";
+    case dd_wls_NumericEvaluators_RUNTIME_VERSION_MAJOR:
+      return "RUNTIME_VERSION_MAJOR";
+    case dd_wls_NumericEvaluators_RUNTIME_VERSION_MINOR:
+      return "RUNTIME_VERSION_MINOR";
+    case dd_wls_NumericEvaluators_RUNTIME_VERSION_PATCH:
+      return "RUNTIME_VERSION_PATCH";
+    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_MAJOR:
+      return "OS_DISTRO_VERSION_MAJOR";
+    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_MINOR:
+      return "OS_DISTRO_VERSION_MINOR";
+    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_PATCH:
+      return "OS_DISTRO_VERSION_PATCH";
+    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_MAJOR:
+      return "OS_KERNEL_VERSION_MAJOR";
+    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_MINOR:
+      return "OS_KERNEL_VERSION_MINOR";
+    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_PATCH:
+      return "OS_KERNEL_VERSION_PATCH";
+    case dd_wls_NumericEvaluators_LIBC_VERSION_MAJOR:
+      return "LIBC_VERSION_MAJOR";
+    case dd_wls_NumericEvaluators_LIBC_VERSION_MINOR:
+      return "LIBC_VERSION_MINOR";
+    case dd_wls_NumericEvaluators_LIBC_VERSION_PATCH:
+      return "LIBC_VERSION_PATCH";
+    case dd_wls_NumericEvaluators_NUM_EVAL_COUNT:
+      return "NUM_EVAL_COUNT";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_NumericEvaluators_is_known_value(dd_wls_NumericEvaluators_enum_t value)
-{
-    switch (value) {
-    case dd_wls_NumericEvaluators_JAVA_HEAP: return 1;
-    case dd_wls_NumericEvaluators_RUNTIME_VERSION_MAJOR: return 1;
-    case dd_wls_NumericEvaluators_RUNTIME_VERSION_MINOR: return 1;
-    case dd_wls_NumericEvaluators_RUNTIME_VERSION_PATCH: return 1;
-    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_MAJOR: return 1;
-    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_MINOR: return 1;
-    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_PATCH: return 1;
-    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_MAJOR: return 1;
-    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_MINOR: return 1;
-    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_PATCH: return 1;
-    case dd_wls_NumericEvaluators_LIBC_VERSION_MAJOR: return 1;
-    case dd_wls_NumericEvaluators_LIBC_VERSION_MINOR: return 1;
-    case dd_wls_NumericEvaluators_LIBC_VERSION_PATCH: return 1;
-    case dd_wls_NumericEvaluators_NUM_EVAL_COUNT: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_NumericEvaluators_is_known_value(dd_wls_NumericEvaluators_enum_t value) {
+  switch (value) {
+    case dd_wls_NumericEvaluators_JAVA_HEAP:
+      return 1;
+    case dd_wls_NumericEvaluators_RUNTIME_VERSION_MAJOR:
+      return 1;
+    case dd_wls_NumericEvaluators_RUNTIME_VERSION_MINOR:
+      return 1;
+    case dd_wls_NumericEvaluators_RUNTIME_VERSION_PATCH:
+      return 1;
+    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_MAJOR:
+      return 1;
+    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_MINOR:
+      return 1;
+    case dd_wls_NumericEvaluators_OS_DISTRO_VERSION_PATCH:
+      return 1;
+    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_MAJOR:
+      return 1;
+    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_MINOR:
+      return 1;
+    case dd_wls_NumericEvaluators_OS_KERNEL_VERSION_PATCH:
+      return 1;
+    case dd_wls_NumericEvaluators_LIBC_VERSION_MAJOR:
+      return 1;
+    case dd_wls_NumericEvaluators_LIBC_VERSION_MINOR:
+      return 1;
+    case dd_wls_NumericEvaluators_LIBC_VERSION_PATCH:
+      return 1;
+    case dd_wls_NumericEvaluators_NUM_EVAL_COUNT:
+      return 1;
+    default:
+      return 0;
+  }
 }
-
-
-
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* EVALUATOR_IDS_READER_H */

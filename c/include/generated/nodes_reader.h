@@ -24,7 +24,6 @@
 #define flatbuffers_extension "bin"
 #endif
 
-
 typedef const struct dd_wls_NodeTypeWrapper_table *dd_wls_NodeTypeWrapper_table_t;
 typedef struct dd_wls_NodeTypeWrapper_table *dd_wls_NodeTypeWrapper_mutable_table_t;
 typedef const flatbuffers_uoffset_t *dd_wls_NodeTypeWrapper_vec_t;
@@ -74,82 +73,98 @@ typedef flatbuffers_uoffset_t *dd_wls_EvaluatorNode_mutable_vec_t;
 #define dd_wls_EvaluatorNode_file_extension "bin"
 #endif
 
-
 /**  Represents the type of node in the policy tree.
  *  It can either be a leaf node (which contains an evaluator) or a root node (which contains children nodes).
  *  The NodeType is a union of EvaluatorNode and CompositeNode. */
 typedef uint8_t dd_wls_NodeType_union_type_t;
 __flatbuffers_define_integer_type(dd_wls_NodeType, dd_wls_NodeType_union_type_t, 8)
-__flatbuffers_define_union(flatbuffers_, dd_wls_NodeType)
+    __flatbuffers_define_union(flatbuffers_, dd_wls_NodeType)
 /**  Represents a wrapper for NodeType to allow for union vectors in FlatBuffers.
  *  This is necessary because union vectors are not supported directly in all FlatBuffers implementations :( */
 #define dd_wls_NodeType_NONE ((dd_wls_NodeType_union_type_t)UINT8_C(0))
 #define dd_wls_NodeType_EvaluatorNode ((dd_wls_NodeType_union_type_t)UINT8_C(1))
 #define dd_wls_NodeType_CompositeNode ((dd_wls_NodeType_union_type_t)UINT8_C(2))
 
-static inline const char *dd_wls_NodeType_type_name(dd_wls_NodeType_union_type_t type)
-{
-    switch (type) {
-    case dd_wls_NodeType_NONE: return "NONE";
-    case dd_wls_NodeType_EvaluatorNode: return "EvaluatorNode";
-    case dd_wls_NodeType_CompositeNode: return "CompositeNode";
-    default: return "";
-    }
+        static inline const char *dd_wls_NodeType_type_name(dd_wls_NodeType_union_type_t type) {
+  switch (type) {
+    case dd_wls_NodeType_NONE:
+      return "NONE";
+    case dd_wls_NodeType_EvaluatorNode:
+      return "EvaluatorNode";
+    case dd_wls_NodeType_CompositeNode:
+      return "CompositeNode";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_NodeType_is_known_type(dd_wls_NodeType_union_type_t type)
-{
-    switch (type) {
-    case dd_wls_NodeType_NONE: return 1;
-    case dd_wls_NodeType_EvaluatorNode: return 1;
-    case dd_wls_NodeType_CompositeNode: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_NodeType_is_known_type(dd_wls_NodeType_union_type_t type) {
+  switch (type) {
+    case dd_wls_NodeType_NONE:
+      return 1;
+    case dd_wls_NodeType_EvaluatorNode:
+      return 1;
+    case dd_wls_NodeType_CompositeNode:
+      return 1;
+    default:
+      return 0;
+  }
 }
 
-
-struct dd_wls_NodeTypeWrapper_table { uint8_t unused__; };
+struct dd_wls_NodeTypeWrapper_table {
+  uint8_t unused__;
+};
 
 static inline size_t dd_wls_NodeTypeWrapper_vec_len(dd_wls_NodeTypeWrapper_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_NodeTypeWrapper_table_t dd_wls_NodeTypeWrapper_vec_at(dd_wls_NodeTypeWrapper_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_NodeTypeWrapper_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_NodeTypeWrapper)
+    __flatbuffers_vec_len(vec) static inline dd_wls_NodeTypeWrapper_table_t
+    dd_wls_NodeTypeWrapper_vec_at(dd_wls_NodeTypeWrapper_vec_t vec, size_t i)
+        __flatbuffers_offset_vec_at(dd_wls_NodeTypeWrapper_table_t, vec, i, 0)
+            __flatbuffers_table_as_root(dd_wls_NodeTypeWrapper)
 
-__flatbuffers_define_union_field(flatbuffers_, 1, dd_wls_NodeTypeWrapper, node, dd_wls_NodeType, 0)
+                __flatbuffers_define_union_field(flatbuffers_, 1, dd_wls_NodeTypeWrapper, node, dd_wls_NodeType, 0)
 
-/**  Represents a root node in the policy tree.
- *  It contains a description, a boolean operation (AND, OR, NOT) and a list of child nodes.
- *  The children are wrapped in NodeTypeWrapper to allow for union vectors. */
-struct dd_wls_CompositeNode_table { uint8_t unused__; };
+    /**  Represents a root node in the policy tree.
+     *  It contains a description, a boolean operation (AND, OR, NOT) and a list of child nodes.
+     *  The children are wrapped in NodeTypeWrapper to allow for union vectors. */
+    struct dd_wls_CompositeNode_table {
+  uint8_t unused__;
+};
 
 static inline size_t dd_wls_CompositeNode_vec_len(dd_wls_CompositeNode_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_CompositeNode_table_t dd_wls_CompositeNode_vec_at(dd_wls_CompositeNode_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_CompositeNode_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_CompositeNode)
+    __flatbuffers_vec_len(vec) static inline dd_wls_CompositeNode_table_t
+    dd_wls_CompositeNode_vec_at(dd_wls_CompositeNode_vec_t vec, size_t i)
+        __flatbuffers_offset_vec_at(dd_wls_CompositeNode_table_t, vec, i, 0)
+            __flatbuffers_table_as_root(dd_wls_CompositeNode)
 
-__flatbuffers_define_string_field(0, dd_wls_CompositeNode, description, 0)
-__flatbuffers_define_scalar_field(1, dd_wls_CompositeNode, op, dd_wls_BoolOperation, dd_wls_BoolOperation_enum_t, INT8_C(0))
-/**  At some point we will switch back to; children: [NodeType]; 
- *  (union vectors are not supported in GO so we are wrapping the table in a table) */
-__flatbuffers_define_vector_field(2, dd_wls_CompositeNode, children, dd_wls_NodeTypeWrapper_vec_t, 0)
+                __flatbuffers_define_string_field(0, dd_wls_CompositeNode, description, 0)
+                    __flatbuffers_define_scalar_field(
+                        1,
+                        dd_wls_CompositeNode,
+                        op,
+                        dd_wls_BoolOperation,
+                        dd_wls_BoolOperation_enum_t,
+                        INT8_C(0)
+                    )
+    /**  At some point we will switch back to; children: [NodeType];
+     *  (union vectors are not supported in GO so we are wrapping the table in a table) */
+    __flatbuffers_define_vector_field(2, dd_wls_CompositeNode, children, dd_wls_NodeTypeWrapper_vec_t, 0)
 
-/**  Represents a leaf node in the policy tree.
- *  It contains a description and an evaluator. */
-struct dd_wls_EvaluatorNode_table { uint8_t unused__; };
+    /**  Represents a leaf node in the policy tree.
+     *  It contains a description and an evaluator. */
+    struct dd_wls_EvaluatorNode_table {
+  uint8_t unused__;
+};
 
 static inline size_t dd_wls_EvaluatorNode_vec_len(dd_wls_EvaluatorNode_vec_t vec)
-__flatbuffers_vec_len(vec)
-static inline dd_wls_EvaluatorNode_table_t dd_wls_EvaluatorNode_vec_at(dd_wls_EvaluatorNode_vec_t vec, size_t i)
-__flatbuffers_offset_vec_at(dd_wls_EvaluatorNode_table_t, vec, i, 0)
-__flatbuffers_table_as_root(dd_wls_EvaluatorNode)
+    __flatbuffers_vec_len(vec) static inline dd_wls_EvaluatorNode_table_t
+    dd_wls_EvaluatorNode_vec_at(dd_wls_EvaluatorNode_vec_t vec, size_t i)
+        __flatbuffers_offset_vec_at(dd_wls_EvaluatorNode_table_t, vec, i, 0)
+            __flatbuffers_table_as_root(dd_wls_EvaluatorNode)
 
-/**  The description is used for debugging purposes. */
-__flatbuffers_define_string_field(0, dd_wls_EvaluatorNode, description, 0)
-/**  The evaluator is a union of different evaluator types (String, Numeric, etc.). */
-__flatbuffers_define_union_field(flatbuffers_, 2, dd_wls_EvaluatorNode, eval, dd_wls_EvaluatorType, 0)
-
+    /**  The description is used for debugging purposes. */
+    __flatbuffers_define_string_field(0, dd_wls_EvaluatorNode, description, 0)
+    /**  The evaluator is a union of different evaluator types (String, Numeric, etc.). */
+    __flatbuffers_define_union_field(flatbuffers_, 2, dd_wls_EvaluatorNode, eval, dd_wls_EvaluatorType, 0)
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* NODES_READER_H */

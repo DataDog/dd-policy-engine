@@ -18,9 +18,7 @@
 #define flatbuffers_extension "bin"
 #endif
 
-
-
-/**  Each Action should have an ID associated with it - it should be unique! 
+/**  Each Action should have an ID associated with it - it should be unique!
  *  IMPORTANT! When adding a new action make sure you add it as the last one (just before the ACTIONS_COUNT entry) */
 typedef int8_t dd_wls_ActionId_enum_t;
 __flatbuffers_define_integer_type(dd_wls_ActionId, dd_wls_ActionId_enum_t, 8)
@@ -31,34 +29,43 @@ __flatbuffers_define_integer_type(dd_wls_ActionId, dd_wls_ActionId_enum_t, 8)
 #define dd_wls_ActionId_SET_ENVAR ((dd_wls_ActionId_enum_t)INT8_C(4))
 #define dd_wls_ActionId_ACTIONS_COUNT ((dd_wls_ActionId_enum_t)INT8_C(5))
 
-static inline const char *dd_wls_ActionId_name(dd_wls_ActionId_enum_t value)
-{
-    switch (value) {
-    case dd_wls_ActionId_INJECT_DENY: return "INJECT_DENY";
-    case dd_wls_ActionId_INJECT_ALLOW: return "INJECT_ALLOW";
-    case dd_wls_ActionId_ENABLE_SDK: return "ENABLE_SDK";
-    case dd_wls_ActionId_ENABLE_PROFILER: return "ENABLE_PROFILER";
-    case dd_wls_ActionId_SET_ENVAR: return "SET_ENVAR";
-    case dd_wls_ActionId_ACTIONS_COUNT: return "ACTIONS_COUNT";
-    default: return "";
-    }
+    static inline const char *dd_wls_ActionId_name(dd_wls_ActionId_enum_t value) {
+  switch (value) {
+    case dd_wls_ActionId_INJECT_DENY:
+      return "INJECT_DENY";
+    case dd_wls_ActionId_INJECT_ALLOW:
+      return "INJECT_ALLOW";
+    case dd_wls_ActionId_ENABLE_SDK:
+      return "ENABLE_SDK";
+    case dd_wls_ActionId_ENABLE_PROFILER:
+      return "ENABLE_PROFILER";
+    case dd_wls_ActionId_SET_ENVAR:
+      return "SET_ENVAR";
+    case dd_wls_ActionId_ACTIONS_COUNT:
+      return "ACTIONS_COUNT";
+    default:
+      return "";
+  }
 }
 
-static inline int dd_wls_ActionId_is_known_value(dd_wls_ActionId_enum_t value)
-{
-    switch (value) {
-    case dd_wls_ActionId_INJECT_DENY: return 1;
-    case dd_wls_ActionId_INJECT_ALLOW: return 1;
-    case dd_wls_ActionId_ENABLE_SDK: return 1;
-    case dd_wls_ActionId_ENABLE_PROFILER: return 1;
-    case dd_wls_ActionId_SET_ENVAR: return 1;
-    case dd_wls_ActionId_ACTIONS_COUNT: return 1;
-    default: return 0;
-    }
+static inline int dd_wls_ActionId_is_known_value(dd_wls_ActionId_enum_t value) {
+  switch (value) {
+    case dd_wls_ActionId_INJECT_DENY:
+      return 1;
+    case dd_wls_ActionId_INJECT_ALLOW:
+      return 1;
+    case dd_wls_ActionId_ENABLE_SDK:
+      return 1;
+    case dd_wls_ActionId_ENABLE_PROFILER:
+      return 1;
+    case dd_wls_ActionId_SET_ENVAR:
+      return 1;
+    case dd_wls_ActionId_ACTIONS_COUNT:
+      return 1;
+    default:
+      return 0;
+  }
 }
-
-
-
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* ACTION_IDS_READER_H */

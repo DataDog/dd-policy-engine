@@ -48,6 +48,18 @@
       }
     },
     {
+      "name": "clang-ci",
+      "displayName": "Clang Coverage",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
+      },
+      "environment": {
+        "ADDITIONAL_C_FLAGS": "-std=c23"
+      }
+    },
+    {
       "name": "clang-coverage",
       "displayName": "Clang Coverage",
       "inherits": "clang-base",
