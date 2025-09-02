@@ -26,7 +26,6 @@ jobs:
     env:
       IN_DOCKER: "true"
       DD_ENV: ci
-      DD_API_KEY: ${{ secrets.DD_API_KEY_CI_VIS_APP }}
       DD_SERVICE: dd-policy-engine
       DD_CIVISIBILITY_AGENTLESS_ENABLED: true
     steps:
@@ -41,10 +40,10 @@ jobs:
       - run: ctest --test-dir build --output-junit test-report.xml
         working-directory: c
       - name: Report test coverage
-        run: |
-          curl -L --fail "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_linux-x64" --output "/tmp/datadog-ci"
-          chmod +x /tmp/datadog-ci
-          /tmp/datadog-ci junit upload c/build/test-report.xml
+        uses: datadog/junit-upload-github-action@762867566348d59ac9bcf479ebb4ec040db8940a # v2.0.0
+        with:
+          api_key: ${{ secrets.DD_API_KEY_CI_VIS_APP }}
+          files: c/build/test-report.xml
 
   # TODO: add arch and vs versions
   build-windows:
