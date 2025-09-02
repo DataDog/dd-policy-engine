@@ -70,7 +70,7 @@ jobs:
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
       - name: Install Dependencies
         run: | 
-          scoop install main/cmake@4.0.1 main/ninja main/vcpkg main/flatc main/flatc
+          scoop install main/cmake@4.0.1 main/ninja main/vcpkg
           $vcpkgPath = scoop prefix vcpkg
           echo "VCPKG_ROOT=$vcpkgPath" >> $env:GITHUB_ENV
       - name: Build

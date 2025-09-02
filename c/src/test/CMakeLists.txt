@@ -12,6 +12,7 @@ target_include_directories(dd-policy-engine.unit-tests
   PRIVATE
     ${CMAKE_BINARY_DIR}/c
     ${CMAKE_SOURCE_DIR}/c/src
+    ${CMAKE_SOURCE_DIR}/c/src/schema
 )
 
 target_link_libraries(dd-policy-engine.unit-tests

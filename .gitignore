@@ -54,13 +54,23 @@ dkms.conf
 # debug information files
 *.dwo
 
+# Coverage files
+*.gcov
+*.gcda
+*.gcno
+*.html
+*.css
+coverage/
+
 # build folder
 build/
 
 compile_commands.json
 
 .DS_Store
-coverage/
+.venv
 
 # Mise conf
 mise.toml
+
+lib/
