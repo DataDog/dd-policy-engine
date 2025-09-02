@@ -33,13 +33,16 @@ find_path(FLATCC_INCLUDE_DIR
   NAMES flatcc/flatcc.h
   HINTS
   PATH_SUFFIXES include
+  PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}"
 )
 
 find_library(FLATCC_LIBRARY
   NAMES flatcc
 )
+
 find_library(FLATCC_RUNTIME_LIBRARY
   NAMES flatccrt
+  PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}"
 )
 
 find_program(FLATCC_EXECUTABLE
@@ -48,7 +51,7 @@ find_program(FLATCC_EXECUTABLE
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(flatcc
-  REQUIRED_VARS FLATCC_EXECUTABLE FLATCC_INCLUDE_DIR FLATCC_LIBRARY FLATCC_RUNTIME_LIBRARY)
+  REQUIRED_VARS FLATCC_EXECUTABLE FLATCC_INCLUDE_DIR FLATCC_RUNTIME_LIBRARY)
 
 if(FLATCC_FOUND)
   function(FLATCC_GENERATE_C_HEADERS Name)
@@ -82,23 +85,22 @@ if(FLATCC_FOUND)
 
   set(FLATCC_INCLUDE_DIRS ${FLATCC_INCLUDE_DIR})
   include_directories(${CMAKE_BINARY_DIR})
-else()
-  set(FLATCC_INCLUDE_DIR)
+
+  add_library(flatcc-static STATIC IMPORTED)
+  add_library(flatcc::static ALIAS flatcc-static)
+
+  set_target_properties(flatcc-static PROPERTIES
+    IMPORTED_LOCATION ${FLATCC_LIBRARY}
+    INTERFACE_INCLUDE_DIRECTORIES "${FLATCC_INCLUDE_DIR}"
+  )
+
+  add_library(flatcc-crt STATIC IMPORTED)
+  add_library(flatcc::crt ALIAS flatcc-crt)
+
+  set_target_properties(flatcc-crt PROPERTIES
+    IMPORTED_LOCATION ${FLATCC_RUNTIME_LIBRARY}
+    INTERFACE_INCLUDE_DIRECTORIES "${FLATCC_INCLUDE_DIR}"
+  )
 endif()
 
-add_library(flatcc-static STATIC IMPORTED)
-add_library(flatcc::static ALIAS flatcc-static)
-
-set_target_properties(flatcc-static PROPERTIES
-  IMPORTED_LOCATION ${FLATCC_LIBRARY}
-  INTERFACE_INCLUDE_DIRECTORIES "${FLATCC_INCLUDE_DIR}"
-)
-
-add_library(flatcc-crt STATIC IMPORTED)
-add_library(flatcc::crt ALIAS flatcc-crt)
-
-set_target_properties(flatcc-crt PROPERTIES
-  IMPORTED_LOCATION ${FLATCC_RUNTIME_LIBRARY}
-  INTERFACE_INCLUDE_DIRECTORIES "${FLATCC_INCLUDE_DIR}"
-)
-
+# TODO: add required target

@@ -6,7 +6,10 @@
       "hidden": true,
       "name": "msvc-base",
       "generator": "Ninja",
-      "toolchainFile": "$env{VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake"
+      "toolchainFile": "$env{VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} /wd4477"
+      }
     },
     {
       "hidden": true,
@@ -28,11 +31,10 @@
       "inherits": "msvc-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
-        "DD_POLICY_ENABLE_STATIC_CRT": "ON"
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c17"
+        "ADDITIONAL_C_FLAGS": "/std:c17"
       }
     },
     {
@@ -41,11 +43,10 @@
       "inherits": "msvc-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
-        "DD_POLICY_ENABLE_STATIC_CRT": "ON"
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c17"
+        "ADDITIONAL_C_FLAGS": "/std:c17"
       }
     },
     {

@@ -6,6 +6,8 @@
 
 #include "eval_ctx.h"
 
+#define DD_UNUSED(x) (void)x
+
 /**
  * @brief A string comparison evaluator that checks if the evaluated string
  * matches the provided parameter exactly
@@ -95,9 +97,12 @@ plcs_evaluation_result plcs_default_string_evaluator(
     const char *policy,
     const plcs_string_comparator cmp,
     const char *ctx,
-    const char *description __attribute__((unused)),
-    plcs_string_evaluators eval_id __attribute__((unused))
+    const char *description,
+    plcs_string_evaluators eval_id
 ) {
+  DD_UNUSED(description);
+  DD_UNUSED(eval_id);
+
   if (!policy) {
     // log error?
     return EVAL_RESULT_ABSTAIN;
@@ -139,9 +144,11 @@ plcs_evaluation_result plcs_default_numeric_evaluator(
     const long policy,
     const plcs_numeric_comparator cmp,
     const long ctx,
-    const char *description __attribute__((unused)),
-    plcs_numeric_evaluators eval_id __attribute__((unused))
+    const char *description,
+    plcs_numeric_evaluators eval_id
 ) {
+  DD_UNUSED(description);
+  DD_UNUSED(eval_id);
   switch (cmp) {
     case NUM_CMP_EQ:
       return (policy == ctx) ? EVAL_RESULT_TRUE : EVAL_RESULT_FALSE;
@@ -177,9 +184,11 @@ plcs_evaluation_result plcs_default_unumeric_evaluator(
     const unsigned long policy,
     const plcs_numeric_comparator cmp,
     const unsigned long ctx,
-    const char *description __attribute__((unused)),
-    plcs_numeric_evaluators eval_id __attribute__((unused))
+    const char *description,
+    plcs_numeric_evaluators eval_id
 ) {
+  DD_UNUSED(description);
+  DD_UNUSED(eval_id);
   switch (cmp) {
     case NUM_CMP_EQ:
       return (policy == ctx) ? EVAL_RESULT_TRUE : EVAL_RESULT_FALSE;
@@ -210,3 +219,5 @@ plcs_evaluation_result plcs_default_unumeric_evaluator(
   plcs_eval_ctx_set_unum_eval_error(eval_id, DD_EUNKNOWN_CMP);
   return EVAL_RESULT_ABSTAIN;
 }
+
+#undef DD_UNUSED
