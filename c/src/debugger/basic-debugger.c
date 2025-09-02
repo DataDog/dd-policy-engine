@@ -1,5 +1,6 @@
 
 #include <dd/policies/evaluator_default.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "policy.h"

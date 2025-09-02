@@ -2,6 +2,8 @@ LANGUAGES := c go
 SHELL := /bin/bash
 SCHEMA_DIR := ./fbs-schema
 JSONSCHEMA_OUT_PATH := $(SCHEMA_DIR)/json/
+COMMIT_SHA ?= $(shell git rev-parse --short HEAD)
+DOCKER_REPO ?= datadog/docker-library
 
 include Makefile.docker
 
@@ -20,7 +22,17 @@ examples: build-container $(addsuffix -examples,$(LANGUAGES))
 %-clean: build-container
 	$(DOCKER_RUN) make -C $(patsubst %-clean,%,$@) clean
 
+%-fmt: build-container
+	$(DOCKER_RUN) make -C $(patsubst %-fmt,%,$@) fmt
+
+%-fmt-check: build-container
+	$(DOCKER_RUN) make -C $(patsubst %-fmt-check,%,$@) fmt-check
+
 clean: $(addsuffix -clean,$(LANGUAGES))
+
+fmt: $(addsuffix -fmt,$(LANGUAGES))
+
+fmt-check: $(addsuffix -fmt-check,$(LANGUAGES))
 
 generate-jsonschema: build-container
 	@$(DOCKER_RUN) echo "[i] generating JSON schema in: $(JSONSCHEMA_OUT_PATH)"
@@ -36,3 +48,16 @@ build-container:
 ifeq ($(IN_DOCKER),false)
 	docker build -t $(DOCKER_IMAGE) -f ./Dockerfile.build .
 endif
+
+push-ci-container:
+ifeq ($(IN_DOCKER),false)
+	docker build --progress=plain --platform linux/amd64 -t $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-amd64 -f ./Dockerfile.build .
+	docker push $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-amd64
+	docker build --progress=plain --platform linux/arm64 -t $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-arm64 -f ./Dockerfile.build .
+	docker push $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-arm64
+	docker buildx imagetools create -t $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA) \
+			$(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-amd64 \
+			$(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-arm64
+	docker push $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)
+endif
+

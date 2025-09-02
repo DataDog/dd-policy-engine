@@ -34,7 +34,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "/std:c17"
+        "ADDITIONAL_C_FLAGS": "/std:c17 /fsanitize=address"
       }
     },
     {
@@ -46,7 +46,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "/std:c17"
+        "ADDITIONAL_C_FLAGS": "/std:c17 /fsanitize=address"
       }
     },
     {
@@ -70,7 +70,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c23"
+        "ADDITIONAL_C_FLAGS": "-std=c23 -fno-optimize-sibiling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined"
       }
     },
     {
@@ -85,7 +85,7 @@
         "CMAKE_STATIC_LINKER_FLAGS": "-fprofile-arcs"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "--coverage -fprofile-arcs -ftest-coverage"
+        "ADDITIONAL_C_FLAGS": "-fprofile-arcs -ftest-coverage -fprofile-instr-generate -fcoverage-mapping"
       }
     }
   ]

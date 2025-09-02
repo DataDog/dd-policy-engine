@@ -305,7 +305,6 @@ UTEST(evaluator, test_evaluate_string_basic_functionality) {
   dd_wls_StrEvaluator_table_t eval = dd_wls_StrEvaluator_as_root(buf);
 
   int res = evaluate_string(eval, "d");
-  flatcc_builder_aligned_free(buf);
   ASSERT_EQ(res, EVAL_RESULT_TRUE);
 
   res = evaluate_string(NULL, "d");
@@ -316,6 +315,7 @@ UTEST(evaluator, test_evaluate_string_basic_functionality) {
   res = evaluate_string(eval, "d");
   // shouldn't be any value
   ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  flatcc_builder_free(buf);
   flatcc_builder_reset(&b);
 }
 
@@ -354,7 +354,7 @@ UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
   res = evaluate_numeric(eval, "d");
   // shouldn't be any value
   ASSERT_EQ(res, EVAL_RESULT_FALSE);
-  flatcc_builder_aligned_free(buf);
+  flatcc_builder_free(buf);
   flatcc_builder_reset(&b);
 }
 
@@ -392,7 +392,7 @@ UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
   dd_wls_UNumEvaluator_table_t eval = dd_wls_UNumEvaluator_as_root(buf);
 
   int res = evaluate_unumeric(eval, "d");
-  flatcc_builder_aligned_free(buf);
+  flatcc_builder_free(buf);
   ASSERT_EQ(res, EVAL_RESULT_TRUE);
 
   res = evaluate_unumeric(NULL, "d");
@@ -438,7 +438,7 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   dd_wls_EvaluatorNode_table_t eval = dd_wls_EvaluatorNode_as_root(buf);
 
   rc = node_evaluator(eval);
-  flatcc_builder_aligned_free(buf);
+  flatcc_builder_free(buf);
   flatcc_builder_clear(&b);
   ASSERT_EQ(rc, EVAL_RESULT_TRUE);
 
@@ -459,7 +459,7 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   eval = dd_wls_EvaluatorNode_as_root(buf);
 
   rc = node_evaluator(eval);
-  flatcc_builder_aligned_free(buf);
+  flatcc_builder_free(buf);
   flatcc_builder_clear(&b);
   ASSERT_EQ(rc, EVAL_RESULT_TRUE);
 
@@ -478,7 +478,7 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   eval = dd_wls_EvaluatorNode_as_root(buf);
 
   rc = node_evaluator(eval);
-  flatcc_builder_aligned_free(buf);
+  flatcc_builder_free(buf);
   ASSERT_EQ(rc, EVAL_RESULT_TRUE);
 }
 

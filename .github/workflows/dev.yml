@@ -1,0 +1,118 @@
+name: Development
+on: [pull_request, workflow_dispatch]
+
+jobs:
+  checks:
+    runs-on: ubuntu-22.04
+    container:
+      image: datadog/docker-library:dd-policy-engine-10949a6
+    env:
+      IN_DOCKER: "true"
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: make fmt-check
+
+  # TODO: Add GCC compiler
+  build-linux:
+    needs: checks
+    runs-on: ubuntu-22.04
+    container:
+      image: datadog/docker-library:dd-policy-engine-10949a6
+    environment:
+      name: dev-env
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IN_DOCKER: "true"
+      DD_ENV: ci
+      DD_SERVICE: dd-policy-engine
+      DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build
+        run: make test-build
+        working-directory: c
+        env:
+          CC: clang
+          CXX: clang
+          CMAKE_PRESET: clang-ci
+      - run: ctest --test-dir build --schedule-random --output-junit test-report.xml
+        working-directory: c
+      # - name: Report test coverage
+      #   uses: datadog/junit-upload-github-action@762867566348d59ac9bcf479ebb4ec040db8940a # v2.0.0
+      #   with:
+      #     api_key: ${{ secrets.DD_API_KEY_CI_VIS_APP }}
+      #     files: c/build/test-report.xml
+
+
+  # TODO: add arch and vs versions
+  build-windows:
+    needs: checks
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: powershell
+    environment:
+      name: dev-env
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DD_ENV: ci
+      DD_SERVICE: dd-policy-engine
+      DD_API_KEY: ${{ secrets.DD_API_KEY_CI_VIS_APP }}
+      DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: x64
+      - name: Install Dependency Manager (scoop)
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+      - name: Install Dependencies
+        run: | 
+          scoop install main/cmake@4.0.1 main/vcpkg@2025.08.27
+          $vcpkgPath = scoop prefix vcpkg
+          echo "VCPKG_ROOT=$vcpkgPath" >> $env:GITHUB_ENV
+      - name: Build
+        run: |
+          cmake -B build --preset msvc-ci .
+          cmake --build build -j
+      - name: Run tests
+        run: ctest --test-dir build --output-junit test-report.xml
+      - name: Download datadog-ci
+        run: Invoke-WebRequest -Uri "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_win-x64" -OutFile "datadog-ci.exe"
+      - name: Report test coverage
+        run: ./datadog-ci.exe junit upload build/test-report.xml
+
+  coverage:
+    needs: build-linux
+    runs-on: ubuntu-22.04
+    container:
+      image: datadog/docker-library:dd-policy-engine-10949a6
+    environment:
+      name: dev-env
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: make coverage
+        working-directory: c
+        env:
+          CC: clang
+          CXX: clang
+      # - name: Upload coverage reports
+      #   run: |
+      #     curl -L --fail "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_linux-x64" --output "/tmp/datadog-ci"
+      #     chmod +x /tmp/datadog-ci
+      #     /tmp/datadog-ci coverage upload c/coverage/filtered.info
