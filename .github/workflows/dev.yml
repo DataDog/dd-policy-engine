@@ -14,7 +14,7 @@ jobs:
 
   # TODO: Add GCC compiler
   build-linux:
-    deploy:
+    deployment:
       needs: checks
       runs-on: ubuntu-22.04
       container:
