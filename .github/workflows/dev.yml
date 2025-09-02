@@ -5,36 +5,47 @@ jobs:
   checks:
     runs-on: ubuntu-22.04
     container:
-      image: datadog/docker-library:dd-policy-engine-ce3b8e5
+      image: datadog/docker-library:dd-policy-engine-dfbb306
     env:
       IN_DOCKER: "true"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: make fmt-check
 
-  # TODO: Add MSVC and GCC compilers
+  # TODO: Add GCC compiler
   build-linux:
-    needs: checks
-    runs-on: ubuntu-22.04
-    container:
-      image: datadog/docker-library:dd-policy-engine-ce3b8e5
-    env:
-      IN_DOCKER: "true"
-      DD_ENV: ci
-      # DD_API_KEY: ${{ secrets.DD_API_KEY_CI_APP }}
-      DD_SERVICE: dd-policy-engine
-      DD_CIVISIBILITY_AGENTLESS_ENABLED: true
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Build
-        run: make test-build
-        working-directory: c
-        env:
-          CC: clang
-          CXX: clang
-          CMAKE_PRESET: clang-ci
-      - run: ctest --test-dir build --output-junit junit.xml
-        working-directory: c
+    deploy:
+      needs: checks
+      runs-on: ubuntu-22.04
+      container:
+        image: datadog/docker-library:dd-policy-engine-dfbb306
+      environment:
+        name: protected-main-env
+      permissions:
+        contents: read
+        packages: read
+      env:
+        IN_DOCKER: "true"
+        DD_ENV: ci
+        DD_API_KEY: ${{ secrets.DD_API_KEY_CI_VIS_APP }}
+        DD_SERVICE: dd-policy-engine
+        DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+      steps:
+        - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        - name: Build
+          run: make test-build
+          working-directory: c
+          env:
+            CC: clang
+            CXX: clang
+            CMAKE_PRESET: clang-ci
+        - run: ctest --test-dir build --output-junit test-report.xml
+          working-directory: c
+        - name: Report test coverage
+          run: |
+            curl -L --fail "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_linux-x64" --output "/tmp/datadog-ci"
+            chmod +x /tmp/datadog-ci
+            /tmp/datadog-ci junit upload c/build/test-report.xml
 
   # TODO: add arch and vs versions
   build-windows:
@@ -43,6 +54,11 @@ jobs:
     defaults:
       run:
         shell: powershell
+    env:
+      DD_ENV: ci
+      # DD_API_KEY: ${{ secrets.DD_API_KEY_CI_APP }}
+      DD_SERVICE: dd-policy-engine
+      DD_CIVISIBILITY_AGENTLESS_ENABLED: true
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Setup MSVC
@@ -62,13 +78,17 @@ jobs:
           cmake -B build --preset msvc-ci .
           cmake --build build -j
       - name: Run tests
-        run: ctest --test-dir build --output-junit junit.xml
+        run: ctest --test-dir build --output-junit test-report.xml
+      - name: Report test coverage
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_win-x64" -OutFile "datadog-ci.exe"
+          Start-Process -FilePath "./datadog-ci.exe" -ArgumentList "upload build/test-report.xml"
 
   coverage:
     needs: build-linux
     runs-on: ubuntu-22.04
     container:
-      image: datadog/docker-library:dd-policy-engine-ce3b8e5
+      image: datadog/docker-library:dd-policy-engine-dfbb306
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: make coverage
@@ -76,12 +96,8 @@ jobs:
         env:
           CC: clang
           CXX: clang
-      # - name: Upload coverage reports to Codecov
-      #   uses: codecov/codecov-action@v4.0.1
-      #   with:
-      #     files: coverage.lcov
-      #     name: github-actions
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     slug: DataDog/dd-policy-engine
-      #     os: alpine
-      #     fail_ci_if_error: true
+      - name: Upload coverage reports
+        run: |
+          curl -L --fail "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_linux-x64" --output "/tmp/datadog-ci"
+          chmod +x /tmp/datadog-ci
+          /tmp/datadog-ci coverage upload c/coverage/filtered.info
