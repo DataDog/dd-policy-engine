@@ -12,7 +12,7 @@
 
 #include <dd/policies/policies.h>
 
-#include "../eval_ctx.h"
+#include "eval_ctx.h"
 
 #include <stddef.h>
 #include <stdint.h>

@@ -1,67 +1,25 @@
 PREFIX ?= $(CURDIR)
+POLICIES_ROOT := $(PREFIX)/..
 
-AR      ?= ar
-RANLIB  ?= ranlib
-LIBFLATCCRT ?= /root/flatcc/lib/libflatccrt.a
-
-EXAMPLES_DIR := $(PREFIX)/examples
-TEST_DIR := $(PREFIX)/src/test
-TEST_FILES := $(wildcard $(TEST_DIR)/*.c)
-TEST_BIN := $(TEST_DIR)/policies-tests
+BUILD_DIR ?= build
+TEST_DIR := $(BUILD_DIR)/c/src/test
 COVERAGE_DIR := $(PREFIX)/coverage
 
-SOURCES := $(filter-out $(TEST_FILES), $(wildcard $(PREFIX)/src/*.c))
-EXAMPLES := basic-reader hardcoded-header-reader mmap-reader hardcoded_cmdline_evaluator
-TEST_BIN := $(TEST_DIR)/policies-tests
-FILES_TO_CLEAN += $(OBJS) $(SCHEMA_OUTPUT_DIR) lib/ $(addprefix $(EXAMPLES_DIR)/, $(EXAMPLES)) *.html *.css *.gcov $(PREFIX)/src/*.gcda $(PREFIX)/src/*.gcno $(PREFIX)/src/test/*.gcda $(PREFIX)/src/test/*.gcno $(COVERAGE_DIR) $(TEST_BIN)
-FILES_TO_FORMAT += $(shell find . -type f \( -name "*.c" -o -name "*.h" \) )
-LIB_SRC += $(SOURCES)
-OBJS += $(SOURCES:.c=.o)
+TEST_BIN := $(TEST_DIR)/dd-policy-engine.unit-tests
 
-POLICIES_ROOT := $(PREFIX)/..
+EXAMPLES := basic-reader hardcoded-header-reader mmap-reader hardcoded_cmdline_evaluator
+FILES_TO_FORMAT += $(shell find . -type f \( -name "*.c" -o -name "*.h" \) )
 
 SCHEMA_DIR := $(POLICIES_ROOT)/fbs-schema
 SCHEMA_OUTPUT_DIR := $(PREFIX)/src/schema
 
-CFLAGS ?= \
-	-std=c23 \
-	-fPIC \
-	-fvisibility=hidden \
-	-pedantic-errors \
-	-Werror -Wall -Wextra \
-	-fstrict-aliasing \
-	-funsigned-char \
-	-fwrapv \
-	-fno-stack-protector \
-	-Wconversion \
-	-Wcast-align \
-	-Wno-sign-conversion \
-	-Wmissing-format-attribute \
-	-Wpointer-arith \
-	-Wformat-nonliteral \
-	-Winit-self \
-	-Wwrite-strings \
-	-Wshadow \
-	-Wparentheses \
-	-Wsign-conversion \
-	-Wenum-conversion \
-	-Wswitch-enum \
-	-Wvla
+# Run `cmake --list-presets` to get the list of all available presets.
+CMAKE_PRESET := clang-dev
 
-# add includes anyway
-CFLAGS += -I$(PREFIX)/include \
-	-I$(SCHEMA_OUTPUT_DIR)
+.PHONY: all clean fmt $(SCHEMA_OUTPUT_DIR) lib/libpolicies.a $(EXAMPLES) coverage
 
-LDFLAGS += \
-	-L$(PREFIX)/lib/ \
-	-lpolicies
-
-.PHONY: all clean fmt test-bin $(SCHEMA_OUTPUT_DIR) lib/libpolicies.a $(EXAMPLES) coverage
-
-all: $(SCHEMA_OUTPUT_DIR) $(OBJS) lib/libpolicies.a debugger
-
-%.o: %.c
-	@$(CC) $(CFLAGS)  -c $< -o $@
+all: clean go-prerequisites configure
+	@cmake --build $(BUILD_DIR) -j
 
 $(SCHEMA_OUTPUT_DIR): $(SCHEMA_DIR)/*.fbs
 	@echo "[i] Generating C schema headers..."
@@ -73,25 +31,23 @@ go-prerequisites:
 	@make -C ../go/ examples
 	@command -v clang-format >/dev/null 2>&1 || { echo >&2 "clang-format is required but not installed. Aborting."; exit 1; }
 
-examples: go-prerequisites $(SCHEMA_OUTPUT_DIR) lib/libpolicies.a
+configure:
+	@echo "[i] Configuring CMake project..."
+	@cmake -B $(BUILD_DIR) --preset $(CMAKE_PRESET) ..
+
+examples: go-prerequisites configure
 	@echo "[i] Building examples..."
-	@$(MAKE) -C $(EXAMPLES_DIR)
+	@cmake --build $(BUILD_DIR) --target $(EXAMPLES)
 
 clean:
 	@echo "[i] Cleaning up..."
-	@rm -rf $(FILES_TO_CLEAN)
-	@$(MAKE) -C $(EXAMPLES_DIR) clean
-	@echo "[i] done cleaning"
+	@rm -rf $(BUILD_DIR)
+	@rm -rf $(COVERAGE_DIR)
+	@echo "[i] Done cleaning"
 
-lib/libpolicies.a: $(OBJS) 
-	@mkdir -p lib/.flatccrt_objs
-	@rm -rf lib/.flatccrt_objs/* $@
-	@echo "[i] Bundling flatcc runtime: $(LIBFLATCCRT)"
-	@cd lib/.flatccrt_objs && $(AR) x $(LIBFLATCCRT)
-	@$(AR) qc $@ $(OBJS) lib/.flatccrt_objs/*.o
-	@$(RANLIB) $@
-	@echo "[i] done linking policies library (runtime included)"
-
+lib/libpolicies.a: configure
+	@echo "[i] Building libpolicies.a"
+	@cmake --build $(BUILD_DIR) --target dd-policy-engine.static-lib
 
 fmt:
 	@echo "[i] Formatting source files..."
@@ -101,37 +57,29 @@ fmt-check:
 	@echo -e "[i] Files to format:\n$(FILES_TO_FORMAT)"
 	@clang-format --dry-run --Werror $(FILES_TO_FORMAT)
 
-debugger: $(SCHEMA_OUTPUT_DIR) lib/libpolicies.a
-	@mkdir -p lib
+debugger: configure
 	@echo "[i] Building debugger binary..."
-	@$(CC) $(CFLAGS) $(PREFIX)/src/debugger/basic-debugger.c -L$(PREFIX)/lib/ -lpolicies -o lib/basic-debugger
-	@echo "[i] Debugger binary built: lib/basic-debugger"
+	@cmake --build $(BUILD_DIR) --target dd-policy-engine.debugger
+	@echo "[i] Debugger binary built: $(BUILD_DIR)/c/basic-debugger"
 
 # Unit tests (utest.h)
 # Build all test translation units in src/test and link with object files.
-test: $(SCHEMA_OUTPUT_DIR) $(OBJS) test-build
+test: test-build
 	@echo "[i] Running unit tests..."
-	@$(TEST_BIN)
+	@ctest --test-dir $(BUILD_DIR) -V
 
-test-build: $(SCHEMA_OUTPUT_DIR) $(OBJS) lib/libpolicies.a
+test-build: configure
 	@echo "[i] Building unit tests..."
-	$(CC) $(CFLAGS) -I$(PREFIX)/src/test $(wildcard $(PREFIX)/src/test/*.c) -L$(PREFIX)/lib/ -lpolicies -o $(TEST_BIN)
+	@cmake --build $(BUILD_DIR) --target dd-policy-engine.unit-tests
 
 # Simple coverage target
-coverage: CFLAGS += --coverage -fprofile-arcs -ftest-coverage
-coverage: LDFLAGS += -lgcov
-coverage: clean $(SCHEMA_OUTPUT_DIR) $(OBJS) lib/libpolicies.a test-build
+coverage: CMAKE_PRESET = clang-coverage
+coverage: clean configure test-build
 	@echo "[i] Running tests with coverage..."
+	@mkdir $(COVERAGE_DIR)
 	@$(TEST_BIN)
-	@echo "[i] Coverage report: (GCOV_PREFIX: $(GCOV_PREFIX))"
-	@gcov src/eval_ctx.c | grep -E "(File|Lines executed)" | grep -v "Creating" | head -2
-	@gcov src/evaluator.c | grep -E "(File|Lines executed)" | grep -v "Creating" | head -2
-	@gcov src/evaluator_default.c | grep -E "(File|Lines executed)" | grep -v "Creating" | head -2
-	@gcov src/policy.c | grep -E "(File|Lines executed)" | grep -v "Creating" | head -2
-	@echo ""
-	@echo "Uncovered functions:"
-	@gcov -f src/eval_ctx.c src/evaluator.c src/evaluator_default.c src/policy.c | grep "function.*0.00%" || echo "All functions covered"
-	@gcovr -r . --exclude 'src/test/*' --exclude 'src/schema/*' --html --html-details -o coverage.html
-	@mkdir -p $(COVERAGE_DIR)
-	@mv *.html $(COVERAGE_DIR)
-	@mv *.css $(COVERAGE_DIR)
+	@echo "[i] Coverage report:"
+	@lcov --quiet --capture --directory $(BUILD_DIR) --output-file $(COVERAGE_DIR)/raw.info
+	@lcov --quiet --remove $(COVERAGE_DIR)/raw.info -o $(COVERAGE_DIR)/filtered.info --ignore-errors unused '/usr/*' '/opt/*' 'src/test/*' 'build/*'
+	@genhtml --quiet --dark-mode $(COVERAGE_DIR)/filtered.info --output-directory $(COVERAGE_DIR)/report
+	@echo "[i] HTML Report: $(COVERAGE_DIR)/report/index.html"

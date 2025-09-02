@@ -39,16 +39,16 @@
 #include <dd/policies/policies.h>
 
 /* Project internal headers */
-#include "../eval_ctx.h"
-#include "../policy.h"
-#include "../schema/actions_reader.h"
-#include "../schema/evaluators_verifier.h"
-#include "../schema/flatbuffers_common_builder.h"
-#include "../schema/policy_builder.h"
-#include "../wire/action.h"
-#include "../wire/boolean_operation.h"
-#include "../wire/dd_types.h"
-#include "../wire/evaluation_result.h"
+#include "actions_reader.h"
+#include "eval_ctx.h"
+#include "evaluators_verifier.h"
+#include "flatbuffers_common_builder.h"
+#include "policy.h"
+#include "policy_builder.h"
+#include "wire/action.h"
+#include "wire/boolean_operation.h"
+#include "wire/dd_types.h"
+#include "wire/evaluation_result.h"
 
 /* Test-specific headers */
 #include "hardcoded_policies.h"
@@ -414,7 +414,7 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   /* Mock an EvaluatorNode with basic values */
   /* Note: This test requires proper mocking of FlatCC objects */
 
-  #include <stdio.h>
+#include <stdio.h>
   printf("hi?!\n");
   /* Initialize context for evaluation */
   int rc = plcs_eval_ctx_init();
@@ -430,7 +430,8 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   ASSERT_EQ(rc, DD_ESUCCESS);
   // str eval
   dd_wls_StrEvaluator_ref_t str = dd_wls_StrEvaluator_create(
-      &b, dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_JAR, dd_wls_CmpTypeSTR_CMP_EXACT, flatbuffers_string_create_str(&b, "test.jar")
+      &b, dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_JAR, dd_wls_CmpTypeSTR_CMP_EXACT,
+      flatbuffers_string_create_str(&b, "test.jar")
   );
   dd_wls_EvaluatorNode_create_as_root(&b, str, dd_wls_EvaluatorType_as_StrEvaluator(str));
   void *buf = flatcc_builder_finalize_buffer(&b, &sz);
@@ -440,7 +441,6 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   flatcc_builder_aligned_free(buf);
   flatcc_builder_clear(&b);
   ASSERT_EQ(rc, EVAL_RESULT_TRUE);
-
 
   /* Set a numeric parameter for testing */
   flatcc_builder_init(&b);

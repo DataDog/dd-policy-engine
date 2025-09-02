@@ -1,9 +1,11 @@
 FROM alpine:3.22
 
-
 ARG GO_VER="1.24.4"
 
-RUN apk update && apk add musl-dev gcc make python3 patchelf bash clang18-extra-tools ruff
+ARG CLANG_VERSION=18
+
+RUN apk update \
+ && apk add musl-dev gcc make python3 patchelf bash clang${CLANG_VERSION} clang${CLANG_VERSION}-extra-tools ruff ninja-build git
 
 # for some reason clang-format installation dir is not included in PATH
 ENV PATH="$PATH:/usr/lib/llvm18/bin/"
@@ -29,15 +31,26 @@ ENV PATH="$PATH:/go/bin/"
 # Make sure all "make" commands won't try to run a new Docker container
 ENV IN_DOCKER=true
 
+# Install CMake
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main cmake=4.1.1-r0
+
 # Add flatcc
-RUN apk update && apk add cmake ninja-build git clang-dev
 ARG FLATCC_COMMIT_ID=47af7e6
-RUN cd ~ && git clone https://github.com/dvidelabs/flatcc.git && cd flatcc && git reset --hard $FLATCC_COMMIT_ID && scripts/initbuild.sh make-concurrent && ./scripts/build.sh
+RUN cd ~ \
+ && git clone https://github.com/dvidelabs/flatcc.git \
+ && cd flatcc \
+ && git reset --hard $FLATCC_COMMIT_ID \
+ && CMAKE_POLICY_VERSION_MINIMUM=3.5 scripts/initbuild.sh make-concurrent \
+ && CMAKE_POLICY_VERSION_MINIMUM=3.5 ./scripts/build.sh
 RUN cp ~/flatcc/bin/flatcc /usr/bin/
 RUN cp -r ~/flatcc/include/flatcc /usr/include/
+RUN cp ~/flatcc/lib/libflatcc.a /usr/lib/
+RUN cp ~/flatcc/lib/libflatcc_d.a /usr/lib/
+RUN cp ~/flatcc/lib/libflatccrt.a /usr/lib/
+RUN cp ~/flatcc/lib/libflatccrt_d.a /usr/lib/
 
 # Add flatbuffers
 RUN apk add flatbuffers flatbuffers-dev
 
-# Add gcovr
-RUN apk add gcovr
+# Add lcov
+RUN apk add lcov

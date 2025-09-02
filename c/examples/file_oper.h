@@ -52,3 +52,4 @@ static inline uint8_t *read_file_contents(const char *filepath, size_t *out_size
   *out_size = bytes_read;
   return buffer;
 }
+

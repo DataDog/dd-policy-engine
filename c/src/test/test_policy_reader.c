@@ -26,10 +26,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../policy.h" /* get_policies(...) */
-#include "../schema/policy_builder.h"
-#include "../schema/policy_verifier.h"
-#include "../wire/dd_types.h" /* dd_ns(...) */
+#include "policy.h" /* get_policies(...) */
+#include "policy_builder.h"
+#include "policy_verifier.h"
+#include "wire/dd_types.h" /* dd_ns(...) */
 
 UTEST(policy_reader, null_buffer_returns_null_vector) {
   dd_ns(Policy_vec_t) v = plcs_get_policies(NULL, 0);
