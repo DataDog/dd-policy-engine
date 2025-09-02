@@ -30,6 +30,7 @@ endif ()
 
 # Dependencies
 find_package(flatcc REQUIRED)
+
 # C Library
 add_subdirectory(c)
 

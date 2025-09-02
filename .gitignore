@@ -57,10 +57,20 @@ dkms.conf
 # build folder
 build/
 
+# Coverage files
+*.gcov
+*.gcda
+*.gcno
+*.html
+*.css
+coverage/
+
 compile_commands.json
 
+.venv
 .DS_Store
-coverage/
 
 # Mise conf
 mise.toml
+
+lib/

@@ -1,9 +1,0 @@
-src/schema
-lib/
-*.o
-*.gcov
-*.gcda
-*.gcno
-*.html
-*.css
-.venv

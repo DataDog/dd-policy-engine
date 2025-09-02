@@ -7,18 +7,6 @@ target_compile_features(dd-policy-engine.objects
     c_std_17
 )
 
-# Generate code from flatbuffers schema
-FLATCC_GENERATE_C_HEADERS(dd-policy-engine.schema
-  ${CMAKE_CURRENT_SOURCE_DIR}/../fbs-schema/action_ids.fbs
-  ${CMAKE_CURRENT_SOURCE_DIR}/../fbs-schema/actions.fbs
-  ${CMAKE_CURRENT_SOURCE_DIR}/../fbs-schema/boolean_operation.fbs
-  ${CMAKE_CURRENT_SOURCE_DIR}/../fbs-schema/evaluation_result.fbs
-  ${CMAKE_CURRENT_SOURCE_DIR}/../fbs-schema/evaluator_ids.fbs
-  ${CMAKE_CURRENT_SOURCE_DIR}/../fbs-schema/evaluators.fbs
-  ${CMAKE_CURRENT_SOURCE_DIR}/../fbs-schema/nodes.fbs
-  ${CMAKE_CURRENT_SOURCE_DIR}/../fbs-schema/policy.fbs
-)
-
 target_sources(dd-policy-engine.objects
   PUBLIC
     FILE_SET public_headers
@@ -32,31 +20,18 @@ target_sources(dd-policy-engine.objects
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_default.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_types.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/policies.h
-  # PRIVATE
-  #   FILE_SET private_headers
-  #   TYPE HEADERS
-  #   BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include/generated
-  #   FILES
-  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/generated/action_ids_reader.h
-  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/generated/actions_reader.h
-  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/generated/boolean_operation_reader.h
-  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/generated/evaluation_result_reader.h
-  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/generated/evaluators_reader.h
-  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/generated/flatbuffers_common_reader.h
-  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/generated/nodes_reader.h
-  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/generated/policy_reader.h
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/eval_ctx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator_default.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/policy.c
-    ${dd-policy-engine.schema_OUTPUTS}
 )
 
 target_include_directories(dd-policy-engine.objects
   PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/schema
 )
 
 set_target_properties(dd-policy-engine.objects
@@ -103,6 +78,7 @@ target_include_directories(dd-policy-engine.debugger
   PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/schema
 )
 
 target_link_libraries(dd-policy-engine.debugger
