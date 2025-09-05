@@ -3,6 +3,7 @@ module github.com/DataDog/dd-policy-engine/go
 go 1.23.5
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/google/flatbuffers v25.2.10+incompatible
 	github.com/urfave/cli/v2 v2.27.7
 )
