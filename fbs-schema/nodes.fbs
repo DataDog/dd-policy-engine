@@ -22,7 +22,7 @@ table NodeTypeWrapper {
 /// The children are wrapped in NodeTypeWrapper to allow for union vectors.
 table CompositeNode {
   description: string;
-  op: BoolOperation;
+  op: BoolOperation = BOOL_UNKNOWN;
   /// At some point we will switch back to; children: [NodeType]; 
   /// (union vectors are not supported in GO so we are wrapping the table in a table)
   children: [NodeTypeWrapper];

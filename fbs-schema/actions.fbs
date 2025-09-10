@@ -12,7 +12,7 @@ enum ActionMax : short{
 /// Represents an action taken post evaluation
 table Action {
   /// An enum representing the type of action to take.
-  action: ActionId;
+  action: ActionId = ACTION_UNKNOWN;
   /// For debugging purposes a description string can be passed 
   description: string;
   /// Each action defines the values it accepts\supports.

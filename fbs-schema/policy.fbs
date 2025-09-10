@@ -6,6 +6,8 @@ namespace dd.wls;
 /// Represents a policy that contains rules and actions.
 /// The rules are represented as a tree structure where each node can be a leaf (with an evaluator) or a root (with child nodes).
 table Policy {
+  // 128 bit UUID represented as 16 raw bytes
+  id:[ubyte:16];
   /// The policy can have a description for debugging purposes.
   description: string;
   /// The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers. 

@@ -42,6 +42,7 @@ extern "C" {
 static inline dd_ns(CmpTypeSTR_enum_t) dd_strcmp_to_wire(enum plcs_string_comparator v) {
   /* Map your public enum -> vendor numeric value. */
   static const int map[STR_CMP__COUNT] = {
+      [STR_CMP_UNKNOWN] = dd_ns(CmpTypeSTR_CMP_STR_UNKNOWN),
       [STR_CMP_PREFIX] = dd_ns(CmpTypeSTR_CMP_PREFIX),
       [STR_CMP_SUFFIX] = dd_ns(CmpTypeSTR_CMP_SUFFIX),
       [STR_CMP_CONTAINS] = dd_ns(CmpTypeSTR_CMP_CONTAINS),
@@ -56,8 +57,11 @@ static inline dd_ns(CmpTypeSTR_enum_t) dd_strcmp_to_wire(enum plcs_string_compar
 
 static inline dd_ns(CmpTypeNUM_enum_t) dd_numcmp_to_wire(enum plcs_numeric_comparator v) {
   static const int map[NUM_CMP__COUNT] = {
-      [NUM_CMP_EQ] = dd_ns(CmpTypeNUM_CMP_EQ),   [NUM_CMP_GT] = dd_ns(CmpTypeNUM_CMP_GT),
-      [NUM_CMP_GTE] = dd_ns(CmpTypeNUM_CMP_GTE), [NUM_CMP_LT] = dd_ns(CmpTypeNUM_CMP_LT),
+      [NUM_CMP_UNKNOWN] = dd_ns(CmpTypeNUM_CMP_NUM_UNKNOWN),
+      [NUM_CMP_EQ] = dd_ns(CmpTypeNUM_CMP_EQ),
+      [NUM_CMP_GT] = dd_ns(CmpTypeNUM_CMP_GT),
+      [NUM_CMP_GTE] = dd_ns(CmpTypeNUM_CMP_GTE),
+      [NUM_CMP_LT] = dd_ns(CmpTypeNUM_CMP_LT),
       [NUM_CMP_LTE] = dd_ns(CmpTypeNUM_CMP_LTE),
   };
   _Static_assert(
@@ -70,6 +74,7 @@ static inline dd_ns(CmpTypeNUM_enum_t) dd_numcmp_to_wire(enum plcs_numeric_compa
 static inline dd_ns(StringEvaluators_enum_t) dd_streval_to_wire(enum plcs_string_evaluators v) {
   /* Keep indices aligned with your public enum order. */
   static const int map[STR_EVAL__COUNT] = {
+      [STR_EVAL_UNKNOWN] = dd_ns(StringEvaluators_STRING_EVAL_UNKNOWN),
       [STR_EVAL_COMPONENT] = dd_ns(StringEvaluators_COMPONENT),
       [STR_EVAL_PROCESS_EXE] = dd_ns(StringEvaluators_PROCESS_EXE),
       [STR_EVAL_PROCESS_EXE_FULL_PATH] = dd_ns(StringEvaluators_PROCESS_EXE_FULL_PATH),
@@ -113,6 +118,7 @@ static inline dd_ns(StringEvaluators_enum_t) dd_streval_to_wire(enum plcs_string
 
 static inline dd_ns(NumericEvaluators_enum_t) dd_numeval_to_wire(enum plcs_numeric_evaluators v) {
   static const int map[NUM_EVAL__COUNT] = {
+      [NUM_EVAL_UNKNOWN] = dd_ns(NumericEvaluators_NUMERIC_EVAL_UNKNOWN),
       [NUM_EVAL_JAVA_HEAP] = dd_ns(NumericEvaluators_JAVA_HEAP),
       [NUM_EVAL_RUNTIME_VERSION_MAJOR] = dd_ns(NumericEvaluators_RUNTIME_VERSION_MAJOR),
       [NUM_EVAL_RUNTIME_VERSION_MINOR] = dd_ns(NumericEvaluators_RUNTIME_VERSION_MINOR),

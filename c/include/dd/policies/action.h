@@ -10,12 +10,13 @@
  *
  */
 typedef enum plcs_actions {
-  INJECT_DENY = 0,
-  INJECT_ALLOW = 1,
-  ENABLE_SDK = 2,
-  ENABLE_PROFILER = 3,
-  SET_ENVAR = 4,
-  REEXEC = 5,
+  ACTION_UNKNOWN = 0, // default and fallback value 
+  INJECT_DENY = 1,
+  INJECT_ALLOW = 2,
+  ENABLE_SDK = 3,
+  ENABLE_PROFILER = 4,
+  SET_ENVAR = 5,
+  REEXEC = 6,
   ACTIONS__COUNT
 } plcs_actions;
 
