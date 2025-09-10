@@ -3,6 +3,8 @@ namespace dd.wls;
 
 /// These are the supported boolean operators when evaluating multiple conditions
 enum BoolOperation : byte {
+  /// \brief used a fallback and default incase of a failed parsing
+  BOOL_UNKNOWN = 0,
   BOOL_AND,
   BOOL_NOT,
   BOOL_OR,

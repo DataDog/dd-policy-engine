@@ -9,6 +9,8 @@ namespace dd.wls;
 /// CMP_LT : Compare Lower Than `<`
 /// CMP_LTE : Compare Lower Than Equal `<=`
 enum CmpTypeNUM : byte {
+  /// An enum representing the type of action to take.
+  CMP_NUM_UNKNOWN = 0,
   CMP_EQ,
   CMP_GT,
   CMP_GTE,
@@ -23,6 +25,8 @@ enum CmpTypeNUM : byte {
 /// CMP_CONTAINS : Compare if the string contains the value
 /// CMP_EXACT : Compare if the string is exactly equal to the value
 enum CmpTypeSTR : byte {
+  /// An enum representing the type of action to take.
+  CMP_STR_UNKNOWN = 0,
   CMP_PREFIX,
   CMP_SUFFIX,
   CMP_CONTAINS,
@@ -41,7 +45,7 @@ table StrEvaluator {
   /// The ID is a unique identifier for the evaluator.
   id: StringEvaluators;
   /// The comparison type is used to determine how to compare the value against the evaluator's value.
-  cmp: CmpTypeSTR;
+  cmp: CmpTypeSTR = CMP_STR_UNKNOWN;
   /// The value is the value to compare against.
   value: string;
 }
@@ -60,7 +64,7 @@ table UNumEvaluator {
   /// Each evaluator has an ID, a comparison type and a value to compare against.
   id: NumericEvaluators;
   /// The comparison type is used to determine how to compare the value against the evaluator's value.
-  cmp: CmpTypeNUM;
+  cmp: CmpTypeNUM = CMP_NUM_UNKNOWN;
   /// The value is an unsigned long.
   value: ulong;
 }
@@ -72,7 +76,7 @@ table NumEvaluator {
   /// Each evaluator has an ID, a comparison type and a value to compare against.
   id: NumericEvaluators;
   /// The comparison type is used to determine how to compare the value against the evaluator's value.
-  cmp: CmpTypeNUM;
+  cmp: CmpTypeNUM = CMP_NUM_UNKNOWN;
   /// The value is a signed long.
   value: long;
 }

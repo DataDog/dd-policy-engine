@@ -10,12 +10,13 @@
  *
  */
 #define PLCS_LIST_ACTIONS(X)                                                                                           \
-  X(INJECT_DENY, 0)                                                                                                    \
-  X(INJECT_ALLOW, 1)                                                                                                   \
-  X(ENABLE_SDK, 2)                                                                                                     \
-  X(ENABLE_PROFILER, 3)                                                                                                \
-  X(SET_ENVAR, 4)                                                                                                      \
-  X(REEXEC, 5)
+  X(UNKNOWN, 0)                                                                                                        \
+  X(INJECT_DENY, 1)                                                                                                    \
+  X(INJECT_ALLOW, 2)                                                                                                   \
+  X(ENABLE_SDK, 3)                                                                                                     \
+  X(ENABLE_PROFILER, 4)                                                                                                \
+  X(SET_ENVAR, 5)                                                                                                      \
+  X(REEXEC, 6)
 
 #define ENUM_VAL(ID, IX) PLCS_ACTION_##ID = IX,
 typedef enum plcs_actions { PLCS_LIST_ACTIONS(ENUM_VAL) PLCS_ACTIONS__COUNT } plcs_actions;

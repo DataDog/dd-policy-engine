@@ -5,6 +5,8 @@ namespace dd.wls;
 /// Each evaluator ID should be UNIQUE!
 /// IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry)
 enum StringEvaluators : byte {
+    /// An enum representing the type of action to take.
+    STRING_EVAL_UNKNOWN = 0,
     COMPONENT,
 
     PROCESS_EXE,
@@ -80,6 +82,8 @@ enum StringEvaluators : byte {
 /// The numeric evaluators are the same for signed and unsigned types.
 /// IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry)
 enum NumericEvaluators : byte {
+    /// An enum representing the type of action to take.
+    NUMERIC_EVAL_UNKNOWN = 0,
     JAVA_HEAP,
 
     RUNTIME_VERSION_MAJOR,

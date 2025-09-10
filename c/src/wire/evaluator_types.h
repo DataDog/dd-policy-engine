@@ -55,7 +55,6 @@ static inline dd_ns(CmpTypeNUM_enum_t) dd_numcmp_to_wire(enum plcs_numeric_compa
 #define ENUM_VAL(ID, X) [PLCS_NUM_CMP_##ID] = dd_ns(CmpTypeNUM_CMP_##ID),
   static const int map[PLCS_NUM_CMP__COUNT] = {PLCS_LIST_NUMERIC_COMPARATOR(ENUM_VAL)};
 #undef ENUM_VAL
-
   _Static_assert(
       PLCS_NUM_CMP__COUNT == dd_ns(CmpTypeNUM_CMP_COUNT),
       "update dd_numcmp_to_wire & plcs_numeric_comparator mappings when you modify CmpTypeNUM"

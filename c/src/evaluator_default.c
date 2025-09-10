@@ -130,6 +130,7 @@ plcs_evaluation_result plcs_default_string_evaluator(
       return string_evaluator_contains(policy, ctx);
       break;
 
+    case PLCS_STR_CMP_UNKNOWN:
     case PLCS_STR_CMP__COUNT:
       // error we should not get here!
       return PLCS_EVAL_RESULT_ABSTAIN;
@@ -171,6 +172,7 @@ plcs_evaluation_result plcs_default_numeric_evaluator(
       return (policy <= ctx) ? PLCS_EVAL_RESULT_TRUE : PLCS_EVAL_RESULT_FALSE;
       break;
 
+    case PLCS_NUM_CMP_UNKNOWN:
     case PLCS_NUM_CMP__COUNT:
       // error we should not get here!
       return PLCS_EVAL_RESULT_ABSTAIN;
@@ -212,6 +214,7 @@ plcs_evaluation_result plcs_default_unumeric_evaluator(
       return (policy <= ctx) ? PLCS_EVAL_RESULT_TRUE : PLCS_EVAL_RESULT_FALSE;
       break;
 
+    case PLCS_NUM_CMP_UNKNOWN:
     case PLCS_NUM_CMP__COUNT:
       // error we should not get here!
       return PLCS_EVAL_RESULT_ABSTAIN;

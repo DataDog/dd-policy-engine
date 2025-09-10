@@ -3,6 +3,8 @@ namespace dd.wls;
 /// Each Action should have an ID associated with it - it should be unique! 
 /// IMPORTANT! When adding a new action make sure you add it as the last one (just before the ACTIONS_COUNT entry)
 enum ActionId : byte {
+  /// \brief used a fallback and default incase of a failed parsing
+  ACTION_UNKNOWN = 0,
   INJECT_DENY,
   INJECT_ALLOW,
   ENABLE_SDK,

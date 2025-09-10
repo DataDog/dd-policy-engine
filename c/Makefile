@@ -18,7 +18,7 @@ CMAKE_PRESET := clang-dev
 
 .PHONY: all clean fmt $(SCHEMA_OUTPUT_DIR) lib/libpolicies.a $(EXAMPLES) coverage
 
-all: clean go-prerequisites configure
+all: clean go-prerequisites configure $(SCHEMA_OUTPUT_DIR)
 	@cmake --build $(BUILD_DIR) -j
 
 $(SCHEMA_OUTPUT_DIR): $(SCHEMA_DIR)/*.fbs
