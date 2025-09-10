@@ -29,6 +29,7 @@ project(
 option(DD_POLICY_BUILD_TESTS "Enable building tests" ${PROJECT_IS_TOP_LEVEL})
 option(DD_POLICY_BUILD_EXAMPLES "Enable building examples" ${PROJECT_IS_TOP_LEVEL})
 option(DD_POLICY_BUILD_FUZZERS "Enable building fuzzers" OFF)
+option(DD_POLICY_BUILD_CPP_BINDINGS "Enable C++ bindings" ${PROJECT_IS_TOP_LEVEL})
 
 if (WIN32)
   option(DD_POLICY_ENABLE_STATIC_CRT "Build libpolicy with static CRT" OFF)
@@ -39,6 +40,10 @@ find_package(flatcc REQUIRED)
 
 # C Library
 add_subdirectory(c)
+
+if(DD_POLICY_BUILD_CPP_BINDINGS)
+  add_subdirectory(c/bindings/cpp)
+endif()
 
 if(DD_POLICY_BUILD_TESTS)
   enable_testing()
