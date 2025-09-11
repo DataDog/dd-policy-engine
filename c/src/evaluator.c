@@ -1,16 +1,23 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed
+ * under the Apache 2.0 License. This product includes software developed at
+ * Datadog (https://www.datadoghq.com/).
+ *
+ * Copyright 2024-Present Datadog, Inc.
+ */
 #include <policy_reader.h>
 
 #include <dd/policies/error_codes.h>
 #include <dd/policies/evaluator_default.h>
 #include <dd/policies/policies.h>
 
+#include <stdio.h>
 #include "eval_ctx.h"
 #include "policy.h"
 #include "wire/action.h"
 #include "wire/boolean_operation.h"
 #include "wire/dd_types.h"
 #include "wire/evaluation_result.h"
-#include <stdio.h>
 plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node);
 
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {

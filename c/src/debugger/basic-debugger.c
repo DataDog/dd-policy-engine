@@ -1,4 +1,10 @@
-
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed
+ * under the Apache 2.0 License. This product includes software developed at
+ * Datadog (https://www.datadoghq.com/).
+ *
+ * Copyright 2024-Present Datadog, Inc.
+ */
 #include <dd/policies/evaluator_default.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +34,7 @@ void print_node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
       dd_ns(NumEvaluator_table_t) eval_num = evaluator.value;
       plcs_numeric_evaluators eval_num_id = dd_ns(NumEvaluator_id)(eval_num);
       printf(
-          "[num][%s][%s][%s][value: '%ld']\n", dd_wls_CmpTypeNUM_name(dd_ns(NumEvaluator_cmp)(eval_num)),
+          "[num][%s][%s][%s][value: '%lld']\n", dd_wls_CmpTypeNUM_name(dd_ns(NumEvaluator_cmp)(eval_num)),
           dd_wls_NumericEvaluators_name(eval_num_id), dd_ns(EvaluatorNode_description)(node),
           dd_ns(NumEvaluator_value)(eval_num)
       );
@@ -38,7 +44,7 @@ void print_node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
       dd_ns(UNumEvaluator_table_t) eval_unum = evaluator.value;
       plcs_numeric_evaluators eval_unum_id = dd_ns(UNumEvaluator_id)(eval_unum);
       printf(
-          "[unum][%s][%s][%s][value: '%ld']\n", dd_wls_CmpTypeNUM_name(dd_ns(UNumEvaluator_cmp)(eval_unum)),
+          "[unum][%s][%s][%s][value: '%lld']\n", dd_wls_CmpTypeNUM_name(dd_ns(UNumEvaluator_cmp)(eval_unum)),
           dd_wls_NumericEvaluators_name(eval_unum_id), dd_ns(EvaluatorNode_description)(node),
           dd_ns(UNumEvaluator_value)(eval_unum)
       );

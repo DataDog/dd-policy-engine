@@ -1,4 +1,11 @@
 /**
+ * Unless explicitly stated otherwise all files in this repository are licensed
+ * under the Apache 2.0 License. This product includes software developed at
+ * Datadog (https://www.datadoghq.com/).
+ *
+ * Copyright 2024-Present Datadog, Inc.
+ * -----
+ *
  * @file wire/actions.h
  * @brief Internal translation for plcs_actions enum and related constants.
  *
@@ -45,7 +52,7 @@ static inline dd_ns(ActionId_enum_t) dd_action_to_wire(enum plcs_actions v) {
   static const int map[ACTIONS__COUNT] = {
       [INJECT_DENY] = dd_ns(ActionId_INJECT_DENY), [INJECT_ALLOW] = dd_ns(ActionId_INJECT_ALLOW),
       [ENABLE_SDK] = dd_ns(ActionId_ENABLE_SDK),   [ENABLE_PROFILER] = dd_ns(ActionId_ENABLE_PROFILER),
-      [SET_ENVAR] = dd_ns(ActionId_SET_ENVAR), [REEXEC] = dd_ns(ActionId_REEXEC)
+      [SET_ENVAR] = dd_ns(ActionId_SET_ENVAR),     [REEXEC] = dd_ns(ActionId_REEXEC)
   };
   _Static_assert(
       ACTIONS__COUNT == dd_ns(ActionId_ACTIONS_COUNT),
