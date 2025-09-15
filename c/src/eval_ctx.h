@@ -3,6 +3,7 @@
 #include <dd/policies/action.h>
 #include <dd/policies/error_codes.h>
 #include <dd/policies/eval_ctx.h>
+#include "arena_allocator.h"
 #include "wire/evaluator_types.h"
 
 /**
@@ -12,7 +13,7 @@ typedef struct string_evaluator_entry {
   /**< Function pointer to the string evaluator function */
   plcs_string_evaluator_function_ptr function_ptr;
   /**< The value to evaluate against, can be NULL if not set */
-  const char *value;
+  char *value;
   /**< Error code if the evaluator is not registered or */
   /**< fails !NEEDS TO BE RESET EVERY EVALUATION! */
   plcs_errors error;
@@ -103,6 +104,9 @@ typedef struct plcs_eval_ctx {
 
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
+
+  /**< TODO */
+  plcs_arena_allocator allocator;
 
 } plcs_eval_ctx;
 

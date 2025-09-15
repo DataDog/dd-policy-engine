@@ -9,6 +9,7 @@
 
 static plcs_eval_ctx ctx;
 static bool plcs_eval_ctx_initialized = false;
+const size_t PLCS_MAX_STR_PARAM_LENGTH = 1024;
 
 plcs_errors
 plcs_eval_ctx_register_str_evaluator(plcs_string_evaluator_function_ptr func_ptr, plcs_string_evaluators ix) {
@@ -52,12 +53,35 @@ plcs_eval_ctx_register_unum_evaluator(plcs_unumeric_evaluator_function_ptr func_
   return DD_ESUCCESS;
 }
 
+static void *plcs_strdup_with_allocator(plcs_arena_allocator *allocator, const char *str) {
+  if (str == NULL)
+    return NULL;
+
+  size_t len = strlen(str) + 1;  //< +1 for null terminated character
+  void *buffer = arena_alloc_aligned(allocator, len, 1);
+  if (buffer == NULL) {
+    return NULL;
+  }
+
+  memcpy(buffer, str, len);
+  return buffer;
+}
+
 plcs_errors plcs_eval_ctx_set_str_eval_param(plcs_string_evaluators ix, const char *value) {
   if (ix >= STR_EVAL__COUNT) {
     return DD_EIX_OVERFLOW;
   }
 
-  ctx.string_evaluators[ix].value = value;
+  size_t len = strlen(value) + 1;
+  if (len > PLCS_MAX_STR_PARAM_LENGTH) {
+    return DD_ESTR_EVAL_EXCEED_MAX_LENGTH;
+  }
+
+  void *newstr = plcs_strdup_with_allocator(&ctx.allocator, value);
+  if (newstr == NULL) {
+  }
+
+  ctx.string_evaluators[ix].value = newstr;
   return DD_ESUCCESS;
 }
 
@@ -214,6 +238,8 @@ plcs_errors plcs_eval_ctx_get_last_error(void) {
 }
 
 void plcs_eval_ctx_reset(void) {
+  plcs_arena_clear(&ctx.allocator);
+
   // Reset all evaluators to NULL and parameters to their 'not set' values
   // Initialize all evaluators to NULL
   for (int i = 0; i < STR_EVAL__COUNT; ++i) {
@@ -240,11 +266,20 @@ void plcs_eval_ctx_reset(void) {
   ctx.error = DD_ESUCCESS;
 }
 
+#define DD_GET_ARRAY_SIZE(x) (size_t)sizeof(buffer) / sizeof(buffer[0])
+
 plcs_errors plcs_eval_ctx_init(void) {
   if (plcs_eval_ctx_initialized) {
-    return DD_EINITIZLIED;
+    return DD_EINITIALIZED;
   }
 
+  // Allocation: 32 * 1024B = 32 KiB
+  uint8_t *buffer = calloc(STR_EVAL__COUNT, PLCS_MAX_STR_PARAM_LENGTH);
+  if (buffer == NULL) {
+    return DD_EINITIALIZED;
+  }
+
+  ctx.allocator = plcs_arena_init(&buffer, PLCS_MAX_STR_PARAM_LENGTH * STR_EVAL__COUNT);
   plcs_eval_ctx_reset();
 
   ctx.error = DD_ESUCCESS;

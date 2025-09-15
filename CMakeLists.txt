@@ -28,6 +28,9 @@ if (WIN32)
   option(DD_POLICY_ENABLE_STATIC_CRT "Build libpolicy with static CRT" OFF)
 endif ()
 
+include(CheckSymbolExists)
+check_symbol_exists("strdup" "string.h" DD_HAVE_STRDUP)
+
 # Dependencies
 find_package(flatcc REQUIRED)
 

@@ -191,7 +191,7 @@ Key public headers (under c/include/policies):
 ## Common gotchas
 
 - ABSTAIN is expected and not an error; it often means "insufficient context" and can be fine depending on boolean composition.
-- Call `plcs_eval_ctx_init()` once per process before using the API; subsequent calls return `-DD_EINITIZLIED`.
+- Call `plcs_eval_ctx_init()` once per process before using the API; subsequent calls return `-DD_EINITIALIZED`.
 - If you rely on default evaluators, remember to set the corresponding context parameters for any evaluators referenced by the policies.
 - Action handlers should return `DD_ESUCCESS` unless they truly failed; `plcs_evaluate_buffer` sums error codes across policies.
 

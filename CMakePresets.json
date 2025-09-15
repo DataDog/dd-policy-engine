@@ -55,10 +55,11 @@
       "inherits": "clang-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c23"
+        "ADDITIONAL_C_FLAGS": "-std=c23 -fsanitize=address,undefined"
       }
     },
     {

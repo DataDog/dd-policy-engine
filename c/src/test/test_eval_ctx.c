@@ -84,8 +84,8 @@ dummy_action(plcs_evaluation_result res, char *values[], size_t value_len, const
 UTEST(eval_ctx, eval_ctx_init_double_init) {
   int r1 = plcs_eval_ctx_init();
   int r2 = plcs_eval_ctx_init();
-  /* Depending on previous tests, r1 may already be -DD_EINITIZLIED. */
-  ASSERT_TRUE((r1 == DD_ESUCCESS && r2 == DD_EINITIZLIED) || (r1 == DD_EINITIZLIED && r2 == DD_EINITIZLIED));
+  /* Depending on previous tests, r1 may already be -DD_EINITIALIZED. */
+  ASSERT_TRUE((r1 == DD_ESUCCESS && r2 == DD_EINITIALIZED) || (r1 == DD_EINITIALIZED && r2 == DD_EINITIALIZED));
 }
 
 UTEST(eval_ctx, verify_error_handling_string_evaluator_and_param) {
@@ -295,6 +295,18 @@ UTEST(eval_ctx, set_error_out_of_bound) {
   plcs_eval_ctx_set_action_error(ACTIONS__COUNT, 0);
   int err = plcs_eval_ctx_get_last_error();
   ASSERT_EQ(err, DD_ESUCCESS);
+}
+
+UTEST(eval_ctx, str_param_create_a_copy) {
+  plcs_errors init_status = plcs_eval_ctx_init();
+  ASSERT_EQ((plcs_errors)DD_ESUCCESS, init_status);
+
+  char exe_param[] = "hello";
+  plcs_eval_ctx_set_str_eval_param(STR_EVAL_PROCESS_EXE, exe_param);
+
+  const char *process_exe = plcs_eval_ctx_get_string_param(STR_EVAL_PROCESS_EXE);
+  EXPECT_NE(exe_param, process_exe);
+  EXPECT_STREQ(exe_param, process_exe);
 }
 
 /* -------------------------------------------------------------------------- */

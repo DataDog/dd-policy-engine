@@ -282,7 +282,7 @@ UTEST(evaluator, test_evaluate_string_null_input) {
 UTEST(evaluator, test_evaluate_string_basic_functionality) {
   /* Initialize context for numeric evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIALIZED);
 
   /* Set a string parameter for testing */
   rc = plcs_eval_ctx_set_str_eval_param(STR_EVAL_HOST_IP, "1.2.3.4");
@@ -332,7 +332,7 @@ UTEST(evaluator, test_evaluate_numeric_null_input) {
 UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
   /* Initialize context for numeric evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIALIZED);
 
   /* Set a numeric parameter for testing */
   rc = plcs_eval_ctx_set_num_eval_param(NUM_EVAL_JAVA_HEAP, 100);
@@ -374,7 +374,7 @@ UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
 
   /* Initialize context for unumeric evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIALIZED);
 
   /* Set an unumeric parameter for testing */
   rc = plcs_eval_ctx_set_unum_eval_param(NUM_EVAL_JAVA_HEAP, 100);
@@ -418,13 +418,13 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   printf("hi?!\n");
   /* Initialize context for evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIALIZED);
 
   flatcc_builder_t b;
   size_t sz;
   flatcc_builder_init(&b);
   rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIALIZED);
 
   rc = plcs_eval_ctx_set_str_eval_param(STR_EVAL_RUNTIME_ENTRY_POINT_JAR, "test.jar");
   ASSERT_EQ(rc, DD_ESUCCESS);
@@ -445,7 +445,7 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   /* Set a numeric parameter for testing */
   flatcc_builder_init(&b);
   rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIALIZED);
   rc = plcs_eval_ctx_set_num_eval_param(NUM_EVAL_JAVA_HEAP, 100);
   ASSERT_EQ(rc, DD_ESUCCESS);
 
@@ -604,7 +604,7 @@ UTEST(evaluator, test_composite_evaluator_basic_functionality) {
 
   /* Initialize context for evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIALIZED);
 
   /* Note: Full testing would require creating mock FlatCC objects */
   /* This test demonstrates the test structure for when headers are available */
@@ -742,7 +742,7 @@ UTEST(evaluator_integration, evaluate_generated_header_if_available) {
   /* Initialize context and register actions */
   int rc = plcs_eval_ctx_init();
   /* init; accept already-inited code path as well */
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIALIZED);
 
   g_allow_called = 0;
   g_deny_called = 0;
