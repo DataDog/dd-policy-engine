@@ -26,6 +26,7 @@ target_sources(dd-policy-engine.objects
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_types.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/policies.h
   PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/arena_allocator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/eval_ctx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator_default.c

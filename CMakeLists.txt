@@ -3,7 +3,7 @@
 # Datadog (https://www.datadoghq.com/).
 #
 # Copyright 2025-Present Datadog, Inc.
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 3.28...4.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 

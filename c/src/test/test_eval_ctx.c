@@ -108,6 +108,17 @@ UTEST(eval_ctx, verify_error_handling_string_evaluator_and_param) {
   ASSERT_EQ(err, PLCS_EIX_OVERFLOW);
 }
 
+UTEST(eval_ctx, set_str_param_exceeds_limit) {
+  (void)plcs_eval_ctx_init();
+
+  char value[PLCS_MAX_STR_PARAM_LENGTH + 1];
+  memset((void *)value, 'a', PLCS_MAX_STR_PARAM_LENGTH);
+  value[PLCS_MAX_STR_PARAM_LENGTH] = 0;
+
+  int rc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, value);
+  EXPECT_EQ(rc, PLCS_ESTR_PARAM_EXCEED_MAX_LENGTH);
+}
+
 UTEST(eval_ctx, register_and_get_string_evaluator_and_param) {
   /* Ensure initialized */
   (void)plcs_eval_ctx_init();
@@ -129,7 +140,8 @@ UTEST(eval_ctx, register_and_get_string_evaluator_and_param) {
 
   param = plcs_eval_ctx_get_string_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE);
   ASSERT_TRUE(param != NULL);
-  ASSERT_EQ(0, strcmp(param, ctx_value));
+  ASSERT_NE(param, ctx_value);
+  ASSERT_STREQ(param, ctx_value);
 
   /* Ensure evaluator behaves as expected */
   int r = f("jvm", PLCS_STR_CMP_EXACT, param, "desc", PLCS_STR_EVAL_RUNTIME_LANGUAGE);
