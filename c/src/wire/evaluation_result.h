@@ -3,7 +3,7 @@
  * under the Apache 2.0 License. This product includes software developed at
  * Datadog (https://www.datadoghq.com/).
  *
- * Copyright 2024-Present Datadog, Inc.
+ * Copyright 2025-Present Datadog, Inc.
  * -----
  * @file wire/evaluation_result.h
  * @brief Internal translation for plcs_evaluation_result enum.
