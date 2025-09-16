@@ -28,6 +28,7 @@ target_sources(dd-policy-engine.objects
   PUBLIC
     $<TARGET_OBJECTS:flatccrt-obj>
   PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/arena_allocator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/eval_ctx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator_default.c

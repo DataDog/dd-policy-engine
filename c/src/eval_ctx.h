@@ -10,7 +10,10 @@
 #include <dd/policies/action.h>
 #include <dd/policies/error_codes.h>
 #include <dd/policies/eval_ctx.h>
+#include "arena_allocator.h"
 #include "wire/evaluator_types.h"
+
+#define PLCS_MAX_STR_PARAM_LENGTH 1024
 
 /**
  * @brief String evaluator entry structure.
@@ -110,6 +113,9 @@ typedef struct plcs_eval_ctx {
 
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
+
+  /**< string parameters allocator */
+  plcs_arena_allocator allocator;
 
 } plcs_eval_ctx;
 

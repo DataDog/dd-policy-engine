@@ -77,6 +77,9 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
+      },
+      "environment": {
+        "ADDITIONAL_C_FLAGS": "-fsanitize=address,leak,undefined"
       }
     },
     {

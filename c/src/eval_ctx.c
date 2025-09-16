@@ -63,7 +63,22 @@ plcs_errors plcs_eval_ctx_set_str_eval_param(plcs_string_evaluators ix, const ch
     return PLCS_EIX_OVERFLOW;
   }
 
-  ctx.string_evaluators[ix].value = value;
+  size_t len = strlen(value) + 1;  //< +1 for null terminated character
+  if (len > PLCS_MAX_STR_PARAM_LENGTH) {
+    return PLCS_ESTR_PARAM_EXCEED_MAX_LENGTH;
+  }
+
+  // Allow to reuse already allocated memory by a previous call to `*_str_eval_param`.
+  if (ctx.string_evaluators[ix].value == NULL) {
+    void *buffer = plcs_arena_alloc(&ctx.allocator, len, alignof(uint8_t));
+    if (buffer == NULL) {
+      return PLCS_EALLOCATION;
+    }
+
+    ctx.string_evaluators[ix].value = buffer;
+  }
+
+  memcpy((void *)ctx.string_evaluators[ix].value, value, len);
   return PLCS_ESUCCESS;
 }
 
@@ -220,6 +235,8 @@ plcs_errors plcs_eval_ctx_get_last_error(void) {
 }
 
 void plcs_eval_ctx_reset(void) {
+  plcs_arena_reset(&ctx.allocator);
+
   // Reset all evaluators to NULL and parameters to their 'not set' values
   // Initialize all evaluators to NULL
   for (int i = 0; i < PLCS_STR_EVAL__COUNT; ++i) {
@@ -251,9 +268,16 @@ plcs_errors plcs_eval_ctx_init(void) {
     return PLCS_EINITIZLIED;
   }
 
-  plcs_eval_ctx_reset();
+  // Allocation size: 32 * 1024B = 32 KiB
+  void *buffer = calloc(PLCS_STR_EVAL__COUNT - 1, PLCS_MAX_STR_PARAM_LENGTH);
+  if (buffer == NULL) {
+    return PLCS_EINITIZLIED;
+  }
 
+  ctx.allocator = plcs_arena_new(buffer, PLCS_MAX_STR_PARAM_LENGTH * PLCS_STR_EVAL__COUNT);
   ctx.error = PLCS_ESUCCESS;
+
+  plcs_eval_ctx_reset();
 
   plcs_eval_ctx_initialized = true;
   return PLCS_ESUCCESS;

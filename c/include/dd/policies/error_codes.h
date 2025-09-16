@@ -20,10 +20,10 @@
   X(NO_DATA, 5)                                                                                                        \
   X(UNKNOWN_EVAL_IX, 6)                                                                                                \
   X(ACTIONS_EVAL, 7)                                                                                                   \
-  X(UNKNOWN_CMP, 8)
+  X(UNKNOWN_CMP, 8)                                                                                                    \
+  X(ALLOCATION, 9)                                                                                                     \
+  X(STR_PARAM_EXCEED_MAX_LENGTH, 10)
 
 #define ENUM_VAL(VAL, IX) PLCS_E##VAL = IX,
-
 typedef enum plcs_errors { PLCS_LIST_ERRORS(ENUM_VAL) } plcs_errors;
-
 #undef ENUM_VAL
