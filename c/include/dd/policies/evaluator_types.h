@@ -36,7 +36,7 @@ typedef enum plcs_numeric_comparator {
  * These represent the supported string evaluators by the policy engine.
  */
 typedef enum plcs_string_evaluators {
-  STR_EVAL_UNKNOWN = 0, // default and fallback value 
+  STR_EVAL_UNKNOWN = 0,  // default and fallback value
   STR_EVAL_COMPONENT = 1,
   STR_EVAL_PROCESS_EXE = 2,
   STR_EVAL_PROCESS_EXE_FULL_PATH = 3,
@@ -78,7 +78,7 @@ typedef enum plcs_string_evaluators {
  * These represent the supported numeric evaluators by the policy engine.
  */
 typedef enum plcs_numeric_evaluators {
-  NUM_EVAL_UNKNOWN = 0, // default and fallback value 
+  NUM_EVAL_UNKNOWN = 0,  // default and fallback value
   NUM_EVAL_JAVA_HEAP = 1,
   NUM_EVAL_RUNTIME_VERSION_MAJOR = 2,
   NUM_EVAL_RUNTIME_VERSION_MINOR = 3,

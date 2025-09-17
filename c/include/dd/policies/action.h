@@ -10,7 +10,7 @@
  *
  */
 typedef enum plcs_actions {
-  ACTION_UNKNOWN = 0, // default and fallback value 
+  ACTION_UNKNOWN = 0,  // default and fallback value
   INJECT_DENY = 1,
   INJECT_ALLOW = 2,
   ENABLE_SDK = 3,

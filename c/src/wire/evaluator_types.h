@@ -42,10 +42,8 @@ extern "C" {
 static inline dd_ns(CmpTypeSTR_enum_t) dd_strcmp_to_wire(enum plcs_string_comparator v) {
   /* Map your public enum -> vendor numeric value. */
   static const int map[STR_CMP__COUNT] = {
-      [STR_CMP_UNKNOWN] = dd_ns(CmpTypeSTR_CMP_STR_UNKNOWN),
-      [STR_CMP_PREFIX] = dd_ns(CmpTypeSTR_CMP_PREFIX),
-      [STR_CMP_SUFFIX] = dd_ns(CmpTypeSTR_CMP_SUFFIX),
-      [STR_CMP_CONTAINS] = dd_ns(CmpTypeSTR_CMP_CONTAINS),
+      [STR_CMP_UNKNOWN] = dd_ns(CmpTypeSTR_CMP_STR_UNKNOWN), [STR_CMP_PREFIX] = dd_ns(CmpTypeSTR_CMP_PREFIX),
+      [STR_CMP_SUFFIX] = dd_ns(CmpTypeSTR_CMP_SUFFIX),       [STR_CMP_CONTAINS] = dd_ns(CmpTypeSTR_CMP_CONTAINS),
       [STR_CMP_EXACT] = dd_ns(CmpTypeSTR_CMP_EXACT),
   };
   _Static_assert(
