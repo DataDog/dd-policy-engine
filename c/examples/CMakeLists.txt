@@ -8,17 +8,17 @@ target_link_libraries(basic-reader
     dd-policy-engine::static-lib
 )
 
-add_executable(hardcoded-header-reader)
-target_sources(hardcoded-header-reader
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/hardcoded-header-reader.c
-)
-target_link_libraries(hardcoded-header-reader
-  PUBLIC
-    dd-policy-engine::static-lib
-)
-
 if(LINUX)
+  add_executable(hardcoded-header-reader)
+  target_sources(hardcoded-header-reader
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/hardcoded-header-reader.c
+  )
+  target_link_libraries(hardcoded-header-reader
+    PUBLIC
+      dd-policy-engine::static-lib
+  )
+
   add_executable(mmap-reader)
   target_sources(mmap-reader
     PRIVATE
