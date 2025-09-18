@@ -108,17 +108,17 @@ static inline dd_wls_Policy_table_t dd_wls_Policy_vec_at(dd_wls_Policy_vec_t vec
 __flatbuffers_offset_vec_at(dd_wls_Policy_table_t, vec, i, 0)
 __flatbuffers_table_as_root(dd_wls_Policy)
 
+/**  The policy can have a description for debugging purposes. */
+__flatbuffers_define_string_field(0, dd_wls_Policy, description, 0)
+/**  The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers.  */
+__flatbuffers_define_table_field(1, dd_wls_Policy, rules, dd_wls_NodeTypeWrapper_table_t, 0)
+/**  The actions are taken post evaluation of the policy. */
+__flatbuffers_define_vector_field(2, dd_wls_Policy, actions, dd_wls_Action_vec_t, 0)
 /**  128 bit UUID represented as 16 raw bytes
  *  this can be used to verify integrity (but NOT origin - this is not a signature!) */
-__flatbuffers_define_struct_field(0, dd_wls_Policy, id, dd_wls_UUID_struct_t, 0)
+__flatbuffers_define_struct_field(3, dd_wls_Policy, id, dd_wls_UUID_struct_t, 0)
 /**  used to track the version number of this policy */
-__flatbuffers_define_scalar_field(1, dd_wls_Policy, version, flatbuffers_int64, int64_t, INT64_C(0))
-/**  The policy can have a description for debugging purposes. */
-__flatbuffers_define_string_field(2, dd_wls_Policy, description, 0)
-/**  The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers.  */
-__flatbuffers_define_table_field(3, dd_wls_Policy, rules, dd_wls_NodeTypeWrapper_table_t, 0)
-/**  The actions are taken post evaluation of the policy. */
-__flatbuffers_define_vector_field(4, dd_wls_Policy, actions, dd_wls_Action_vec_t, 0)
+__flatbuffers_define_scalar_field(4, dd_wls_Policy, version, flatbuffers_int64, int64_t, INT64_C(0))
 
 /**  Represents a collection of policies.
  *  This allows for concatenation of policies from different sources.
