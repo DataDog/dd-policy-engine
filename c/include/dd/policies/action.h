@@ -10,7 +10,7 @@
  *
  */
 #define PLCS_LIST_ACTIONS(X)                                                                                           \
-  X(UNKNOWN, 0)                                                                                                        \
+  X(ACTION_UNKNOWN, 0)                                                                                                 \
   X(INJECT_DENY, 1)                                                                                                    \
   X(INJECT_ALLOW, 2)                                                                                                   \
   X(ENABLE_SDK, 3)                                                                                                     \

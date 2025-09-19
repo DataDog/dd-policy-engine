@@ -10,7 +10,7 @@
  * @brief comparison operators for string evaluators
  */
 #define PLCS_LIST_STRING_COMPARATORS(X)                                                                                \
-  X(UNKNOWN, 0)                                                                                                        \
+  X(STR_UNKNOWN, 0)                                                                                                    \
   X(PREFIX, 1)                                                                                                         \
   X(SUFFIX, 2)                                                                                                         \
   X(CONTAINS, 3)                                                                                                       \
@@ -26,7 +26,7 @@ typedef enum plcs_string_comparator {
  * @brief comparison operators for numeric (and unsigned numeric) evaluators
  */
 #define PLCS_LIST_NUMERIC_COMPARATOR(X)                                                                                \
-  X(UNKNOWN, 0)                                                                                                        \
+  X(NUM_UNKNOWN, 0)                                                                                                    \
   X(EQ, 1)                                                                                                             \
   X(GT, 2)                                                                                                             \
   X(GTE, 3)                                                                                                            \
@@ -44,7 +44,7 @@ typedef enum plcs_numeric_comparator {
  * These represent the supported string evaluators by the policy engine.
  */
 #define PLCS_LIST_STRING_EVALUATORS(X)                                                                                 \
-  X(UNKNOWN, 0)                                                                                                        \
+  X(STRING_EVAL_UNKNOWN, 0)                                                                                            \
   X(COMPONENT, 1)                                                                                                      \
   X(PROCESS_EXE, 2)                                                                                                    \
   X(PROCESS_EXE_FULL_PATH, 3)                                                                                          \
@@ -90,7 +90,7 @@ typedef enum plcs_string_evaluators {
  * These represent the supported numeric evaluators by the policy engine.
  */
 #define PLCS_LIST_NUMERIC_EVALUATORS(X)                                                                                \
-  X(UNKNOWN, 0)                                                                                                        \
+  X(NUMERIC_EVAL_UNKNOWN, 0)                                                                                           \
   X(JAVA_HEAP, 1)                                                                                                      \
   X(RUNTIME_VERSION_MAJOR, 2)                                                                                          \
   X(RUNTIME_VERSION_MINOR, 3)                                                                                          \
