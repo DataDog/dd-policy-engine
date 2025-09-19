@@ -7,7 +7,7 @@
  *   - Implements two action handlers: `ACTION_INJECT_DENY` and `ACTION_INJECT_ALLOW`
  *     (they match the public `plcs_action_function_ptr` signature and just print what they receive).
  *   - Implements one string evaluator: `EVALUATOR_RUNTIME_LANGUAGE`
- *     (it matches `plcs_string_evaluator_function_ptr` and always returns `EVAL_RESULT_TRUE` for demo).
+ *     (it matches `plcs_string_evaluator_function_ptr` and always returns `PLCS_EVAL_RESULT_TRUE` for demo).
  *   - Reads a policy file into memory, initializes the evaluation context, wires everything up,
  *     and calls `plcs_evaluate_buffer(...)`.
  *

@@ -13,8 +13,8 @@
  * matches the provided parameter exactly
  * @param eval The [policy] value
  * @param param The [ctx] parameter to compare against
- * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, EVAL_RESULT_TRUE if the
- * strings match, EVAL_RESULT_FALSE otherwise
+ * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, PLCS_EVAL_RESULT_TRUE if the
+ * strings match, PLCS_EVAL_RESULT_FALSE otherwise
  */
 plcs_evaluation_result string_evaluator_exact(const char *eval, const char *param) {
   if (!eval || !param) {
@@ -29,8 +29,8 @@ plcs_evaluation_result string_evaluator_exact(const char *eval, const char *para
  * matches the provided parameter as a prefix
  * @param eval The [policy] value
  * @param param The [ctx] parameter to compare against
- * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, EVAL_RESULT_TRUE if the
- * strings match, EVAL_RESULT_FALSE otherwise
+ * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, PLCS_EVAL_RESULT_TRUE if the
+ * strings match, PLCS_EVAL_RESULT_FALSE otherwise
  */
 plcs_evaluation_result string_evaluator_prefix(const char *eval, const char *param) {
   if (!eval || !param) {
@@ -49,8 +49,8 @@ plcs_evaluation_result string_evaluator_prefix(const char *eval, const char *par
  * matches the provided parameter as a suffix
  * @param eval The [policy] value
  * @param param The [ctx] parameter to compare against
- * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, EVAL_RESULT_TRUE if the
- * strings match, EVAL_RESULT_FALSE otherwise
+ * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, PLCS_EVAL_RESULT_TRUE if the
+ * strings match, PLCS_EVAL_RESULT_FALSE otherwise
  */
 plcs_evaluation_result string_evaluator_suffix(const char *eval, const char *param) {
   if (!eval || !param) {
