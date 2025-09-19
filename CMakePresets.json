@@ -87,6 +87,17 @@
       "environment": {
         "ADDITIONAL_C_FLAGS": "-fprofile-arcs -ftest-coverage -fprofile-instr-generate -fcoverage-mapping"
       }
+    },
+    {
+      "name": "clang-fuzz",
+      "displayName": "Clang Fuzz configuration",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "DD_POLICY_BUILD_FUZZERS": "ON"
+      },
+      "environment": {
+        "ADDITIONAL_C_FLAGS": "-std=c23 -fsanitize=fuzzer,address"
+      }
     }
   ]
 }

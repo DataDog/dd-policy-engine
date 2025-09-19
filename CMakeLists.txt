@@ -23,6 +23,7 @@ project(
 
 option(DD_POLICY_BUILD_TESTS "Enable building tests" ${PROJECT_IS_TOP_LEVEL})
 option(DD_POLICY_BUILD_EXAMPLES "Enable building examples" ${PROJECT_IS_TOP_LEVEL})
+option(DD_POLICY_BUILD_FUZZERS "Enable building fuzzers" OFF)
 
 if (WIN32)
   option(DD_POLICY_ENABLE_STATIC_CRT "Build libpolicy with static CRT" OFF)
@@ -41,6 +42,10 @@ endif()
 
 if(DD_POLICY_BUILD_EXAMPLES)
   add_subdirectory(c/examples)
+endif()
+
+if(DD_POLICY_BUILD_FUZZERS)
+  add_subdirectory(c/fuzz)
 endif()
 
 # install
