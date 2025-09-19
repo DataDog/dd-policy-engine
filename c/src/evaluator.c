@@ -171,6 +171,10 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node) {
   plcs_evaluation_result res;
 
   switch (oper) {
+    case dd_ns(BoolOperation_BOOL_UNKNOWN):
+      res = PLCS_EVAL_RESULT_ABSTAIN;
+      break;
+
     case dd_ns(BoolOperation_BOOL_OR):
       res = PLCS_EVAL_RESULT_FALSE;
       break;

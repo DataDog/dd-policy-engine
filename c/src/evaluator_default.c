@@ -13,8 +13,8 @@
  * matches the provided parameter exactly
  * @param eval The [policy] value
  * @param param The [ctx] parameter to compare against
- * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, EVAL_RESULT_TRUE if the
- * strings match, EVAL_RESULT_FALSE otherwise
+ * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, PLCS_EVAL_RESULT_TRUE if the
+ * strings match, PLCS_EVAL_RESULT_FALSE otherwise
  */
 plcs_evaluation_result string_evaluator_exact(const char *eval, const char *param) {
   if (!eval || !param) {
@@ -29,8 +29,8 @@ plcs_evaluation_result string_evaluator_exact(const char *eval, const char *para
  * matches the provided parameter as a prefix
  * @param eval The [policy] value
  * @param param The [ctx] parameter to compare against
- * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, EVAL_RESULT_TRUE if the
- * strings match, EVAL_RESULT_FALSE otherwise
+ * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, PLCS_EVAL_RESULT_TRUE if the
+ * strings match, PLCS_EVAL_RESULT_FALSE otherwise
  */
 plcs_evaluation_result string_evaluator_prefix(const char *eval, const char *param) {
   if (!eval || !param) {
@@ -49,8 +49,8 @@ plcs_evaluation_result string_evaluator_prefix(const char *eval, const char *par
  * matches the provided parameter as a suffix
  * @param eval The [policy] value
  * @param param The [ctx] parameter to compare against
- * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, EVAL_RESULT_TRUE if the
- * strings match, EVAL_RESULT_FALSE otherwise
+ * @return EVAL_RESULT_ABSTAIN if data is corrupt or non existent, PLCS_EVAL_RESULT_TRUE if the
+ * strings match, PLCS_EVAL_RESULT_FALSE otherwise
  */
 plcs_evaluation_result string_evaluator_suffix(const char *eval, const char *param) {
   if (!eval || !param) {
@@ -130,6 +130,7 @@ plcs_evaluation_result plcs_default_string_evaluator(
       return string_evaluator_contains(policy, ctx);
       break;
 
+    case PLCS_STR_CMP_STR_UNKNOWN:
     case PLCS_STR_CMP__COUNT:
       // error we should not get here!
       return PLCS_EVAL_RESULT_ABSTAIN;
@@ -171,6 +172,7 @@ plcs_evaluation_result plcs_default_numeric_evaluator(
       return (policy <= ctx) ? PLCS_EVAL_RESULT_TRUE : PLCS_EVAL_RESULT_FALSE;
       break;
 
+    case PLCS_NUM_CMP_NUM_UNKNOWN:
     case PLCS_NUM_CMP__COUNT:
       // error we should not get here!
       return PLCS_EVAL_RESULT_ABSTAIN;
@@ -212,6 +214,7 @@ plcs_evaluation_result plcs_default_unumeric_evaluator(
       return (policy <= ctx) ? PLCS_EVAL_RESULT_TRUE : PLCS_EVAL_RESULT_FALSE;
       break;
 
+    case PLCS_NUM_CMP_NUM_UNKNOWN:
     case PLCS_NUM_CMP__COUNT:
       // error we should not get here!
       return PLCS_EVAL_RESULT_ABSTAIN;
