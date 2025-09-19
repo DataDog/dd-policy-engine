@@ -41,11 +41,12 @@ set_target_properties(dd-policy-engine.objects
 
 target_link_libraries(dd-policy-engine.objects
   PUBLIC
-    flatcc::crt
+    # flatcc::crt
+    flatccrt
 )
 
 install(
-  TARGETS dd-policy-engine.objects
+  TARGETS dd-policy-engine.objects flatccrt
   EXPORT dd-policy-engine-targets
   FILE_SET public_headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
