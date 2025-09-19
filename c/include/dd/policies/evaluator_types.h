@@ -9,87 +9,103 @@
 /**
  * @brief comparison operators for string evaluators
  */
+#define PLCS_LIST_STRING_COMPARATORS(X)                                                                                \
+  X(PREFIX, 0)                                                                                                         \
+  X(SUFFIX, 1)                                                                                                         \
+  X(CONTAINS, 2)                                                                                                       \
+  X(EXACT, 3)
+
+#define ENUM_COMPARATOR_VAL(VAL, IX) PLCS_STR_CMP_##VAL = IX,
 typedef enum plcs_string_comparator {
-  STR_CMP_PREFIX = 0,
-  STR_CMP_SUFFIX = 1,
-  STR_CMP_CONTAINS = 2,
-  STR_CMP_EXACT = 3,
-  STR_CMP__COUNT
+  PLCS_LIST_STRING_COMPARATORS(ENUM_COMPARATOR_VAL) PLCS_STR_CMP__COUNT
 } plcs_string_comparator;
+#undef ENUM_COMPARATOR_VAL
 
 /**
  * @brief comparison operators for numeric (and unsigned numeric) evaluators
  */
+#define PLCS_LIST_NUMERIC_COMPARATOR(X)                                                                                \
+  X(EQ, 0)                                                                                                             \
+  X(GT, 1)                                                                                                             \
+  X(GTE, 2)                                                                                                            \
+  X(LT, 3)                                                                                                             \
+  X(LTE, 4)
+
+#define ENUM_NUMERIC_VAL(VAL, IX) PLCS_NUM_CMP_##VAL = IX,
 typedef enum plcs_numeric_comparator {
-  NUM_CMP_EQ = 0,
-  NUM_CMP_GT = 1,
-  NUM_CMP_GTE = 2,
-  NUM_CMP_LT = 3,
-  NUM_CMP_LTE = 4,
-  NUM_CMP__COUNT
+  PLCS_LIST_NUMERIC_COMPARATOR(ENUM_NUMERIC_VAL) PLCS_NUM_CMP__COUNT
 } plcs_numeric_comparator;
+#undef ENUM_NUMERIC_VAL
 
 /**
  * @brief string evaluators
  * These represent the supported string evaluators by the policy engine.
  */
+#define PLCS_LIST_STRING_EVALUATORS(X)                                                                                 \
+  X(COMPONENT, 0)                                                                                                      \
+  X(PROCESS_EXE, 1)                                                                                                    \
+  X(PROCESS_EXE_FULL_PATH, 2)                                                                                          \
+  X(PROCESS_BASEDIR_PATH, 3)                                                                                           \
+  X(PROCESS_ARGV, 4)                                                                                                   \
+  X(PROCESS_CWD, 5)                                                                                                    \
+  X(RUNTIME_LANGUAGE, 6)                                                                                               \
+  X(RUNTIME_ENTRY_POINT_FILE, 7)                                                                                       \
+  X(RUNTIME_ENTRY_POINT_JAR, 8)                                                                                        \
+  X(RUNTIME_ENTRY_POINT_CLASS, 9)                                                                                      \
+  X(RUNTIME_ENTRY_POINT_PACKAGE, 10)                                                                                   \
+  X(RUNTIME_ENTRY_POINT_MODULE, 11)                                                                                    \
+  X(RUNTIME_ENTRY_POINT_SOURCE, 12)                                                                                    \
+  X(RUNTIME_DOPTION, 13)                                                                                               \
+  X(RUNTIME_VERSION, 14)                                                                                               \
+  X(LIBC_FLAVOR, 15)                                                                                                   \
+  X(LIBC_VERSION, 16)                                                                                                  \
+  X(MACHINE_ARCHITECTURE, 17)                                                                                          \
+  X(HOST_NAME, 18)                                                                                                     \
+  X(HOST_IP, 19)                                                                                                       \
+  X(OS, 20)                                                                                                            \
+  X(OS_DISTRO, 21)                                                                                                     \
+  X(OS_DISTRO_VERSION, 22)                                                                                             \
+  X(OS_DISTRO_CODENAME, 23)                                                                                            \
+  X(OS_KERNEL_VERSION, 24)                                                                                             \
+  X(OS_KERNEL_NAME, 25)                                                                                                \
+  X(OS_USER, 26)                                                                                                       \
+  X(OS_USER_GROUP, 27)                                                                                                 \
+  X(CONTAINER_IMAGE, 28)                                                                                               \
+  X(CONTAINER_ID, 29)                                                                                                  \
+  X(ALWAYS_TRUE, 30)                                                                                                   \
+  X(ALWAYS_FALSE, 31)                                                                                                  \
+  X(ALWAYS_ABSTAIN, 32)
+
+#define ENUM_STR_CMP_EVAL(ID, IX) PLCS_STR_EVAL_##ID = IX,
 typedef enum plcs_string_evaluators {
-  STR_EVAL_COMPONENT = 0,
-  STR_EVAL_PROCESS_EXE = 1,
-  STR_EVAL_PROCESS_EXE_FULL_PATH = 2,
-  STR_EVAL_PROCESS_BASEDIR_PATH = 3,
-  STR_EVAL_PROCESS_ARGV = 4,
-  STR_EVAL_PROCESS_CWD = 5,
-  STR_EVAL_RUNTIME_LANGUAGE = 6,
-  STR_EVAL_RUNTIME_ENTRY_POINT_FILE = 7,
-  STR_EVAL_RUNTIME_ENTRY_POINT_JAR = 8,
-  STR_EVAL_RUNTIME_ENTRY_POINT_CLASS = 9,
-  STR_EVAL_RUNTIME_ENTRY_POINT_PACKAGE = 10,
-  STR_EVAL_RUNTIME_ENTRY_POINT_MODULE = 11,
-  STR_EVAL_RUNTIME_ENTRY_POINT_SOURCE = 12,
-  STR_EVAL_RUNTIME_DOPTION = 13,
-  STR_EVAL_RUNTIME_VERSION = 14,
-  STR_EVAL_LIBC_FLAVOR = 15,
-  STR_EVAL_LIBC_VERSION = 16,
-  STR_EVAL_MACHINE_ARCHITECTURE = 17,
-  STR_EVAL_HOST_NAME = 18,
-  STR_EVAL_HOST_IP = 19,
-  STR_EVAL_OS = 20,
-  STR_EVAL_OS_DISTRO = 21,
-  STR_EVAL_OS_DISTRO_VERSION = 22,
-  STR_EVAL_OS_DISTRO_CODENAME = 23,
-  STR_EVAL_OS_KERNEL_VERSION = 24,
-  STR_EVAL_OS_KERNEL_NAME = 25,
-  STR_EVAL_OS_USER = 26,
-  STR_EVAL_OS_USER_GROUP = 27,
-  STR_EVAL_CONTAINER_IMAGE = 28,
-  STR_EVAL_CONTAINER_ID = 29,
-  STR_EVAL_ALWAYS_TRUE = 30,
-  STR_EVAL_ALWAYS_FALSE = 31,
-  STR_EVAL_ALWAYS_ABSTAIN = 32,
-  STR_EVAL__COUNT
+  PLCS_LIST_STRING_EVALUATORS(ENUM_STR_CMP_EVAL) PLCS_STR_EVAL__COUNT
 } plcs_string_evaluators;
+#undef ENUM_STR_CMP_EVAL
 
 /**
  * @brief numeric evaluators
  * These represent the supported numeric evaluators by the policy engine.
  */
+#define PLCS_LIST_NUMERIC_EVALUATORS(X)                                                                                \
+  X(JAVA_HEAP, 0)                                                                                                      \
+  X(RUNTIME_VERSION_MAJOR, 1)                                                                                          \
+  X(RUNTIME_VERSION_MINOR, 2)                                                                                          \
+  X(RUNTIME_VERSION_PATCH, 3)                                                                                          \
+  X(OS_DISTRO_VERSION_MAJOR, 4)                                                                                        \
+  X(OS_DISTRO_VERSION_MINOR, 5)                                                                                        \
+  X(OS_DISTRO_VERSION_PATCH, 6)                                                                                        \
+  X(OS_KERNEL_VERSION_MAJOR, 7)                                                                                        \
+  X(OS_KERNEL_VERSION_MINOR, 8)                                                                                        \
+  X(OS_KERNEL_VERSION_PATCH, 9)                                                                                        \
+  X(LIBC_VERSION_MAJOR, 10)                                                                                            \
+  X(LIBC_VERSION_MINOR, 11)                                                                                            \
+  X(LIBC_VERSION_PATCH, 12)
+
+#define ENUM_STR_EVAL(ID, IX) PLCS_NUM_EVAL_##ID = IX,
 typedef enum plcs_numeric_evaluators {
-  NUM_EVAL_JAVA_HEAP = 0,
-  NUM_EVAL_RUNTIME_VERSION_MAJOR = 1,
-  NUM_EVAL_RUNTIME_VERSION_MINOR = 2,
-  NUM_EVAL_RUNTIME_VERSION_PATCH = 3,
-  NUM_EVAL_OS_DISTRO_VERSION_MAJOR = 4,
-  NUM_EVAL_OS_DISTRO_VERSION_MINOR = 5,
-  NUM_EVAL_OS_DISTRO_VERSION_PATCH = 6,
-  NUM_EVAL_OS_KERNEL_VERSION_MAJOR = 7,
-  NUM_EVAL_OS_KERNEL_VERSION_MINOR = 8,
-  NUM_EVAL_OS_KERNEL_VERSION_PATCH = 9,
-  NUM_EVAL_LIBC_VERSION_MAJOR = 10,
-  NUM_EVAL_LIBC_VERSION_MINOR = 11,
-  NUM_EVAL_LIBC_VERSION_PATCH = 12,
-  NUM_EVAL__COUNT
+  PLCS_LIST_NUMERIC_EVALUATORS(ENUM_STR_EVAL) PLCS_NUM_EVAL__COUNT
 } plcs_numeric_evaluators;
+#undef ENUM_STR_EVAL
 
 /**
  * @brief A signature for string evaluator functions.

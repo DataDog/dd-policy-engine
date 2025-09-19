@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEFAULT_ALLOW_INJECTION EVAL_RESULT_TRUE
+#define DEFAULT_ALLOW_INJECTION PLCS_EVAL_RESULT_TRUE
 
 plcs_evaluation_result allow_injection = DEFAULT_ALLOW_INJECTION;  // Default to allowing injection
 
@@ -46,20 +46,20 @@ plcs_errors ACTION_INJECT_DENY(
   }
 
   switch (res) {
-    case EVAL_RESULT_TRUE:
-      set_allow_injection(EVAL_RESULT_FALSE);
+    case PLCS_EVAL_RESULT_TRUE:
+      set_allow_injection(PLCS_EVAL_RESULT_FALSE);
       break;
-    case EVAL_RESULT_FALSE:
+    case PLCS_EVAL_RESULT_FALSE:
       // do nothing, it means we didn't really match
       break;
-    case EVAL_RESULT_ABSTAIN:
+    case PLCS_EVAL_RESULT_ABSTAIN:
       // do nothing!
       break;
 
-    case EVAL_RESULT__COUNT:
+    case PLCS_EVAL_RESULT__COUNT:
       break;
   }
-  return DD_ESUCCESS;
+  return PLCS_ESUCCESS;
 }
 
 plcs_errors ACTION_INJECT_ALLOW(
@@ -79,22 +79,22 @@ plcs_errors ACTION_INJECT_ALLOW(
   }
 
   switch (res) {
-    case EVAL_RESULT_TRUE:
-      set_allow_injection(EVAL_RESULT_TRUE);
+    case PLCS_EVAL_RESULT_TRUE:
+      set_allow_injection(PLCS_EVAL_RESULT_TRUE);
       break;
-    case EVAL_RESULT_FALSE:
+    case PLCS_EVAL_RESULT_FALSE:
       // do nothing, it means we didn't really match
       break;
-    case EVAL_RESULT_ABSTAIN:
+    case PLCS_EVAL_RESULT_ABSTAIN:
       // do whatever the default says
       set_allow_injection(DEFAULT_ALLOW_INJECTION);
       break;
 
-    case EVAL_RESULT__COUNT:
+    case PLCS_EVAL_RESULT__COUNT:
       break;
   }
 
-  return DD_ESUCCESS;
+  return PLCS_ESUCCESS;
 }
 
 // Demo evaluator for runtime language detection
@@ -117,22 +117,22 @@ plcs_evaluation_result EVALUATOR_RUNTIME_LANGUAGE(
 void init() {
   // Initialize policy evaluation context
   int res = plcs_eval_ctx_init();
-  if (res != DD_ESUCCESS) {
+  if (res != PLCS_ESUCCESS) {
     plcs_eval_ctx_reset();
   }
   set_allow_injection(DEFAULT_ALLOW_INJECTION);
   printf("Evaluation context initialized\n");
 
   // Register action handlers
-  plcs_eval_ctx_register_action(ACTION_INJECT_DENY, INJECT_DENY);
-  plcs_eval_ctx_register_action(ACTION_INJECT_ALLOW, INJECT_ALLOW);
+  plcs_eval_ctx_register_action(ACTION_INJECT_DENY, PLCS_ACTION_INJECT_DENY);
+  plcs_eval_ctx_register_action(ACTION_INJECT_ALLOW, PLCS_ACTION_INJECT_ALLOW);
 }
 
 plcs_errors test_java_classes(const char *classname, uint8_t *buffer, size_t buffer_size) {
   init();
   // Register evaluators and set parameters
-  REGISTER_STR_EVAL_PARAM(STR_EVAL_RUNTIME_LANGUAGE, EVALUATOR_RUNTIME_LANGUAGE, "jvm");
-  REGISTER_STR_EVAL_PARAM(STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, EVALUATOR_RUNTIME_LANGUAGE, classname);
+  REGISTER_STR_EVAL_PARAM(PLCS_STR_EVAL_RUNTIME_LANGUAGE, EVALUATOR_RUNTIME_LANGUAGE, "jvm");
+  REGISTER_STR_EVAL_PARAM(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, EVALUATOR_RUNTIME_LANGUAGE, classname);
 
   // Evaluate policy
   printf("test_java_classes ('%s')\n\tEvaluating policies...\n", classname);
@@ -142,8 +142,8 @@ plcs_errors test_java_classes(const char *classname, uint8_t *buffer, size_t buf
 plcs_errors test_python_entry(const char *entry_file, uint8_t *buffer, size_t buffer_size) {
   init();
   // Register evaluators and set parameters
-  REGISTER_STR_EVAL_PARAM(STR_EVAL_RUNTIME_LANGUAGE, EVALUATOR_RUNTIME_LANGUAGE, "python");
-  REGISTER_STR_EVAL_PARAM(STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, EVALUATOR_RUNTIME_LANGUAGE, entry_file);
+  REGISTER_STR_EVAL_PARAM(PLCS_STR_EVAL_RUNTIME_LANGUAGE, EVALUATOR_RUNTIME_LANGUAGE, "python");
+  REGISTER_STR_EVAL_PARAM(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, EVALUATOR_RUNTIME_LANGUAGE, entry_file);
 
   // Evaluate policy
   printf("test_python_entry ('%s')\n\tEvaluating policies...\n", entry_file);
@@ -153,8 +153,8 @@ plcs_errors test_python_entry(const char *entry_file, uint8_t *buffer, size_t bu
 plcs_errors test_any_bin(const char *filepath, const char *runtime, uint8_t *buffer, size_t buffer_size) {
   init();
   // Register evaluators and set parameters
-  REGISTER_STR_EVAL_PARAM(STR_EVAL_RUNTIME_LANGUAGE, EVALUATOR_RUNTIME_LANGUAGE, runtime);
-  REGISTER_STR_EVAL_PARAM(STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, EVALUATOR_RUNTIME_LANGUAGE, filepath);
+  REGISTER_STR_EVAL_PARAM(PLCS_STR_EVAL_RUNTIME_LANGUAGE, EVALUATOR_RUNTIME_LANGUAGE, runtime);
+  REGISTER_STR_EVAL_PARAM(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, EVALUATOR_RUNTIME_LANGUAGE, filepath);
 
   // Evaluate policy
   printf("test_any_bin ('%s')\n\tEvaluating policies...\n", filepath);
@@ -163,9 +163,9 @@ plcs_errors test_any_bin(const char *filepath, const char *runtime, uint8_t *buf
 
 void print_test_end() {
   printf(
-      "Allow injection: %s\n", allow_injection == EVAL_RESULT_TRUE    ? "true"
-                               : allow_injection == EVAL_RESULT_FALSE ? "false"
-                                                                      : "dont-care"
+      "Allow injection: %s\n", allow_injection == PLCS_EVAL_RESULT_TRUE    ? "true"
+                               : allow_injection == PLCS_EVAL_RESULT_FALSE ? "false"
+                                                                           : "dont-care"
   );
   printf("Evaluation completed\n");
   printf("--------------------------------------------------\n");
@@ -179,7 +179,7 @@ void tests_java_classes(uint8_t *buffer, size_t buffer_size) {
   for (size_t i = 0; test_files[i] != NULL; i++) {
     printf("Testing binary: %s\n", test_files[i]);
     plcs_errors res = test_java_classes(test_files[i], buffer, buffer_size);
-    printf("Result for '%s': %s\n", test_files[i], res == DD_ESUCCESS ? "Success" : "Failure");
+    printf("Result for '%s': %s\n", test_files[i], res == PLCS_ESUCCESS ? "Success" : "Failure");
     print_test_end();
   }
 }
@@ -190,7 +190,7 @@ void tests_python_entry(uint8_t *buffer, size_t buffer_size) {
   for (size_t i = 0; test_files[i] != NULL; i++) {
     printf("Testing binary: %s\n", test_files[i]);
     plcs_errors res = test_python_entry(test_files[i], buffer, buffer_size);
-    printf("Result for '%s': %s\n", test_files[i], res == DD_ESUCCESS ? "Success" : "Failure");
+    printf("Result for '%s': %s\n", test_files[i], res == PLCS_ESUCCESS ? "Success" : "Failure");
     print_test_end();
   }
 }
@@ -212,7 +212,7 @@ void tests_any_bin(uint8_t *buffer, size_t buffer_size) {
     plcs_errors res = test_any_bin(test_cases[i].path, test_cases[i].runtime, buffer, buffer_size);
     printf(
         "Result for '%s'/'%s': %s\n", test_cases[i].path, test_cases[i].runtime,
-        res == DD_ESUCCESS ? "Success" : "Failure"
+        res == PLCS_ESUCCESS ? "Success" : "Failure"
     );
     print_test_end();
   }
