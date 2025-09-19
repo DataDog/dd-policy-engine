@@ -4,6 +4,7 @@ on: [pull_request, workflow_dispatch]
 jobs:
   checks:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     container:
       image: datadog/docker-library:dd-policy-engine-10949a6
     env:
@@ -19,6 +20,7 @@ jobs:
   build-linux:
     needs: checks
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     container:
       image: datadog/docker-library:dd-policy-engine-10949a6
     environment:
@@ -53,6 +55,7 @@ jobs:
   build-windows:
     needs: checks
     runs-on: windows-2022
+    timeout-minutes: 10
     defaults:
       run:
         shell: powershell
@@ -89,6 +92,7 @@ jobs:
           cmake --build build -j
       - name: Run tests
         run: ctest --test-dir build --output-junit test-report.xml
+        timeout-minutes: 2
       - name: Download datadog-ci
         run: Invoke-WebRequest -Uri "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_win-x64" -OutFile "datadog-ci.exe"
       - name: Report test coverage
@@ -97,6 +101,7 @@ jobs:
   coverage:
     needs: build-linux
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     container:
       image: datadog/docker-library:dd-policy-engine-10949a6
     environment:
