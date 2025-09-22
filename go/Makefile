@@ -37,3 +37,9 @@ ifndef BIN
 endif
 	flatc --json --defaults-json --strict-json --raw-binary -o . $(SCHEMA_DIR)/policy.fbs -- $(BIN)
 	@echo "Verification JSON written to $(BIN:.bin=.json)"
+
+fmt-check:
+	go vet ./... || true
+
+fmt:
+	go fmt ./...

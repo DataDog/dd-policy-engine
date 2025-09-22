@@ -27,9 +27,9 @@
 
 #include <limits.h>
 
-#define STR_NOT_SET NULL
-#define NUM_NOT_SET LONG_MAX
-#define UNUM_NOT_SET ULONG_MAX
+#define PLCS_STR_NOT_SET NULL
+#define PLCS_NUM_NOT_SET LONG_MAX
+#define PLCS_UNUM_NOT_SET ULONG_MAX
 
 /**
  * @brief opaque struct, defined in src/eval_ctx.h

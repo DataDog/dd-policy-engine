@@ -97,16 +97,16 @@ typedef struct action_entry {
 typedef struct plcs_eval_ctx {
   /**< EVALUATORS */
   /**< (a simple map evaluator id (enum):func_ptr) */
-  string_evaluator_entry string_evaluators[STR_EVAL__COUNT];
+  string_evaluator_entry string_evaluators[PLCS_STR_EVAL__COUNT];
 
   /**< (a simple map evaluator id (enum):func_ptr) */
-  numeric_evaluator_entry numeric_evaluators[NUM_EVAL__COUNT];
+  numeric_evaluator_entry numeric_evaluators[PLCS_NUM_EVAL__COUNT];
 
   /**< (a simple map evaluator id (enum):func_ptr) */
-  unumeric_evaluator_entry unumeric_evaluators[NUM_EVAL__COUNT];
+  unumeric_evaluator_entry unumeric_evaluators[PLCS_NUM_EVAL__COUNT];
 
   /**< (a simple map action id (enum):func_ptr) */
-  action_entry actions[ACTIONS__COUNT];
+  action_entry actions[PLCS_ACTIONS__COUNT];
 
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;

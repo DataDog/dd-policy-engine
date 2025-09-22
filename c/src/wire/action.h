@@ -46,19 +46,18 @@ extern "C" {
 #endif
 
 /** Maximum number of values allowed in an action (from vendor schema). */
-#define ACTION_VALUES_MAX dd_ns(ActionMax_ACTION_VALUES_MAX)
+#define PLCS_ACTION_VALUES_MAX dd_ns(ActionMax_ACTION_VALUES_MAX)
 
 static inline dd_ns(ActionId_enum_t) dd_action_to_wire(enum plcs_actions v) {
-  static const int map[ACTIONS__COUNT] = {
-      [INJECT_DENY] = dd_ns(ActionId_INJECT_DENY), [INJECT_ALLOW] = dd_ns(ActionId_INJECT_ALLOW),
-      [ENABLE_SDK] = dd_ns(ActionId_ENABLE_SDK),   [ENABLE_PROFILER] = dd_ns(ActionId_ENABLE_PROFILER),
-      [SET_ENVAR] = dd_ns(ActionId_SET_ENVAR),     [REEXEC] = dd_ns(ActionId_REEXEC)
-  };
+#define ENUM_VAL(ID, X) [PLCS_ACTION_##ID] = dd_ns(ActionId_##ID),
+  static const int map[PLCS_ACTIONS__COUNT] = {PLCS_LIST_ACTIONS(ENUM_VAL)};
+#undef ENUM_VAL
+
   _Static_assert(
-      ACTIONS__COUNT == dd_ns(ActionId_ACTIONS_COUNT),
+      PLCS_ACTIONS__COUNT == dd_ns(ActionId_ACTIONS_COUNT),
       "update dd_action_to_wire & plcs_actions mappings when ActionId enum changes"
   );
-  return (dd_ns(ActionId_enum_t))((unsigned)v < ACTIONS__COUNT ? map[v] : -1);
+  return (dd_ns(ActionId_enum_t))((unsigned)v < PLCS_ACTIONS__COUNT ? map[v] : -1);
 }
 
 /**

@@ -6,6 +6,8 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 #include <dd/policies/evaluator_default.h>
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "policy.h"
@@ -34,7 +36,7 @@ void print_node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
       dd_ns(NumEvaluator_table_t) eval_num = evaluator.value;
       plcs_numeric_evaluators eval_num_id = dd_ns(NumEvaluator_id)(eval_num);
       printf(
-          "[num][%s][%s][%s][value: '%ld']\n", dd_wls_CmpTypeNUM_name(dd_ns(NumEvaluator_cmp)(eval_num)),
+          "[num][%s][%s][%s][value: '%" PRId64 "']\n", dd_wls_CmpTypeNUM_name(dd_ns(NumEvaluator_cmp)(eval_num)),
           dd_wls_NumericEvaluators_name(eval_num_id), dd_ns(EvaluatorNode_description)(node),
           dd_ns(NumEvaluator_value)(eval_num)
       );
@@ -44,7 +46,7 @@ void print_node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
       dd_ns(UNumEvaluator_table_t) eval_unum = evaluator.value;
       plcs_numeric_evaluators eval_unum_id = dd_ns(UNumEvaluator_id)(eval_unum);
       printf(
-          "[unum][%s][%s][%s][value: '%ld']\n", dd_wls_CmpTypeNUM_name(dd_ns(UNumEvaluator_cmp)(eval_unum)),
+          "[unum][%s][%s][%s][value: '%" PRId64 "']\n", dd_wls_CmpTypeNUM_name(dd_ns(UNumEvaluator_cmp)(eval_unum)),
           dd_wls_NumericEvaluators_name(eval_unum_id), dd_ns(EvaluatorNode_description)(node),
           dd_ns(UNumEvaluator_value)(eval_unum)
       );

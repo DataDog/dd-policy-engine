@@ -8,7 +8,7 @@ COVERAGE_DIR := $(PREFIX)/coverage
 TEST_BIN := $(TEST_DIR)/dd-policy-engine.unit-tests
 
 EXAMPLES := basic-reader hardcoded-header-reader mmap-reader hardcoded_cmdline_evaluator
-FILES_TO_FORMAT += $(shell find . -type f \( -name "*.c" -o -name "*.h" \) )
+FILES_TO_FORMAT += $(shell find . -type f \( -name "*.c" -o -name "*.h" \) ! -path "./src/schema/*" ! -path "*/utest/utest.h")
 
 SCHEMA_DIR := $(POLICIES_ROOT)/fbs-schema
 SCHEMA_OUTPUT_DIR := $(PREFIX)/src/schema
@@ -18,7 +18,7 @@ CMAKE_PRESET := clang-dev
 
 .PHONY: all clean fmt $(SCHEMA_OUTPUT_DIR) lib/libpolicies.a $(EXAMPLES) coverage
 
-all: clean go-prerequisites configure
+all: clean go-prerequisites configure $(SCHEMA_OUTPUT_DIR)
 	@cmake --build $(BUILD_DIR) -j
 
 $(SCHEMA_OUTPUT_DIR): $(SCHEMA_DIR)/*.fbs
@@ -51,11 +51,11 @@ lib/libpolicies.a: configure
 
 fmt:
 	@echo "[i] Formatting source files..."
-	@clang-format -i $(FILES_TO_FORMAT)
+	@clang-format -i $(FILES_TO_FORMAT) --verbose
 
 fmt-check:
 	@echo -e "[i] Files to format:\n$(FILES_TO_FORMAT)"
-	@clang-format --dry-run --Werror $(FILES_TO_FORMAT)
+	@clang-format --dry-run --Werror $(FILES_TO_FORMAT) --verbose
 
 debugger: configure
 	@echo "[i] Building debugger binary..."
@@ -66,7 +66,7 @@ debugger: configure
 # Build all test translation units in src/test and link with object files.
 test: test-build
 	@echo "[i] Running unit tests..."
-	@ctest --test-dir $(BUILD_DIR) -V
+	@ctest --test-dir $(BUILD_DIR) --schedule-random -V
 
 test-build: configure
 	@echo "[i] Building unit tests..."
@@ -77,9 +77,9 @@ coverage: CMAKE_PRESET = clang-coverage
 coverage: clean configure test-build
 	@echo "[i] Running tests with coverage..."
 	@mkdir $(COVERAGE_DIR)
-	@$(TEST_BIN)
+	@LLVM_PROFILE_FILE="$(COVERAGE_DIR)/test.%p.profraw" $(TEST_BIN)
 	@echo "[i] Coverage report:"
-	@lcov --quiet --capture --directory $(BUILD_DIR) --output-file $(COVERAGE_DIR)/raw.info
-	@lcov --quiet --remove $(COVERAGE_DIR)/raw.info -o $(COVERAGE_DIR)/filtered.info --ignore-errors unused '/usr/*' '/opt/*' 'src/test/*' 'build/*'
-	@genhtml --quiet --dark-mode $(COVERAGE_DIR)/filtered.info --output-directory $(COVERAGE_DIR)/report
+	@llvm-profdata merge -sparse $(COVERAGE_DIR)/*.profraw -o $(COVERAGE_DIR)/test.profdata
+	@llvm-cov export $(TEST_BIN) -format=lcov -instr-profile=$(COVERAGE_DIR)/test.profdata -ignore-filename-regex=test_.*.c -ignore-filename-regex=utest.h -ignore-filename-regex=.*_reader.h -ignore-filename-regex=.*_builder.h -ignore-filename-regex=.*_verifier.h > $(COVERAGE_DIR)/coverage.lcov
+	@genhtml --quiet --dark-mode $(COVERAGE_DIR)/coverage.lcov --output-directory $(COVERAGE_DIR)/report
 	@echo "[i] HTML Report: $(COVERAGE_DIR)/report/index.html"

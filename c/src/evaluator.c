@@ -22,7 +22,7 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node);
 
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
   if (!eval_str) {
-    return EVAL_RESULT_ABSTAIN;
+    return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
   plcs_string_evaluators eval_id = dd_ns(StrEvaluator_id)(eval_str);
@@ -35,16 +35,16 @@ plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, con
   }
 
   // parameter could potentially be NULL, so we check if there was an explicit error
-  if (plcs_eval_ctx_peek_last_error() == DD_ESUCCESS) {
+  if (plcs_eval_ctx_peek_last_error() == PLCS_ESUCCESS) {
     return eval(dd_ns(StrEvaluator_value)(eval_str), dd_ns(StrEvaluator_cmp)(eval_str), param, description, eval_id);
   }
 
-  return EVAL_RESULT_ABSTAIN;
+  return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
 plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, const char *description) {
   if (!eval_num) {
-    return EVAL_RESULT_ABSTAIN;
+    return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
   plcs_numeric_evaluators eval_id = dd_ns(NumEvaluator_id)(eval_num);
@@ -57,16 +57,16 @@ plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, co
   }
 
   // parameter could potentially be NULL, so we check if there was an explicit error
-  if (plcs_eval_ctx_peek_last_error() == DD_ESUCCESS) {
+  if (plcs_eval_ctx_peek_last_error() == PLCS_ESUCCESS) {
     return eval(dd_ns(NumEvaluator_value)(eval_num), dd_ns(NumEvaluator_cmp)(eval_num), param, description, eval_id);
   }
 
-  return EVAL_RESULT_ABSTAIN;
+  return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
 plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum, const char *description) {
   if (!eval_unum) {
-    return EVAL_RESULT_ABSTAIN;
+    return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
   plcs_numeric_evaluators eval_id = dd_ns(UNumEvaluator_id)(eval_unum);
@@ -79,17 +79,17 @@ plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum,
   }
 
   // parameter could potentially be NULL, so we check if there was an explicit error
-  if (plcs_eval_ctx_peek_last_error() == DD_ESUCCESS) {
+  if (plcs_eval_ctx_peek_last_error() == PLCS_ESUCCESS) {
     return eval(
         dd_ns(UNumEvaluator_value)(eval_unum), dd_ns(UNumEvaluator_cmp)(eval_unum), param, description, eval_id
     );
   }
 
-  return EVAL_RESULT_ABSTAIN;
+  return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
 plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
-  plcs_evaluation_result result = EVAL_RESULT_ABSTAIN;
+  plcs_evaluation_result result = PLCS_EVAL_RESULT_ABSTAIN;
   if (!node) {
     return result;  // log error?
   }
@@ -107,42 +107,42 @@ plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
       return evaluate_unumeric(evaluator.value, dd_ns(EvaluatorNode_description)(node));
   }
 
-  plcs_eval_ctx_set_error(DD_EUNKNOWN_EVAL_IX);
+  plcs_eval_ctx_set_error(PLCS_EUNKNOWN_EVAL_IX);
   return result;
 }
 
 plcs_evaluation_result DoAnd(plcs_evaluation_result a, plcs_evaluation_result b) {
   // 0 & {0, 1, x} -> 0
-  if (a == EVAL_RESULT_FALSE || b == EVAL_RESULT_FALSE) {
-    return EVAL_RESULT_FALSE;
+  if (a == PLCS_EVAL_RESULT_FALSE || b == PLCS_EVAL_RESULT_FALSE) {
+    return PLCS_EVAL_RESULT_FALSE;
   }
 
   // {1} & {1} -> a & b
-  if (a != EVAL_RESULT_ABSTAIN && b != EVAL_RESULT_ABSTAIN) {
-    return EVAL_RESULT_TRUE;
+  if (a != PLCS_EVAL_RESULT_ABSTAIN && b != PLCS_EVAL_RESULT_ABSTAIN) {
+    return PLCS_EVAL_RESULT_TRUE;
   }
 
   // {1, x} & {x} -> x
-  return EVAL_RESULT_ABSTAIN;
+  return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
 plcs_evaluation_result DoOr(plcs_evaluation_result a, plcs_evaluation_result b) {
   // {1} | {0, 1, x} -> 1
-  if (a == EVAL_RESULT_TRUE || b == EVAL_RESULT_TRUE) {
-    return EVAL_RESULT_TRUE;
+  if (a == PLCS_EVAL_RESULT_TRUE || b == PLCS_EVAL_RESULT_TRUE) {
+    return PLCS_EVAL_RESULT_TRUE;
   }
 
   // {0, 1} | {0, 1} -> a | b
-  if (a != EVAL_RESULT_ABSTAIN && b != EVAL_RESULT_ABSTAIN) {
-    return EVAL_RESULT_FALSE;
+  if (a != PLCS_EVAL_RESULT_ABSTAIN && b != PLCS_EVAL_RESULT_ABSTAIN) {
+    return PLCS_EVAL_RESULT_FALSE;
   }
 
   // {0, x} | {x} -> x
-  return EVAL_RESULT_ABSTAIN;
+  return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
 plcs_evaluation_result DoNot(plcs_evaluation_result res) {
-  return res == EVAL_RESULT_ABSTAIN ? EVAL_RESULT_ABSTAIN : !res;
+  return res == PLCS_EVAL_RESULT_ABSTAIN ? PLCS_EVAL_RESULT_ABSTAIN : !res;
 }
 
 plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_result a, plcs_evaluation_result b) {
@@ -161,14 +161,14 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
 
     default:
       // error unknown result
-      return EVAL_RESULT_ABSTAIN;
+      return PLCS_EVAL_RESULT_ABSTAIN;
       break;
   }
 }
 
 plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node) {
   if (!node) {
-    return EVAL_RESULT_ABSTAIN;
+    return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
   dd_ns(NodeTypeWrapper_vec_t) children = dd_ns(CompositeNode_children)(node);
@@ -178,12 +178,16 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node) {
   plcs_evaluation_result res;
 
   switch (oper) {
+    case dd_ns(BoolOperation_BOOL_UNKNOWN):
+      res = PLCS_EVAL_RESULT_ABSTAIN;
+      break;
+
     case dd_ns(BoolOperation_BOOL_OR):
-      res = EVAL_RESULT_FALSE;
+      res = PLCS_EVAL_RESULT_FALSE;
       break;
 
     case dd_ns(BoolOperation_BOOL_AND):
-      res = EVAL_RESULT_TRUE;
+      res = PLCS_EVAL_RESULT_TRUE;
       break;
 
     case dd_ns(BoolOperation_BOOL_NOT):
@@ -191,7 +195,7 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node) {
       // otherwise this is a non valid boolean operation
       if (children_len != 1) {
         // log error
-        return EVAL_RESULT_ABSTAIN;
+        return PLCS_EVAL_RESULT_ABSTAIN;
       }
       return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0)));
       break;
@@ -202,12 +206,12 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node) {
     res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix)));
 
     // short circuit
-    if (oper == dd_ns(BoolOperation_BOOL_OR) && res == EVAL_RESULT_TRUE) {
+    if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
       return res;
     }
 
     // short circuit
-    if (oper == dd_ns(BoolOperation_BOOL_AND) && res == EVAL_RESULT_FALSE) {
+    if (oper == dd_ns(BoolOperation_BOOL_AND) && res == PLCS_EVAL_RESULT_FALSE) {
       return res;
     }
   }
@@ -233,11 +237,11 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node) {
   }
 
   // log error
-  return EVAL_RESULT_ABSTAIN;
+  return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
 static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns(Action_vec_t) actions_vec) {
-  plcs_errors res = DD_ESUCCESS;
+  plcs_errors res = PLCS_ESUCCESS;
 
   // iterate
   size_t len = dd_ns(Action_vec_len)(actions_vec);
@@ -248,7 +252,7 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
       continue;
     }
     size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
-    char *values[ACTION_VALUES_MAX];
+    char *values[PLCS_ACTION_VALUES_MAX];
     for (size_t v_ix = 0; v_ix < values_len; ++v_ix) {
       values[v_ix] = (char *)flatbuffers_string_vec_at(dd_ns(Action_values(action)), v_ix);
     }
@@ -257,7 +261,7 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
       res = action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
       plcs_eval_ctx_set_action_error(action_id, res);
     } else {
-      res = DD_EACTIONS_EVAL;
+      res = PLCS_EACTIONS_EVAL;
     }
   }
 
@@ -272,7 +276,7 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
-  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules) : EVAL_RESULT_ABSTAIN;
+  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules) : PLCS_EVAL_RESULT_ABSTAIN;
 
   // perform actions given evaluation result
   return perform_actions(eval_res, actions);
@@ -282,7 +286,7 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
   dd_ns(Policy_vec_t) policies = plcs_get_policies(buffer, size);
   if (!policies) {
     // not necessarily an error, could be empty policies
-    return DD_ENO_DATA;
+    return PLCS_ENO_DATA;
   }
 
   size_t policies_count = dd_ns(Policy_vec_len)(policies);

@@ -31,12 +31,12 @@ plcs_errors ACTION_INJECT_DENY(
 ) {
   printf("Action: DENY\n");
   printf("Description: '%s' (id: %d)\n", description, action_id);
-  printf("Result: %s\n", res == EVAL_RESULT_FALSE ? "false" : res == EVAL_RESULT_TRUE ? "true" : "dont-care");
+  printf("Result: %s\n", res == PLCS_EVAL_RESULT_FALSE ? "false" : res == PLCS_EVAL_RESULT_TRUE ? "true" : "dont-care");
 
   for (size_t ix = 0; ix < value_len; ++ix) {
     printf("Value[%lu]: '%s'\n", ix, values[ix]);
   }
-  return DD_ESUCCESS;
+  return PLCS_ESUCCESS;
 }
 
 // Demo action handler for INJECT_ALLOW action
@@ -49,12 +49,12 @@ plcs_errors ACTION_INJECT_ALLOW(
 ) {
   printf("Action: ALLOW\n");
   printf("Description: '%s' (id: %d)\n", description, action_id);
-  printf("Result: %s\n", res == EVAL_RESULT_FALSE ? "false" : res == EVAL_RESULT_TRUE ? "true" : "dont-care");
+  printf("Result: %s\n", res == PLCS_EVAL_RESULT_FALSE ? "false" : res == PLCS_EVAL_RESULT_TRUE ? "true" : "dont-care");
 
   for (size_t ix = 0; ix < value_len; ++ix) {
     printf("Value[%lu]: '%s'\n", ix, values[ix]);
   }
-  return DD_ESUCCESS;
+  return PLCS_ESUCCESS;
 }
 
 // Demo evaluator for runtime language detection
@@ -72,7 +72,7 @@ plcs_evaluation_result EVALUATOR_RUNTIME_LANGUAGE(
     printf("Comparator: %d\n", cmp);
     printf("Description: '%s' (id: %d)\n", description, eval_id);
   }
-  return EVAL_RESULT_TRUE;
+  return PLCS_EVAL_RESULT_TRUE;
 }
 
 static mmaped_file mmap_files_content(const char *filepath) {
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
   printf("Successfully read %zu bytes from '%s'\n", buffer.size, argv[1]);
 
   // Initialize policy evaluation context
-  if (plcs_eval_ctx_init() != DD_ESUCCESS) {
+  if (plcs_eval_ctx_init() != PLCS_ESUCCESS) {
     fprintf(stderr, "Failed to initialize evaluation context\n");
     exit_code = EXIT_FAILURE;
     goto cleanup;
@@ -115,18 +115,18 @@ int main(int argc, char *argv[]) {
   printf("Evaluation context initialized\n");
 
   // Register evaluators and set parameters
-  REGISTER_STR_EVAL_PARAM(STR_EVAL_RUNTIME_LANGUAGE, EVALUATOR_RUNTIME_LANGUAGE, "jvm");
-  plcs_eval_ctx_set_str_eval_param(STR_EVAL_PROCESS_EXE_FULL_PATH, "/some/path/to/runtime");
+  REGISTER_STR_EVAL_PARAM(PLCS_STR_EVAL_RUNTIME_LANGUAGE, EVALUATOR_RUNTIME_LANGUAGE, "jvm");
+  plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH, "/some/path/to/runtime");
 
   // Register action handlers
-  plcs_eval_ctx_register_action(ACTION_INJECT_DENY, INJECT_DENY);
-  plcs_eval_ctx_register_action(ACTION_INJECT_ALLOW, INJECT_ALLOW);
+  plcs_eval_ctx_register_action(ACTION_INJECT_DENY, PLCS_ACTION_INJECT_DENY);
+  plcs_eval_ctx_register_action(ACTION_INJECT_ALLOW, PLCS_ACTION_INJECT_ALLOW);
 
   // Evaluate policy
   printf("Evaluating policies...\n");
   plcs_errors res = plcs_evaluate_buffer(buffer.data, buffer.size);
 
-  if (res != DD_ESUCCESS) {
+  if (res != PLCS_ESUCCESS) {
     fprintf(stderr, "Failed to evaluate policy buffer\n");
     return EXIT_FAILURE;
   }

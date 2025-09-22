@@ -16,15 +16,18 @@
  * representation.
  *
  */
-typedef enum plcs_actions {
-  INJECT_DENY = 0,
-  INJECT_ALLOW = 1,
-  ENABLE_SDK = 2,
-  ENABLE_PROFILER = 3,
-  SET_ENVAR = 4,
-  REEXEC = 5,
-  ACTIONS__COUNT
-} plcs_actions;
+#define PLCS_LIST_ACTIONS(X)                                                                                           \
+  X(ACTION_UNKNOWN, 0)                                                                                                 \
+  X(INJECT_DENY, 1)                                                                                                    \
+  X(INJECT_ALLOW, 2)                                                                                                   \
+  X(ENABLE_SDK, 3)                                                                                                     \
+  X(ENABLE_PROFILER, 4)                                                                                                \
+  X(SET_ENVAR, 5)                                                                                                      \
+  X(REEXEC, 6)
+
+#define ENUM_VAL(ID, IX) PLCS_ACTION_##ID = IX,
+typedef enum plcs_actions { PLCS_LIST_ACTIONS(ENUM_VAL) PLCS_ACTIONS__COUNT } plcs_actions;
+#undef ENUM_VAL
 
 /**
  * @brief represents an action function signature

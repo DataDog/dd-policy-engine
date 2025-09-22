@@ -42,16 +42,15 @@ extern "C" {
 #endif
 
 static inline dd_ns(EvaluationResult_enum_t) dd_evalresult_to_wire(enum plcs_evaluation_result v) {
-  static const int map[EVAL_RESULT__COUNT] = {
-      [EVAL_RESULT_TRUE] = dd_ns(EvaluationResult_EVAL_RESULT_TRUE),
-      [EVAL_RESULT_FALSE] = dd_ns(EvaluationResult_EVAL_RESULT_FALSE),
-      [EVAL_RESULT_ABSTAIN] = dd_ns(EvaluationResult_EVAL_RESULT_ABSTAIN),
-  };
+#define ENUM_VAL(ID, X) [PLCS_EVAL_RESULT_##ID] = dd_ns(EvaluationResult_EVAL_RESULT_##ID),
+  static const int map[PLCS_EVAL_RESULT__COUNT] = {PLCS_LIST_RESULT(ENUM_VAL)};
+#undef ENUM_VAL
+
   _Static_assert(
-      EVAL_RESULT__COUNT == dd_ns(EvaluationResult_EVAL_RESULT_COUNT),
+      PLCS_EVAL_RESULT__COUNT == dd_ns(EvaluationResult_EVAL_RESULT_COUNT),
       "update dd_evalresult_to_wire & plcs_evaluation_result mappings when EvaluationResult enum changes"
   );
-  return (dd_ns(EvaluationResult_enum_t))((unsigned)v < EVAL_RESULT__COUNT ? map[v] : -1);
+  return (dd_ns(EvaluationResult_enum_t))((unsigned)v < PLCS_EVAL_RESULT__COUNT ? map[v] : -1);
 }
 
 #ifdef __cplusplus

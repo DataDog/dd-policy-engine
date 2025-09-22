@@ -103,7 +103,7 @@ static plcs_errors test_action_allow(
   (void)description;
   (void)action_id;
   g_allow_called++;
-  return DD_ESUCCESS;
+  return PLCS_ESUCCESS;
 }
 
 static plcs_errors
@@ -114,7 +114,7 @@ test_action_deny(plcs_evaluation_result res, char *values[], size_t value_len, c
   (void)description;
   (void)action_id;
   g_deny_called++;
-  return DD_ESUCCESS;
+  return PLCS_ESUCCESS;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -122,157 +122,157 @@ test_action_deny(plcs_evaluation_result res, char *values[], size_t value_len, c
 /* -------------------------------------------------------------------------- */
 
 UTEST(evaluator, evaluate_buffer_null_returns_no_data) {
-  /* Passing NULL buffer yields DD_ENO_DATA */
+  /* Passing NULL buffer yields PLCS_ENO_DATA */
   int rc = plcs_evaluate_buffer(NULL, 0);
-  ASSERT_EQ(rc, DD_ENO_DATA);
+  ASSERT_EQ(rc, PLCS_ENO_DATA);
 }
 
 UTEST(evaluator, enum_mappings_return_strings) {
   /* These must return non-NULL stable names derived from the FlatBuffers schema */
-  ASSERT_TRUE(plcs_string_evaluators_to_string(STR_EVAL_COMPONENT) != NULL);
-  ASSERT_TRUE(plcs_string_evaluators_to_string(STR_EVAL_RUNTIME_LANGUAGE) != NULL);
-  ASSERT_TRUE(plcs_numeric_evaluators_to_string(NUM_EVAL_JAVA_HEAP) != NULL);
-  ASSERT_TRUE(plcs_string_comparator_to_string(STR_CMP_EXACT) != NULL);
-  ASSERT_TRUE(plcs_numeric_comparator_to_string(NUM_CMP_LTE) != NULL);
-  ASSERT_TRUE(plcs_evaluation_result_to_string(EVAL_RESULT_TRUE) != NULL);
-  ASSERT_TRUE(plcs_actions_to_string(INJECT_DENY) != NULL);
-  ASSERT_TRUE(plcs_actions_to_string(SET_ENVAR) != NULL);
+  ASSERT_TRUE(plcs_string_evaluators_to_string(PLCS_STR_EVAL_COMPONENT) != NULL);
+  ASSERT_TRUE(plcs_string_evaluators_to_string(PLCS_STR_EVAL_RUNTIME_LANGUAGE) != NULL);
+  ASSERT_TRUE(plcs_numeric_evaluators_to_string(PLCS_NUM_EVAL_JAVA_HEAP) != NULL);
+  ASSERT_TRUE(plcs_string_comparator_to_string(PLCS_STR_CMP_EXACT) != NULL);
+  ASSERT_TRUE(plcs_numeric_comparator_to_string(PLCS_NUM_CMP_LTE) != NULL);
+  ASSERT_TRUE(plcs_evaluation_result_to_string(PLCS_EVAL_RESULT_TRUE) != NULL);
+  ASSERT_TRUE(plcs_actions_to_string(PLCS_ACTION_INJECT_DENY) != NULL);
+  ASSERT_TRUE(plcs_actions_to_string(PLCS_ACTION_SET_ENVAR) != NULL);
 }
 
 UTEST(evaluator, test_string_evaluator) {
   /* Test the string evaluator with a simple exact match */
   int res = string_evaluator_exact("test", "test");
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
   /* Test with a mismatch */
   res = string_evaluator_exact("test", "not_test");
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
 
   /* Test with NULL parameters */
   res = string_evaluator_exact(NULL, "test");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   res = string_evaluator_exact("test", NULL);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 
   res = string_evaluator_prefix(NULL, "test");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   res = string_evaluator_prefix("test", NULL);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 
   res = string_evaluator_suffix(NULL, "test");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   res = string_evaluator_suffix("test", NULL);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   res = string_evaluator_suffix("long_test", "test");
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
 
   res = string_evaluator_contains(NULL, "test");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   res = string_evaluator_contains("test", NULL);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   res = string_evaluator_contains("test", "long_test");
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
   res = string_evaluator_contains("", "long_test");
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 }
 
 UTEST(evaluator, out_of_bounds_eval_error_setters) {
-  plcs_eval_ctx_set_str_eval_error(STR_EVAL__COUNT, DD_EUNKNOWN_EVAL_IX);
-  int err = plcs_eval_ctx_get_str_eval_error(STR_EVAL__COUNT);
-  ASSERT_EQ(err, DD_EIX_OVERFLOW);
+  plcs_eval_ctx_set_str_eval_error(PLCS_STR_EVAL__COUNT, PLCS_EUNKNOWN_EVAL_IX);
+  int err = plcs_eval_ctx_get_str_eval_error(PLCS_STR_EVAL__COUNT);
+  ASSERT_EQ(err, PLCS_EIX_OVERFLOW);
 
-  plcs_eval_ctx_set_num_eval_error(NUM_EVAL__COUNT, DD_EUNKNOWN_EVAL_IX);
-  err = plcs_eval_ctx_get_num_eval_error(NUM_EVAL__COUNT);
-  ASSERT_EQ(err, DD_EIX_OVERFLOW);
+  plcs_eval_ctx_set_num_eval_error(PLCS_NUM_EVAL__COUNT, PLCS_EUNKNOWN_EVAL_IX);
+  err = plcs_eval_ctx_get_num_eval_error(PLCS_NUM_EVAL__COUNT);
+  ASSERT_EQ(err, PLCS_EIX_OVERFLOW);
 
-  plcs_eval_ctx_set_unum_eval_error(NUM_EVAL__COUNT, DD_EUNKNOWN_EVAL_IX);
-  err = plcs_eval_ctx_get_unum_eval_error(NUM_EVAL__COUNT);
-  ASSERT_EQ(err, DD_EIX_OVERFLOW);
+  plcs_eval_ctx_set_unum_eval_error(PLCS_NUM_EVAL__COUNT, PLCS_EUNKNOWN_EVAL_IX);
+  err = plcs_eval_ctx_get_unum_eval_error(PLCS_NUM_EVAL__COUNT);
+  ASSERT_EQ(err, PLCS_EIX_OVERFLOW);
 }
 
 UTEST(evaluator, default_string_eval_sanity) {
   /* Sanity around defaults (no buffer involved) */
   ASSERT_EQ(
-      plcs_default_string_evaluator("abc", STR_CMP_EXACT, "abc", "d", STR_EVAL_COMPONENT),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_string_evaluator("abc", PLCS_STR_CMP_EXACT, "abc", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_string_evaluator("ab", STR_CMP_PREFIX, "abc", "d", STR_EVAL_COMPONENT),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_string_evaluator("ab", PLCS_STR_CMP_PREFIX, "abc", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_string_evaluator("bc", STR_CMP_SUFFIX, "abc", "d", STR_EVAL_COMPONENT),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_string_evaluator("bc", PLCS_STR_CMP_SUFFIX, "abc", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_string_evaluator("b", STR_CMP_CONTAINS, "abc", "d", STR_EVAL_COMPONENT),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_string_evaluator("b", PLCS_STR_CMP_CONTAINS, "abc", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
 
   /* Abstain on missing data */
   ASSERT_EQ(
-      plcs_default_string_evaluator(NULL, STR_CMP_EXACT, "abc", "d", STR_EVAL_COMPONENT),
-      (plcs_evaluation_result)EVAL_RESULT_ABSTAIN
+      plcs_default_string_evaluator(NULL, PLCS_STR_CMP_EXACT, "abc", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_ABSTAIN
   );
   ASSERT_EQ(
-      plcs_default_string_evaluator("abc", STR_CMP_EXACT, NULL, "d", STR_EVAL_COMPONENT),
-      (plcs_evaluation_result)EVAL_RESULT_ABSTAIN
+      plcs_default_string_evaluator("abc", PLCS_STR_CMP_EXACT, NULL, "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_ABSTAIN
   );
 
-  ASSERT_EQ((int)evaluate_string(NULL, "d"), EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)evaluate_string(NULL, "d"), PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, default_numeric_eval_sanity) {
   ASSERT_EQ(
-      plcs_default_numeric_evaluator(5, NUM_CMP_EQ, 5, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_numeric_evaluator(5, PLCS_NUM_CMP_EQ, 5, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_numeric_evaluator(6, NUM_CMP_GT, 5, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_numeric_evaluator(6, PLCS_NUM_CMP_GT, 5, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_numeric_evaluator(5, NUM_CMP_GTE, 5, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_numeric_evaluator(5, PLCS_NUM_CMP_GTE, 5, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_numeric_evaluator(4, NUM_CMP_LT, 5, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_numeric_evaluator(4, PLCS_NUM_CMP_LT, 5, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_numeric_evaluator(5, NUM_CMP_LTE, 5, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_numeric_evaluator(5, PLCS_NUM_CMP_LTE, 5, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
 }
 
 UTEST(evaluator, default_unumeric_eval_sanity) {
   ASSERT_EQ(
-      plcs_default_unumeric_evaluator(5ul, NUM_CMP_EQ, 5ul, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_unumeric_evaluator(5ul, PLCS_NUM_CMP_EQ, 5ul, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_unumeric_evaluator(6ul, NUM_CMP_GT, 5ul, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_unumeric_evaluator(6ul, PLCS_NUM_CMP_GT, 5ul, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_unumeric_evaluator(5ul, NUM_CMP_GTE, 5ul, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_unumeric_evaluator(5ul, PLCS_NUM_CMP_GTE, 5ul, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_unumeric_evaluator(4ul, NUM_CMP_LT, 5ul, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_unumeric_evaluator(4ul, PLCS_NUM_CMP_LT, 5ul, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
   ASSERT_EQ(
-      plcs_default_unumeric_evaluator(5ul, NUM_CMP_LTE, 5ul, "d", NUM_EVAL_JAVA_HEAP),
-      (plcs_evaluation_result)EVAL_RESULT_TRUE
+      plcs_default_unumeric_evaluator(5ul, PLCS_NUM_CMP_LTE, 5ul, "d", PLCS_NUM_EVAL_JAVA_HEAP),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
 }
 
 UTEST(evaluator, test_conversion_evalresult_to_wire) {
-  ASSERT_EQ(dd_evalresult_to_wire(EVAL_RESULT_TRUE), dd_ns(EvaluationResult_EVAL_RESULT_TRUE));
-  ASSERT_EQ(dd_evalresult_to_wire(EVAL_RESULT_FALSE), dd_ns(EvaluationResult_EVAL_RESULT_FALSE));
-  ASSERT_EQ(dd_evalresult_to_wire(EVAL_RESULT_ABSTAIN), dd_ns(EvaluationResult_EVAL_RESULT_ABSTAIN));
-  ASSERT_EQ(dd_evalresult_to_wire(EVAL_RESULT__COUNT), -1);
+  ASSERT_EQ(dd_evalresult_to_wire(PLCS_EVAL_RESULT_TRUE), dd_ns(EvaluationResult_EVAL_RESULT_TRUE));
+  ASSERT_EQ(dd_evalresult_to_wire(PLCS_EVAL_RESULT_FALSE), dd_ns(EvaluationResult_EVAL_RESULT_FALSE));
+  ASSERT_EQ(dd_evalresult_to_wire(PLCS_EVAL_RESULT_ABSTAIN), dd_ns(EvaluationResult_EVAL_RESULT_ABSTAIN));
+  ASSERT_EQ(dd_evalresult_to_wire(PLCS_EVAL_RESULT__COUNT), -1);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -282,20 +282,20 @@ UTEST(evaluator, test_conversion_evalresult_to_wire) {
 UTEST(evaluator, test_evaluate_string_null_input) {
   /* Test with NULL evaluator */
   int res = evaluate_string(NULL, "test description");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_evaluate_string_basic_functionality) {
   /* Initialize context for numeric evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
 
   /* Set a string parameter for testing */
-  rc = plcs_eval_ctx_set_str_eval_param(STR_EVAL_HOST_IP, "1.2.3.4");
-  ASSERT_EQ(rc, DD_ESUCCESS);
+  rc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_HOST_IP, "1.2.3.4");
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
 
-  rc = plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, STR_EVAL_HOST_IP);
-  ASSERT_EQ(rc, DD_ESUCCESS);
+  rc = plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_HOST_IP);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
 
   /* Mocking a flatbuffer object */
   flatcc_builder_t b;
@@ -311,17 +311,17 @@ UTEST(evaluator, test_evaluate_string_basic_functionality) {
   dd_wls_StrEvaluator_table_t eval = dd_wls_StrEvaluator_as_root(buf);
 
   int res = evaluate_string(eval, "d");
-  flatcc_builder_aligned_free(buf);
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
   res = evaluate_string(NULL, "d");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 
   // reset all ctx:
   plcs_eval_ctx_reset();
   res = evaluate_string(eval, "d");
   // shouldn't be any value
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
+  flatcc_builder_free(buf);
   flatcc_builder_reset(&b);
 }
 
@@ -332,17 +332,17 @@ UTEST(evaluator, test_evaluate_string_basic_functionality) {
 UTEST(evaluator, test_evaluate_numeric_null_input) {
   /* Test with NULL evaluator */
   int res = evaluate_numeric(NULL, "test description");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
   /* Initialize context for numeric evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
 
   /* Set a numeric parameter for testing */
-  rc = plcs_eval_ctx_set_num_eval_param(NUM_EVAL_JAVA_HEAP, 100);
-  ASSERT_EQ(rc, DD_ESUCCESS);
+  rc = plcs_eval_ctx_set_num_eval_param(PLCS_NUM_EVAL_JAVA_HEAP, 100);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
   /* Mocking a flatbuffer object */
   flatcc_builder_t b;
   size_t sz;
@@ -352,15 +352,15 @@ UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
   ASSERT_TRUE(dd_wls_NumEvaluator_verify_as_root(buf, sz) == 0);
   dd_wls_NumEvaluator_table_t eval = dd_wls_NumEvaluator_as_root(buf);
   int res = evaluate_numeric(eval, "d");
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
   res = evaluate_numeric(NULL, "d");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   // force reset all ctx (init will return because of it's implementation)
   plcs_eval_ctx_reset();
   res = evaluate_numeric(eval, "d");
   // shouldn't be any value
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
-  flatcc_builder_aligned_free(buf);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  flatcc_builder_free(buf);
   flatcc_builder_reset(&b);
 }
 
@@ -371,7 +371,7 @@ UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
 UTEST(evaluator, test_evaluate_unumeric_null_input) {
   /* Test with NULL evaluator */
   int res = evaluate_unumeric(NULL, "test description");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
@@ -380,11 +380,11 @@ UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
 
   /* Initialize context for unumeric evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
 
   /* Set an unumeric parameter for testing */
-  rc = plcs_eval_ctx_set_unum_eval_param(NUM_EVAL_JAVA_HEAP, 100);
-  ASSERT_EQ(rc, DD_ESUCCESS);
+  rc = plcs_eval_ctx_set_unum_eval_param(PLCS_NUM_EVAL_JAVA_HEAP, 100);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
 
   /* Mocking a flatbuffer object */
   flatcc_builder_t b;
@@ -398,11 +398,11 @@ UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
   dd_wls_UNumEvaluator_table_t eval = dd_wls_UNumEvaluator_as_root(buf);
 
   int res = evaluate_unumeric(eval, "d");
-  flatcc_builder_aligned_free(buf);
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  flatcc_builder_free(buf);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
   res = evaluate_unumeric(NULL, "d");
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   flatcc_builder_reset(&b);
 }
 
@@ -413,7 +413,7 @@ UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
 UTEST(evaluator, test_node_evaluator_null_input) {
   /* Test with NULL node */
   int res = node_evaluator(NULL);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_node_evaluator_basic_functionality) {
@@ -424,16 +424,16 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   printf("hi?!\n");
   /* Initialize context for evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
 
   flatcc_builder_t b;
   size_t sz;
   flatcc_builder_init(&b);
   rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
 
-  rc = plcs_eval_ctx_set_str_eval_param(STR_EVAL_RUNTIME_ENTRY_POINT_JAR, "test.jar");
-  ASSERT_EQ(rc, DD_ESUCCESS);
+  rc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_JAR, "test.jar");
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
   // str eval
   dd_wls_StrEvaluator_ref_t str = dd_wls_StrEvaluator_create(
       &b, dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_JAR, dd_wls_CmpTypeSTR_CMP_EXACT,
@@ -444,16 +444,16 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   dd_wls_EvaluatorNode_table_t eval = dd_wls_EvaluatorNode_as_root(buf);
 
   rc = node_evaluator(eval);
-  flatcc_builder_aligned_free(buf);
+  flatcc_builder_free(buf);
   flatcc_builder_clear(&b);
-  ASSERT_EQ(rc, EVAL_RESULT_TRUE);
+  ASSERT_EQ(rc, PLCS_EVAL_RESULT_TRUE);
 
   /* Set a numeric parameter for testing */
   flatcc_builder_init(&b);
   rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
-  rc = plcs_eval_ctx_set_num_eval_param(NUM_EVAL_JAVA_HEAP, 100);
-  ASSERT_EQ(rc, DD_ESUCCESS);
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+  rc = plcs_eval_ctx_set_num_eval_param(PLCS_NUM_EVAL_JAVA_HEAP, 100);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
 
   // num eval
   dd_wls_NumEvaluator_ref_t num =
@@ -465,15 +465,15 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   eval = dd_wls_EvaluatorNode_as_root(buf);
 
   rc = node_evaluator(eval);
-  flatcc_builder_aligned_free(buf);
+  flatcc_builder_free(buf);
   flatcc_builder_clear(&b);
-  ASSERT_EQ(rc, EVAL_RESULT_TRUE);
+  ASSERT_EQ(rc, PLCS_EVAL_RESULT_TRUE);
 
   /* Set a numeric parameter for testing */
   flatcc_builder_init(&b);
   rc = plcs_eval_ctx_init();
-  rc = plcs_eval_ctx_set_unum_eval_param(NUM_EVAL_RUNTIME_VERSION_MINOR, 4);
-  ASSERT_EQ(rc, DD_ESUCCESS);
+  rc = plcs_eval_ctx_set_unum_eval_param(PLCS_NUM_EVAL_RUNTIME_VERSION_MINOR, 4);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
   // unum eval
   dd_wls_UNumEvaluator_ref_t unum =
       dd_wls_UNumEvaluator_create(&b, dd_wls_NumericEvaluators_RUNTIME_VERSION_MINOR, dd_wls_CmpTypeNUM_CMP_EQ, 4);
@@ -484,8 +484,8 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   eval = dd_wls_EvaluatorNode_as_root(buf);
 
   rc = node_evaluator(eval);
-  flatcc_builder_aligned_free(buf);
-  ASSERT_EQ(rc, EVAL_RESULT_TRUE);
+  flatcc_builder_free(buf);
+  ASSERT_EQ(rc, PLCS_EVAL_RESULT_TRUE);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -496,21 +496,21 @@ UTEST(evaluator, test_DoAnd_basic_operations) {
   /* Test AND logic with various combinations */
 
   /* TRUE & anything = anything */
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_TRUE, EVAL_RESULT_TRUE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_TRUE, EVAL_RESULT_FALSE), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_TRUE, EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_FALSE, EVAL_RESULT_TRUE), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_ABSTAIN, EVAL_RESULT_TRUE), EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_ABSTAIN), PLCS_EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_ABSTAIN);
 
   /* FALSE & FALSE = FALSE */
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_FALSE, EVAL_RESULT_FALSE), EVAL_RESULT_FALSE);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_FALSE);
 
   /* FALSE & ABSTAIN = FALSE */
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_FALSE, EVAL_RESULT_ABSTAIN), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_ABSTAIN, EVAL_RESULT_FALSE), EVAL_RESULT_FALSE);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_ABSTAIN), PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_FALSE);
 
   /* ABSTAIN & ABSTAIN = ABSTAIN */
-  ASSERT_EQ((int)DoAnd(EVAL_RESULT_ABSTAIN, EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)DoAnd(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_ABSTAIN), PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -521,21 +521,21 @@ UTEST(evaluator, test_DoOr_basic_operations) {
   /* Test OR logic with various combinations */
 
   /* TRUE | anything = TRUE */
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_TRUE, EVAL_RESULT_TRUE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_TRUE, EVAL_RESULT_FALSE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_TRUE, EVAL_RESULT_ABSTAIN), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_FALSE, EVAL_RESULT_TRUE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_ABSTAIN, EVAL_RESULT_TRUE), EVAL_RESULT_TRUE);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_ABSTAIN), PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_TRUE);
 
   /* FALSE | FALSE = FALSE */
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_FALSE, EVAL_RESULT_FALSE), EVAL_RESULT_FALSE);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_FALSE);
 
   /* FALSE | ABSTAIN = ABSTAIN */
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_FALSE, EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_ABSTAIN, EVAL_RESULT_FALSE), EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_ABSTAIN), PLCS_EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_ABSTAIN);
 
   /* ABSTAIN | ABSTAIN = ABSTAIN */
-  ASSERT_EQ((int)DoOr(EVAL_RESULT_ABSTAIN, EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)DoOr(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_ABSTAIN), PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -546,13 +546,13 @@ UTEST(evaluator, test_DoNot_basic_operations) {
   /* Test NOT logic with various inputs */
 
   /* NOT TRUE = FALSE */
-  ASSERT_EQ((int)DoNot(EVAL_RESULT_TRUE), EVAL_RESULT_FALSE);
+  ASSERT_EQ((int)DoNot(PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_FALSE);
 
   /* NOT FALSE = TRUE */
-  ASSERT_EQ((int)DoNot(EVAL_RESULT_FALSE), EVAL_RESULT_TRUE);
+  ASSERT_EQ((int)DoNot(PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_TRUE);
 
   /* NOT ABSTAIN = ABSTAIN (preserved) */
-  ASSERT_EQ((int)DoNot(EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)DoNot(PLCS_EVAL_RESULT_ABSTAIN), PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -563,35 +563,35 @@ UTEST(evaluator, test_DoOper_basic_operations) {
   /* Test DoOper with various boolean operations */
 
   /* Test AND operation */
-  int res = DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_TRUE, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  int res = DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
-  res = DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_TRUE, EVAL_RESULT_FALSE);
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
+  res = DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
 
-  res = DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_FALSE, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
+  res = DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
 
   /* Test OR operation */
-  res = DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_TRUE, EVAL_RESULT_FALSE);
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  res = DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
-  res = DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_FALSE, EVAL_RESULT_FALSE);
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
+  res = DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
 
   /* Test NOT operation (second parameter ignored for NOT) */
-  res = DoOper(dd_ns(BoolOperation_BOOL_NOT), EVAL_RESULT_TRUE, EVAL_RESULT_FALSE);
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
+  res = DoOper(dd_ns(BoolOperation_BOOL_NOT), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
 
-  res = DoOper(dd_ns(BoolOperation_BOOL_NOT), EVAL_RESULT_FALSE, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  res = DoOper(dd_ns(BoolOperation_BOOL_NOT), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
-  res = DoOper(dd_ns(BoolOperation_BOOL_NOT), EVAL_RESULT_ABSTAIN, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  res = DoOper(dd_ns(BoolOperation_BOOL_NOT), PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 
   /* Test unknown operation */
-  res = DoOper(99, EVAL_RESULT_TRUE, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  res = DoOper(99, PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -601,7 +601,7 @@ UTEST(evaluator, test_DoOper_basic_operations) {
 UTEST(evaluator, test_composite_evaluator_null_input) {
   /* Test with NULL node */
   int res = composite_evaluator(NULL);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_composite_evaluator_basic_functionality) {
@@ -610,7 +610,7 @@ UTEST(evaluator, test_composite_evaluator_basic_functionality) {
 
   /* Initialize context for evaluation */
   int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
 
   /* Note: Full testing would require creating mock FlatCC objects */
   /* This test demonstrates the test structure for when headers are available */
@@ -630,26 +630,70 @@ UTEST(evaluator_integration, test_boolean_operation_truth_table) {
   /* Test comprehensive truth table for boolean operations */
 
   /* AND truth table */
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_TRUE, EVAL_RESULT_TRUE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_TRUE, EVAL_RESULT_FALSE), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_TRUE, EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_FALSE, EVAL_RESULT_TRUE), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_FALSE, EVAL_RESULT_FALSE), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_FALSE, EVAL_RESULT_ABSTAIN), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_ABSTAIN, EVAL_RESULT_TRUE), EVAL_RESULT_ABSTAIN);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_ABSTAIN, EVAL_RESULT_FALSE), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_ABSTAIN, EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_FALSE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_ABSTAIN),
+      PLCS_EVAL_RESULT_ABSTAIN
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_FALSE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_FALSE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_ABSTAIN),
+      PLCS_EVAL_RESULT_FALSE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_TRUE),
+      PLCS_EVAL_RESULT_ABSTAIN
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_FALSE),
+      PLCS_EVAL_RESULT_FALSE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_ABSTAIN),
+      PLCS_EVAL_RESULT_ABSTAIN
+  );
 
   /* OR truth table */
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_TRUE, EVAL_RESULT_TRUE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_TRUE, EVAL_RESULT_FALSE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_TRUE, EVAL_RESULT_ABSTAIN), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_FALSE, EVAL_RESULT_TRUE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_FALSE, EVAL_RESULT_FALSE), EVAL_RESULT_FALSE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_FALSE, EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_ABSTAIN, EVAL_RESULT_TRUE), EVAL_RESULT_TRUE);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_ABSTAIN, EVAL_RESULT_FALSE), EVAL_RESULT_ABSTAIN);
-  ASSERT_EQ((int)DoOper(dd_ns(BoolOperation_BOOL_OR), EVAL_RESULT_ABSTAIN, EVAL_RESULT_ABSTAIN), EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_ABSTAIN), PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_FALSE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_ABSTAIN),
+      PLCS_EVAL_RESULT_ABSTAIN
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_FALSE),
+      PLCS_EVAL_RESULT_ABSTAIN
+  );
+  ASSERT_EQ(
+      (int)DoOper(dd_ns(BoolOperation_BOOL_OR), PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_ABSTAIN),
+      PLCS_EVAL_RESULT_ABSTAIN
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -660,42 +704,50 @@ UTEST(evaluator, test_boolean_operations_edge_cases) {
   /* Test edge cases and boundary conditions */
 
   /* Test with invalid enum values */
-  int res = DoOper(99, EVAL_RESULT_TRUE, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  int res = DoOper(99, PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 
-  res = DoOper(-1, EVAL_RESULT_FALSE, EVAL_RESULT_FALSE);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  res = DoOper(-1, PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 
   /* Test with BOOL_COUNT (should be invalid) */
-  res = DoOper(dd_ns(BoolOperation_BOOL_COUNT), EVAL_RESULT_TRUE, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_ABSTAIN);
+  res = DoOper(dd_ns(BoolOperation_BOOL_COUNT), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_boolean_operations_commutativity) {
   /* Test that AND and OR operations are commutative */
 
   /* AND commutativity */
-  ASSERT_EQ(DoAnd(EVAL_RESULT_TRUE, EVAL_RESULT_FALSE), DoAnd(EVAL_RESULT_FALSE, EVAL_RESULT_TRUE));
-  ASSERT_EQ(DoAnd(EVAL_RESULT_TRUE, EVAL_RESULT_ABSTAIN), DoAnd(EVAL_RESULT_ABSTAIN, EVAL_RESULT_TRUE));
-  ASSERT_EQ(DoAnd(EVAL_RESULT_FALSE, EVAL_RESULT_ABSTAIN), DoAnd(EVAL_RESULT_ABSTAIN, EVAL_RESULT_FALSE));
+  ASSERT_EQ(DoAnd(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE), DoAnd(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE));
+  ASSERT_EQ(
+      DoAnd(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_ABSTAIN), DoAnd(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_TRUE)
+  );
+  ASSERT_EQ(
+      DoAnd(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_ABSTAIN), DoAnd(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_FALSE)
+  );
 
   /* OR commutativity */
-  ASSERT_EQ(DoOr(EVAL_RESULT_TRUE, EVAL_RESULT_FALSE), DoOr(EVAL_RESULT_FALSE, EVAL_RESULT_TRUE));
-  ASSERT_EQ(DoOr(EVAL_RESULT_TRUE, EVAL_RESULT_ABSTAIN), DoOr(EVAL_RESULT_ABSTAIN, EVAL_RESULT_TRUE));
-  ASSERT_EQ(DoOr(EVAL_RESULT_FALSE, EVAL_RESULT_ABSTAIN), DoOr(EVAL_RESULT_ABSTAIN, EVAL_RESULT_FALSE));
+  ASSERT_EQ(DoOr(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE), DoOr(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE));
+  ASSERT_EQ(
+      DoOr(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_ABSTAIN), DoOr(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_TRUE)
+  );
+  ASSERT_EQ(
+      DoOr(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_ABSTAIN), DoOr(PLCS_EVAL_RESULT_ABSTAIN, PLCS_EVAL_RESULT_FALSE)
+  );
 }
 
 UTEST(evaluator, test_boolean_operations_associativity) {
   /* Test that AND and OR operations are associative */
 
   /* AND associativity: (a & b) & c = a & (b & c) */
-  plcs_evaluation_result left = DoAnd(DoAnd(EVAL_RESULT_TRUE, EVAL_RESULT_FALSE), EVAL_RESULT_ABSTAIN);
-  plcs_evaluation_result right = DoAnd(EVAL_RESULT_TRUE, DoAnd(EVAL_RESULT_FALSE, EVAL_RESULT_ABSTAIN));
+  plcs_evaluation_result left = DoAnd(DoAnd(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE), PLCS_EVAL_RESULT_ABSTAIN);
+  plcs_evaluation_result right = DoAnd(PLCS_EVAL_RESULT_TRUE, DoAnd(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_ABSTAIN));
   ASSERT_EQ(left, right);
 
   /* OR associativity: (a | b) | c = a | (b | c) */
-  left = DoOr(DoOr(EVAL_RESULT_FALSE, EVAL_RESULT_TRUE), EVAL_RESULT_ABSTAIN);
-  right = DoOr(EVAL_RESULT_FALSE, DoOr(EVAL_RESULT_TRUE, EVAL_RESULT_ABSTAIN));
+  left = DoOr(DoOr(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE), PLCS_EVAL_RESULT_ABSTAIN);
+  right = DoOr(PLCS_EVAL_RESULT_FALSE, DoOr(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_ABSTAIN));
   ASSERT_EQ(left, right);
 }
 
@@ -703,13 +755,13 @@ UTEST(evaluator, test_boolean_operations_distributivity) {
   /* Test De Morgan's laws and distributivity */
 
   /* De Morgan's law: NOT(a AND b) = NOT(a) OR NOT(b) */
-  plcs_evaluation_result left = DoNot(DoAnd(EVAL_RESULT_TRUE, EVAL_RESULT_FALSE));
-  plcs_evaluation_result right = DoOr(DoNot(EVAL_RESULT_TRUE), DoNot(EVAL_RESULT_FALSE));
+  plcs_evaluation_result left = DoNot(DoAnd(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE));
+  plcs_evaluation_result right = DoOr(DoNot(PLCS_EVAL_RESULT_TRUE), DoNot(PLCS_EVAL_RESULT_FALSE));
   ASSERT_EQ(left, right);
 
   /* De Morgan's law: NOT(a OR b) = NOT(a) AND NOT(b) */
-  left = DoNot(DoOr(EVAL_RESULT_TRUE, EVAL_RESULT_FALSE));
-  right = DoAnd(DoNot(EVAL_RESULT_TRUE), DoNot(EVAL_RESULT_FALSE));
+  left = DoNot(DoOr(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE));
+  right = DoAnd(DoNot(PLCS_EVAL_RESULT_TRUE), DoNot(PLCS_EVAL_RESULT_FALSE));
   ASSERT_EQ(left, right);
 }
 
@@ -718,20 +770,20 @@ UTEST(evaluator, test_extern_declarations_working) {
   /* This test calls the functions to ensure they can be linked */
 
   /* Test DoAnd with simple values */
-  int res = DoAnd(EVAL_RESULT_TRUE, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  int res = DoAnd(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
   /* Test DoOr with simple values */
-  res = DoOr(EVAL_RESULT_FALSE, EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_TRUE);
+  res = DoOr(PLCS_EVAL_RESULT_FALSE, PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
   /* Test DoNot with simple values */
-  res = DoNot(EVAL_RESULT_TRUE);
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
+  res = DoNot(PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
 
   /* Test DoOper with AND operation */
-  res = DoOper(dd_ns(BoolOperation_BOOL_AND), EVAL_RESULT_TRUE, EVAL_RESULT_FALSE);
-  ASSERT_EQ(res, EVAL_RESULT_FALSE);
+  res = DoOper(dd_ns(BoolOperation_BOOL_AND), PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
 }
 
 /*
@@ -748,25 +800,25 @@ UTEST(evaluator_integration, evaluate_generated_header_if_available) {
   /* Initialize context and register actions */
   int rc = plcs_eval_ctx_init();
   /* init; accept already-inited code path as well */
-  ASSERT_TRUE(rc == DD_ESUCCESS || rc == DD_EINITIZLIED);
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
 
   g_allow_called = 0;
   g_deny_called = 0;
 
-  int prc = plcs_eval_ctx_register_action(test_action_allow, INJECT_ALLOW);
-  ASSERT_EQ(prc, DD_ESUCCESS);
-  prc = plcs_eval_ctx_register_action(test_action_deny, INJECT_DENY);
-  ASSERT_EQ(prc, DD_ESUCCESS);
+  int prc = plcs_eval_ctx_register_action(test_action_allow, PLCS_ACTION_INJECT_ALLOW);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+  prc = plcs_eval_ctx_register_action(test_action_deny, PLCS_ACTION_INJECT_DENY);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
 
   /* Provide context parameter used by policies (runtime language) */
-  prc = plcs_eval_ctx_set_str_eval_param(STR_EVAL_RUNTIME_LANGUAGE, "jvm");
-  ASSERT_EQ(prc, DD_ESUCCESS);
+  prc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "jvm");
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
 
   /* Evaluate the embedded buffer */
   int eval_rc = plcs_evaluate_buffer(hardcoded_policies, hardcoded_policies_len);
 
   /* Non-zero would indicate action failures; we expect success. */
-  ASSERT_EQ(eval_rc, DD_ESUCCESS);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
 
   /* We expect at least one DENY action to have been invoked. */
   ASSERT_TRUE(g_deny_called >= 1);
