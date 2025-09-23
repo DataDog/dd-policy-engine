@@ -35,7 +35,7 @@ extern "C" {
 
 namespace datadog::policies {
 
-#define ENUM_VAL(ID, X) ID,
+#define ENUM_VAL(ID, X) ID = X,
 
 enum class Result : int { PLCS_LIST_RESULT(ENUM_VAL) };
 
@@ -150,6 +150,10 @@ inline std::string_view to_string(Error err) {
       return "missing action callback";
     case Error::UNKNOWN_CMP:
       return "unknown comparator";
+    case Error::ALLOCATION:
+      return "failed to allocate memory";
+    case Error::STR_PARAM_EXCEED_MAX_LENGTH:
+      return "string parameter exceeds maximum length";
   }
   std::abort();
 }
