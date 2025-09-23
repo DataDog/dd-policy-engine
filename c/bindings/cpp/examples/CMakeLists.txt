@@ -1,6 +1,6 @@
 add_executable(dd-policy-engine.cpp-reader)
 
-target_compile_features(dd-policy-engine.cpp PUBLIC cxx_std_20)
+target_compile_features(dd-policy-engine.cpp-reader PUBLIC cxx_std_17)
 
 target_sources(dd-policy-engine.cpp-reader
   PRIVATE
