@@ -58,7 +58,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c23 -fsanitize=address,leak,undefined"
+        "ADDITIONAL_C_FLAGS": "-std=c23 -fsanitize=address,undefined"
       }
     },
     {
