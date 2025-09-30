@@ -1,5 +1,5 @@
---- include/flatbuffers/base.h	2025-09-24 01:18:02.000000000 
-+++ include/flatbuffers/base.h	2025-09-25 17:17:12.000000000 
+--- a/include/flatbuffers/base.h	2025-09-24 01:18:02.000000000 
++++ b/include/flatbuffers/base.h	2025-09-25 17:17:12.000000000 
 @@ -267,13 +267,14 @@
  
  #ifndef FLATBUFFERS_LOCALE_INDEPENDENT
@@ -16,8 +16,8 @@
      #define FLATBUFFERS_LOCALE_INDEPENDENT 0
    #endif
  #endif  // !FLATBUFFERS_LOCALE_INDEPENDENT
---- src/idl_parser.cpp	2025-09-24 01:18:02.000000000 
-+++ src/idl_parser.cpp	2025-09-25 17:37:40.000000000 
+--- a/src/idl_parser.cpp	2025-09-24 01:18:02.000000000 
++++ b/src/idl_parser.cpp	2025-09-25 17:37:40.000000000 
 @@ -1993,14 +1993,19 @@
        auto enum_def_str = word.substr(0, dot);
        const auto enum_def = LookupEnum(enum_def_str);

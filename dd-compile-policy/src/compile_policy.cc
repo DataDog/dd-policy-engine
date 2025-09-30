@@ -7,10 +7,9 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <vector>
 
-#include "cxxopts.hpp"
 #include "policy_schema_bfbs.h" // Contains `schema_policy_bfbs` and `schema_policy_bfbs_len`
+#include <cxxopts.hpp>
 
 int main(int argc, char *argv[]) {
   std::string json_str;
