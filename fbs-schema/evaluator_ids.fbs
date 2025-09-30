@@ -75,6 +75,9 @@ enum StringEvaluators : byte {
     ALWAYS_FALSE,
     ALWAYS_ABSTAIN,
 
+    IIS_APPLICATION_POOL,
+    DOTNET_EXECUTABLE_DLL,
+
     /// Represents the count of String evaluators.
     /// This is used to ensure that the enum is always in sync with the number of evaluators.
     /// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.

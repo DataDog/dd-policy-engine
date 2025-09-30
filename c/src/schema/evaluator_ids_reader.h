@@ -60,7 +60,9 @@ __flatbuffers_define_integer_type(dd_wls_StringEvaluators, dd_wls_StringEvaluato
 #define dd_wls_StringEvaluators_ALWAYS_TRUE ((dd_wls_StringEvaluators_enum_t)INT8_C(31))
 #define dd_wls_StringEvaluators_ALWAYS_FALSE ((dd_wls_StringEvaluators_enum_t)INT8_C(32))
 #define dd_wls_StringEvaluators_ALWAYS_ABSTAIN ((dd_wls_StringEvaluators_enum_t)INT8_C(33))
-#define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(34))
+#define dd_wls_StringEvaluators_IIS_APPLICATION_POOL ((dd_wls_StringEvaluators_enum_t)INT8_C(34))
+#define dd_wls_StringEvaluators_DOTNET_EXECUTABLE_DLL ((dd_wls_StringEvaluators_enum_t)INT8_C(35))
+#define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(36))
 
 static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_enum_t value)
 {
@@ -99,6 +101,8 @@ static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_e
     case dd_wls_StringEvaluators_ALWAYS_TRUE: return "ALWAYS_TRUE";
     case dd_wls_StringEvaluators_ALWAYS_FALSE: return "ALWAYS_FALSE";
     case dd_wls_StringEvaluators_ALWAYS_ABSTAIN: return "ALWAYS_ABSTAIN";
+    case dd_wls_StringEvaluators_IIS_APPLICATION_POOL: return "IIS_APPLICATION_POOL";
+    case dd_wls_StringEvaluators_DOTNET_EXECUTABLE_DLL: return "DOTNET_EXECUTABLE_DLL";
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return "STR_EVAL_COUNT";
     default: return "";
     }
@@ -141,6 +145,8 @@ static inline int dd_wls_StringEvaluators_is_known_value(dd_wls_StringEvaluators
     case dd_wls_StringEvaluators_ALWAYS_TRUE: return 1;
     case dd_wls_StringEvaluators_ALWAYS_FALSE: return 1;
     case dd_wls_StringEvaluators_ALWAYS_ABSTAIN: return 1;
+    case dd_wls_StringEvaluators_IIS_APPLICATION_POOL: return 1;
+    case dd_wls_StringEvaluators_DOTNET_EXECUTABLE_DLL: return 1;
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return 1;
     default: return 0;
     }
