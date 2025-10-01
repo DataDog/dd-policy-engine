@@ -35,6 +35,7 @@ if (WIN32)
 endif ()
 
 # Dependencies
+include(FetchContent)
 find_package(flatcc REQUIRED)
 
 # C Library
