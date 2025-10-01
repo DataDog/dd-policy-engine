@@ -49,6 +49,17 @@
       }
     },
     {
+      "name": "msvc-release",
+      "displayName": "Windows Release",
+      "inherits": "msvc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      },
+      "environment": {
+        "ADDITIONAL_C_FLAGS": "/std:c17"
+      }
+    },
+    {
       "name": "clang-dev",
       "displayName": "Clang Development",
       "inherits": "clang-base",
@@ -96,6 +107,17 @@
       },
       "environment": {
         "ADDITIONAL_C_FLAGS": "-std=c23 -fsanitize=fuzzer,address"
+      }
+    },
+    {
+      "name": "clang-release",
+      "displayName": "Clang Release",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      },
+      "environment": {
+        "ADDITIONAL_C_FLAGS": "-std=c23"
       }
     }
   ]
