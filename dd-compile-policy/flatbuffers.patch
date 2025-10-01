@@ -1,0 +1,42 @@
+--- include/flatbuffers/base.h	2025-09-24 01:18:02.000000000 
++++ include/flatbuffers/base.h	2025-09-25 17:17:12.000000000 
+@@ -267,13 +267,14 @@
+ 
+ #ifndef FLATBUFFERS_LOCALE_INDEPENDENT
+   // Enable locale independent functions {strtof_l, strtod_l,strtoll_l,
+   // strtoull_l}.
+   #if (defined(_MSC_VER) && _MSC_VER >= 1800) || \
+       (defined(__ANDROID_API__) && __ANDROID_API__>= 21) || \
+-      (defined(_XOPEN_VERSION) && (_XOPEN_VERSION >= 700)) && \
++			(defined(_XOPEN_VERSION) && (_XOPEN_VERSION >= 700) && \
++				defined(__GLIBC__) && !defined(__UCLIBC__)) && \
+         (!defined(__Fuchsia__) && !defined(__ANDROID_API__))
+     #define FLATBUFFERS_LOCALE_INDEPENDENT 1
+   #else
+     #define FLATBUFFERS_LOCALE_INDEPENDENT 0
+   #endif
+ #endif  // !FLATBUFFERS_LOCALE_INDEPENDENT
+--- src/idl_parser.cpp	2025-09-24 01:18:02.000000000 
++++ src/idl_parser.cpp	2025-09-25 17:37:40.000000000 
+@@ -1993,14 +1993,19 @@
+       auto enum_def_str = word.substr(0, dot);
+       const auto enum_def = LookupEnum(enum_def_str);
+       if (!enum_def) return Error("unknown enum: " + enum_def_str);
+       auto enum_val_str = word.substr(dot + 1);
+       ev = enum_def->Lookup(enum_val_str);
+     }
+-    if (!ev) return Error("unknown enum value: " + word);
+-    u64 |= ev->GetAsUInt64();
++    // if (!ev) return Error("unknown enum value: " + word);
++    // fall to defaults
++    if (!ev) {
++      u64 = 0;
++    } else {
++      u64 |= ev->GetAsUInt64();
++    }
+   }
+   *result = IsUnsigned(base_type) ? NumToString(u64)
+                                   : NumToString(static_cast<int64_t>(u64));
+   return NoError();
+ }
+ 

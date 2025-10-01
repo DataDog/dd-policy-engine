@@ -11,8 +11,19 @@ include Makefile.docker
 
 %-all: 
 	$(DOCKER_RUN) make -C $(patsubst %-all,%,$@) all
-all: build-container $(addsuffix -all,$(LANGUAGES)) examples
+all: build-container build-dd-compile-policy $(addsuffix -all,$(LANGUAGES)) examples
 
+build-dd-compile-policy:
+	$(DOCKER_RUN) make -C dd-compile-policy build
+
+clean-dd-compile-policy:
+	$(DOCKER_RUN) make -C dd-compile-policy clean
+
+fmt-dd-compile-policy:
+	$(DOCKER_RUN) make -C dd-compile-policy fmt
+
+fmt-dd-compile-policy-check:
+	$(DOCKER_RUN) make -C dd-compile-policy fmt-check
 
 %-examples:
 	$(DOCKER_RUN) make -C $(patsubst %-examples,%,$@) examples
@@ -28,11 +39,11 @@ examples: build-container $(addsuffix -examples,$(LANGUAGES))
 %-fmt-check: build-container
 	$(DOCKER_RUN) make -C $(patsubst %-fmt-check,%,$@) fmt-check
 
-clean: $(addsuffix -clean,$(LANGUAGES))
+clean: $(addsuffix -clean,$(LANGUAGES)) clean-dd-compile-policy
 
-fmt: $(addsuffix -fmt,$(LANGUAGES))
+fmt: $(addsuffix -fmt,$(LANGUAGES)) fmt-dd-compile-policy
 
-fmt-check: $(addsuffix -fmt-check,$(LANGUAGES))
+fmt-check: $(addsuffix -fmt-check,$(LANGUAGES)) fmt-dd-compile-policy-check
 
 generate-jsonschema: build-container
 	@$(DOCKER_RUN) echo "[i] generating JSON schema in: $(JSONSCHEMA_OUT_PATH)"
@@ -60,4 +71,3 @@ ifeq ($(IN_DOCKER),false)
 			$(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-arm64
 	docker push $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)
 endif
-
