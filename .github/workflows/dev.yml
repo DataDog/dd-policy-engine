@@ -82,10 +82,7 @@ jobs:
           Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
       - name: Install Dependencies
-        run: | 
-          scoop install main/cmake@4.0.1 main/vcpkg@2025.08.27
-          $vcpkgPath = scoop prefix vcpkg
-          echo "VCPKG_ROOT=$vcpkgPath" >> $env:GITHUB_ENV
+        run: scoop install main/cmake@4.0.1
       - name: Build
         run: |
           cmake -B build --preset msvc-ci .
