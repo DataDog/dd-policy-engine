@@ -21,7 +21,7 @@ enum StringEvaluators : byte {
     PROCESS_CWD,
 
     RUNTIME_LANGUAGE,
-    /// [python, node] the [.py/shebang, .js] file, 
+    /// [python, node, .NET] the [.py/shebang, .js, .dll] file, 
     RUNTIME_ENTRY_POINT_FILE,
     /// Used to evaluate the jar file passed to the JVM
     RUNTIME_ENTRY_POINT_JAR,
@@ -74,6 +74,8 @@ enum StringEvaluators : byte {
     ALWAYS_TRUE,
     ALWAYS_FALSE,
     ALWAYS_ABSTAIN,
+
+    IIS_APPLICATION_POOL,
 
     /// Represents the count of String evaluators.
     /// This is used to ensure that the enum is always in sync with the number of evaluators.
