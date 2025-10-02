@@ -1,0 +1,11 @@
+name: Release
+on: [workflow_dispatch]
+
+jobs:
+  dummy:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    container:
+      image: datadog/docker-library:dd-policy-engine-10949a6
+    steps:
+      - run: echo "Hello, World!"
