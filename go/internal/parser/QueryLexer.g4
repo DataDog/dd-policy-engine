@@ -86,7 +86,6 @@ TERM_CONTAINS
   : STAR (TERM_CHAR)+ STAR
   ;
 
-
 PHRASE
   : DQUOTE (ESC_CHAR|~('"'))*? DQUOTE
   ;
@@ -94,10 +93,6 @@ PHRASE
 WS
    : [ \r\n\t]+ -> skip
    ;
-
-fragment NON_WS
-  : ~(' ' | '\t' | '\n' | '\r' | '\u3000')
-  ;
 
 /* Comparison submode to properly recognize numbers with/without decimals and E notation */
 mode COMPARISON;
