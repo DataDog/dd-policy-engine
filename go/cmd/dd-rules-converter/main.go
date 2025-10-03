@@ -71,7 +71,6 @@ func main() {
 	for id, rule := range rules {
 		i += 1
 		fmt.Printf("[%d/%d] Parsing rule \"%s\" \n", i, n_rules, id)
-		fmt.Println(rule.Expression)
 		ruleAst, err := parser.Parse(rule.Expression)
 		if err != nil {
 			fmt.Printf("Parsing error: \n%s\n", err)
