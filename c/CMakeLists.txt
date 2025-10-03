@@ -25,6 +25,8 @@ target_sources(dd-policy-engine.objects
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_default.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_types.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/policies.h
+  PUBLIC
+    $<TARGET_OBJECTS:flatccrt-obj>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/eval_ctx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator.c
@@ -46,11 +48,11 @@ set_target_properties(dd-policy-engine.objects
 
 target_link_libraries(dd-policy-engine.objects
   PUBLIC
-    flatcc::crt
+    flatccrt-obj
 )
 
 install(
-  TARGETS dd-policy-engine.objects
+  TARGETS dd-policy-engine.objects flatccrt-obj
   EXPORT dd-policy-engine-targets
   FILE_SET public_headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
@@ -74,6 +76,14 @@ set_target_properties(dd-policy-engine.static-lib
     OUTPUT_NAME "policies"
 )
 
+install(
+  TARGETS dd-policy-engine.static-lib
+  EXPORT dd-policy-engine-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
 # Debugger
 add_executable(dd-policy-engine.debugger 
   ${CMAKE_CURRENT_SOURCE_DIR}/src/debugger/basic-debugger.c
@@ -94,13 +104,5 @@ target_link_libraries(dd-policy-engine.debugger
 set_target_properties(dd-policy-engine.debugger
   PROPERTIES 
     OUTPUT_NAME "basic-debugger"
-)
-
-install(
-  TARGETS dd-policy-engine.static-lib
-  EXPORT dd-policy-engine-targets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 

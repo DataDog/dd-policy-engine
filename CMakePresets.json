@@ -6,7 +6,6 @@
       "hidden": true,
       "name": "msvc-base",
       "generator": "Ninja",
-      "toolchainFile": "$env{VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake",
       "cacheVariables": {
         "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} /wd4477"
       }
