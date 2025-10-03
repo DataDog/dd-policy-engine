@@ -26,7 +26,7 @@ clean:
 	@rm -rf $(addsuffix /out,$(EXAMPLES))
 
 
-build: generate-schema-headers
+build: generate-schema-headers generate-antlr-grammar
 	go mod tidy
 	CGO_ENABLED=0 go build -ldflags="-s -w" ./cmd/... 
 
@@ -43,3 +43,8 @@ fmt-check:
 
 fmt:
 	go fmt ./...
+
+generate-antlr-grammar:
+	antlr4 -Dlanguage=Go -package parser -visitor ./internal/parser/QueryLexer.g4
+	antlr4 -Dlanguage=Go -package parser -visitor ./internal/parser/QueryParser.g4
+
