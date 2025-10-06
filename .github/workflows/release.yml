@@ -2,35 +2,42 @@ name: Release
 on: [workflow_dispatch]
 
 jobs:
-  build-and-package-linux:
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: ["amd64", "arm64"]
+  build-and-package-linux-amd64:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     container:
-      image: datadog/docker-library:dd-policy-engine-10949a6-${{ matrix.arch }}
-    environment:
-      name: dev-env
-    permissions:
-      contents: read
-      packages: read
-    env:
-      IN_DOCKER: "true"
+      image: datadog/docker-library:dd-policy-engine-10949a6-amd64
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Configure
-        run: cmake -B build --preset clang-release .
-      - name: Build
-        run: cmake --build build --target dd-policy-engine.static-lib -j
-      - name: Install
-        run: cmake --install build --prefix=dist
-      - name: Export library
-        uses: actions/upload-artifact@v4
+      - uses: actions/checkout@v4
+      - run: cmake -B build --preset clang-release .
+      - run: cmake --build build --target dd-policy-engine.static-lib -j
+      - run: cmake --install build --prefix=dist
+      - uses: actions/upload-artifact@v4
         with:
-          name: libpolicies-linux-${{ matrix.arch }}
+          name: libpolicies-linux-amd64
           path: dist
+
+  build-and-package-linux-arm64:
+    runs-on: ubuntu-24.04-arm   # Arm runner; no job container
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build inside Alpine Arm64 container
+        run: |
+          docker run --rm \
+            -v "$PWD":/ws -w /ws \
+            datadog/docker-library:dd-policy-engine-10949a6-arm64 \
+            sh -lc '
+              cmake -B build --preset clang-release . &&
+              cmake --build build --target dd-policy-engine.static-lib -j &&
+              cmake --install build --prefix=dist
+            '
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libpolicies-linux-arm64
+          path: dist
+
+
 
   build-and-package-windows:
     strategy:
