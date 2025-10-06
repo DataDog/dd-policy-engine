@@ -3,10 +3,14 @@ on: [workflow_dispatch]
 
 jobs:
   build-and-package-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["amd64", "arm64"]
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     container:
-      image: datadog/docker-library:dd-policy-engine-10949a6
+      image: datadog/docker-library:dd-policy-engine-10949a6-${{ matrix.arch }}
     environment:
       name: dev-env
     permissions:
@@ -25,7 +29,7 @@ jobs:
       - name: Export library
         uses: actions/upload-artifact@v4
         with:
-          name: libpolicies-linux
+          name: libpolicies-linux-${{ matrix.arch }}
           path: dist
 
   build-and-package-windows:
