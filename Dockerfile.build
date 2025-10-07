@@ -11,7 +11,7 @@ ARG CLANG_VERSION=18
 
 RUN apk update \
     && apk add musl-dev gcc make python3 patchelf bash clang${CLANG_VERSION} clang${CLANG_VERSION}-extra-tools clang${CLANG_VERSION}-rtlib \
-    llvm${CLANG_VERSION} ruff ninja-build git xxd g++
+    llvm${CLANG_VERSION} ruff ninja-build git xxd g++ openjdk17-jre
 
 # for some reason clang-format installation dir is not included in PATH
 ENV PATH="$PATH:/usr/lib/llvm18/bin/"
@@ -60,3 +60,9 @@ RUN apk add flatbuffers flatbuffers-dev
 
 # Add lcov
 RUN apk add lcov
+
+# Install ANTLR4
+ADD https://www.antlr.org/download/antlr-4.13.2-complete.jar /usr/local/lib/antlr4-tool.jar
+RUN echo '#!/bin/bash' > /usr/local/bin/antlr4 \
+  && echo 'java -Xmx500M -cp /usr/local/lib/antlr4-tool.jar org.antlr.v4.Tool "$@"' >> /usr/local/bin/antlr4 \
+ && chmod +x /usr/local/bin/antlr4
