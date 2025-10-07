@@ -38,7 +38,6 @@ type PolicyBuilder struct {
 func NewPolicyBuilder() *PolicyBuilder {
 	return &PolicyBuilder{
 		builder: flatbuffers.NewBuilder(1024),
-		offsets: make([]flatbuffers.UOffsetT, 0),
 	}
 }
 
@@ -118,8 +117,6 @@ func createNode(builder *flatbuffers.Builder, node *parser.TermNode) (flatbuffer
 		return createStrEvaluatorNode(builder, wls.StringEvaluatorsPROCESS_EXE, node.Value, cmp, "Check process is "+node.Value), nil
 	case "runtime":
 		return createStrEvaluatorNode(builder, wls.StringEvaluatorsRUNTIME_LANGUAGE, node.Value, cmp, "Check runtime is "+node.Value), nil
-	case "os":
-		return createStrEvaluatorNode(builder, wls.StringEvaluatorsOS, node.Value, cmp, "Check OS is "+node.Value), nil
 	}
 
 	return 0, fmt.Errorf("unsupported field \"%s\"", node.Field)
