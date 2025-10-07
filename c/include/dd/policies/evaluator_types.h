@@ -1,3 +1,10 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed
+ * under the Apache 2.0 License. This product includes software developed at
+ * Datadog (https://www.datadoghq.com/).
+ *
+ * Copyright 2025-Present Datadog, Inc.
+ */
 #pragma once
 
 #include "evaluation_result.h"
@@ -77,7 +84,8 @@ typedef enum plcs_numeric_comparator {
   X(CONTAINER_ID, 30)                                                                                                  \
   X(ALWAYS_TRUE, 31)                                                                                                   \
   X(ALWAYS_FALSE, 32)                                                                                                  \
-  X(ALWAYS_ABSTAIN, 33)
+  X(ALWAYS_ABSTAIN, 33)                                                                                                \
+  X(IIS_APPLICATION_POOL, 34)
 
 #define ENUM_STR_CMP_EVAL(ID, IX) PLCS_STR_EVAL_##ID = IX,
 typedef enum plcs_string_evaluators {

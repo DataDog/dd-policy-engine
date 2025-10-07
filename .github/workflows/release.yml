@@ -1,0 +1,70 @@
+name: Release
+on: [workflow_dispatch]
+
+jobs:
+  build-and-package-linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    container:
+      image: datadog/docker-library:dd-policy-engine-10949a6
+    environment:
+      name: dev-env
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IN_DOCKER: "true"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Configure
+        run: cmake -B build --preset clang-release .
+      - name: Build
+        run: cmake --build build --target dd-policy-engine.static-lib -j
+      - name: Install
+        run: cmake --install build --prefix=dist
+      - name: Export library
+        uses: actions/upload-artifact@v4
+        with:
+          name: libpolicies-linux
+          path: dist
+
+  build-and-package-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["x64", "x86"]
+    runs-on: windows-2022
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: powershell
+    environment:
+      name: dev-env
+    permissions:
+      contents: read
+      packages: read
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: ${{ matrix.arch }}
+      - name: Install Dependency Manager (scoop)
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+      - name: Install Dependencies
+        run: scoop install main/cmake@4.0.1
+      - name: Build
+        run: |
+          cmake -B build --preset msvc-release .
+          cmake --build build --target dd-policy-engine.static-lib -j
+          cmake --install build --prefix=dist
+      - name: Export library
+        uses: actions/upload-artifact@v4
+        with:
+          name: libpolicies-win-${{ matrix.arch }}
+          path: dist

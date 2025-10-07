@@ -1,0 +1,32 @@
+diff --git a/src/runtime/CMakeLists.txt b/src/runtime/CMakeLists.txt
+index 127e2a4..2205988 100644
+--- a/src/runtime/CMakeLists.txt
++++ b/src/runtime/CMakeLists.txt
+@@ -2,7 +2,10 @@ include_directories (
+     "${PROJECT_SOURCE_DIR}/include"
+ )
+ 
+-add_library(flatccrt
++add_library(flatccrt-obj OBJECT)
++
++target_sources(flatccrt-obj
++  PRIVATE
+     builder.c
+     emitter.c
+     refmap.c
+@@ -11,6 +14,14 @@ add_library(flatccrt
+     json_printer.c
+ )
+ 
++target_include_directories(flatccrt-obj
++  PUBLIC
++    $<INSTALL_INTERFACE:include>
++    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
++)
++
++add_library(flatccrt $<TARGET_OBJECTS:flatccrt-obj>)
++
+ if (FLATCC_INSTALL)
+     install(TARGETS flatccrt DESTINATION ${lib_dir})
+ endif()
+

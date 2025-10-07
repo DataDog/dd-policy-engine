@@ -1,3 +1,8 @@
+# Unless explicitly stated otherwise all files in this repository are licensed
+# under the Apache 2.0 License. This product includes software developed at
+# Datadog (https://www.datadoghq.com/).
+#
+# Copyright 2025-Present Datadog, Inc.
 cmake_minimum_required(VERSION 4.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -30,6 +35,7 @@ if (WIN32)
 endif ()
 
 # Dependencies
+include(FetchContent)
 find_package(flatcc REQUIRED)
 
 # C Library

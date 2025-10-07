@@ -6,7 +6,6 @@
       "hidden": true,
       "name": "msvc-base",
       "generator": "Ninja",
-      "toolchainFile": "$env{VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake",
       "cacheVariables": {
         "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} /wd4477"
       }
@@ -47,6 +46,17 @@
       },
       "environment": {
         "ADDITIONAL_C_FLAGS": "/std:c17 /fsanitize=address"
+      }
+    },
+    {
+      "name": "msvc-release",
+      "displayName": "Windows Release",
+      "inherits": "msvc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      },
+      "environment": {
+        "ADDITIONAL_C_FLAGS": "/std:c17"
       }
     },
     {
@@ -97,6 +107,17 @@
       },
       "environment": {
         "ADDITIONAL_C_FLAGS": "-std=c23 -fsanitize=fuzzer,address"
+      }
+    },
+    {
+      "name": "clang-release",
+      "displayName": "Clang Release",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      },
+      "environment": {
+        "ADDITIONAL_C_FLAGS": "-std=c23"
       }
     }
   ]

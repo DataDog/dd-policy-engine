@@ -1,3 +1,8 @@
+/// Unless explicitly stated otherwise all files in this repository are licensed
+/// under the Apache 2.0 License. This product includes software developed at
+/// Datadog (https://www.datadoghq.com/).
+///
+/// Copyright 2025-Present Datadog, Inc.
 
 namespace dd.wls;
 
@@ -16,7 +21,7 @@ enum StringEvaluators : byte {
     PROCESS_CWD,
 
     RUNTIME_LANGUAGE,
-    /// [python, node] the [.py/shebang, .js] file, 
+    /// [python, node, .NET] the [.py/shebang, .js, .dll] file, 
     RUNTIME_ENTRY_POINT_FILE,
     /// Used to evaluate the jar file passed to the JVM
     RUNTIME_ENTRY_POINT_JAR,
@@ -69,6 +74,8 @@ enum StringEvaluators : byte {
     ALWAYS_TRUE,
     ALWAYS_FALSE,
     ALWAYS_ABSTAIN,
+
+    IIS_APPLICATION_POOL,
 
     /// Represents the count of String evaluators.
     /// This is used to ensure that the enum is always in sync with the number of evaluators.

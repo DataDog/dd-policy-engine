@@ -1,54 +1,36 @@
-# Copyright 2014 Stefan.Eilemann@epfl.ch
-# Copyright 2014 Google Inc. All rights reserved.
+# Unless explicitly stated otherwise all files in this repository are licensed
+# under the Apache 2.0 License. This product includes software developed at
+# Datadog (https://www.datadoghq.com/).
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Find the flatcc schema compiler
-#
-# Output Variables:
-# * FLATCC_FOUND
-# * FLATCC_INCLUDE_DIR
-# * FLATCC_RUNTIME_LIBRARY
+# Copyright 2025-Present Datadog, Inc.
 
-set(FLATCC_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
+# flatcc update globals C and CXX flags. Cache our C and CXX flags to reset later.
+set(OLD_CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
+set(OLD_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
-find_path(FLATCC_INCLUDE_DIR
-  NAMES flatcc/flatcc.h
-  HINTS
-  PATH_SUFFIXES include
-  PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}"
+set(FLATCC_TEST OFF CACHE BOOL "" FORCE)
+set(FLATCC_CXX_TEST OFF CACHE BOOL "" FORCE)
+set(FLATCC_DEBUG_CLANG_SANITIZE OFF CACHE BOOL "" FORCE)
+set(FLATCC_REFLECTION OFF CACHE BOOL "" FORCE)
+set(FLATCC_ALLOW_WERROR OFF CACHE BOOL "" FORCE)
+
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5")
+
+FetchContent_Declare(
+  flatcc
+  GIT_REPOSITORY https://github.com/dvidelabs/flatcc.git
+  GIT_TAG 47af7e601f511e80bcb85f28adf06af27c6a6b00
+  PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/flatcc.patch
+  EXCLUDE_FROM_ALL
 )
 
-find_library(FLATCC_RUNTIME_LIBRARY
-  NAMES flatccrt
-  PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}"
-)
+FetchContent_MakeAvailable(flatcc)
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(flatcc
-  REQUIRED_VARS FLATCC_INCLUDE_DIR FLATCC_RUNTIME_LIBRARY
-)
+# Reset our flags.
+set(CMAKE_C_FLAGS ${OLD_CMAKE_C_FLAGS})
+set(CMAKE_CXX_FLAGS ${OLD_CMAKE_CXX_FLAGS})
 
-if(FLATCC_FOUND)
-  add_library(flatcc-crt STATIC IMPORTED)
-  add_library(flatcc::crt ALIAS flatcc-crt)
-
-  set_target_properties(flatcc-crt PROPERTIES
-    IMPORTED_LOCATION ${FLATCC_RUNTIME_LIBRARY}
-    INTERFACE_INCLUDE_DIRECTORIES "${FLATCC_INCLUDE_DIR}"
-  )
+if(NOT TARGET flatccrt-obj)
+  message(FATAL_ERROR "Required target flatccrt-obj was not imported")
 endif()
 
-if(NOT TARGET flatcc::crt)
-  message(FATAL_ERROR "flatcc::crt target was not imported")
-endif()
