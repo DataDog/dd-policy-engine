@@ -75,19 +75,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build docker image  # TODO: use {{ matrix.docker-image }} once it's up to date
+        run: make build-container
       - name: Build dd-compile-policy
-        working-directory: dd-compile-policy
-        run: |
-          docker run --rm --platform linux/${{ matrix.arch }} \
-            -e IN_DOCKER=true -v "$GITHUB_WORKSPACE:/workspace" -w /workspace \
-            ${{ matrix.docker-image }} sh -lc '
-            make -C dd-compile-policy build
-            '
+        run: make build-dd-compile-policy
       - name: Export dd-compile-policy
         uses: actions/upload-artifact@v4
         with:
           name: dd-compile-policy-linux-${{ matrix.arch }}
-          path: dd-compile-policy/bin
+          path: dd-compile-policy/bin/dd-compile-policy
 
   # TODO: add arch and vs versions
   build-windows:
