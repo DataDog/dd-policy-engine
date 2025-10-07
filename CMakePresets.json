@@ -14,6 +14,8 @@
       "hidden": true,
       "name": "clang-base",
       "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} -Wall -Wextra -fvisibility=hidden -fstrict-aliasing -funsigned-char -fwrapv -fno-stack-protector -Wconversion -Wno-implicit-int-conversion -Wno-sign-conversion -Wmissing-format-attribute -Wpointer-arith -Wformat-nonliteral -Winit-self -Wwrite-strings -Wshadow -Wparentheses -Wenum-conversion -Wswitch-enum -Wvla"
       }
     },
@@ -21,6 +23,8 @@
       "hidden": true,
       "name": "clang-base-pedantic",
       "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} -pedantic-errors -Wall -Wextra -fvisibility=hidden -fstrict-aliasing -funsigned-char -fwrapv -fno-stack-protector -Wconversion -Wcast-align -Wno-sign-conversion -Wmissing-format-attribute -Wpointer-arith -Wformat-nonliteral -Winit-self -Wwrite-strings -Wshadow -Wparentheses -Wenum-conversion -Wswitch-enum -Wvla"
       }
     },
