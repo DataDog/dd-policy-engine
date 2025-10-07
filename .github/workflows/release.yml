@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     container:
-      image: datadog/docker-library:dd-policy-engine-10949a6
+      image: datadog/docker-library:dd-policy-engine-35a0551
     environment:
       name: dev-env
     permissions:
@@ -37,11 +37,11 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-22.04
-            docker-image: datadog/docker-library:dd-policy-engine-10949a6-amd64
           - arch: arm64
             runner: ubuntu-22.04-arm
-            docker-image: datadog/docker-library:dd-policy-engine-10949a6-arm64
     runs-on: ${{ matrix.runner }}
+    container:
+      image: datadog/docker-library:dd-policy-engine-35a0551-${{ matrix.arch }}
     timeout-minutes: 10
     environment:
       name: dev-env
@@ -56,12 +56,12 @@ jobs:
       - name: Build dd-compile-policy
         run: make build-dd-compile-policy
       - name: Create tarball for dd-compile-policy
-        run: |
-          tar -czf dd-compile-policy-linux-${{ matrix.arch }}.tar.gz -C dd-compile-policy/bin dd-compile-policy
+        run: tar -czf dd-compile-policy-linux-${{ matrix.arch }}.tar.gz -C dd-compile-policy/bin dd-compile-policy
       - name: Upload release assets
         uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
         with:
           files: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
+          draft: true
 
   build-and-package-windows:
     strategy:
