@@ -4,16 +4,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"log"
 	"os"
-	//
-	flatbuffers "github.com/google/flatbuffers/go"
-	// Import the generated FlatBuffers schema packages
-	//
+
+	"github.com/BurntSushi/toml"
 	"github.com/DataDog/dd-policy-engine/go/internal/parser"
 	"github.com/DataDog/dd-policy-engine/go/schema"
 	wls "github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 func writeBufferToFile(buffer []byte, fileName string) {
@@ -160,11 +158,34 @@ func processAST(nodes *[]flatbuffers.UOffsetT, builder *flatbuffers.Builder, nod
 			operator = wls.BoolOperationBOOL_OR
 		case parser.And:
 			operator = wls.BoolOperationBOOL_AND
+		default:
+			return fmt.Errorf("unsupported operator \"%s\"", n.Kind)
+
 		}
 
 		andNode := createConditionalNode(builder, operator, "", nn)
 		*nodes = append(*nodes, andNode)
 		return nil
+
+	case *parser.UnaryBooleanNode:
+		var nn []flatbuffers.UOffsetT
+		err := processAST(&nn, builder, n.Expr)
+		if err != nil {
+			return err
+		}
+
+		var operator wls.BoolOperation
+		switch n.Kind {
+		case parser.Not:
+			operator = wls.BoolOperationBOOL_NOT
+		default:
+			return fmt.Errorf("unsupported operator \"%s\"", n.Kind)
+		}
+
+		compNode := createConditionalNode(builder, operator, "", nn)
+		*nodes = append(*nodes, compNode)
+		return nil
+
 	}
 
 	return errors.New("unexpected node type")
