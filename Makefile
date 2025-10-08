@@ -4,6 +4,7 @@ SCHEMA_DIR := ./fbs-schema
 JSONSCHEMA_OUT_PATH := $(SCHEMA_DIR)/json/
 COMMIT_SHA ?= $(shell git rev-parse --short HEAD)
 DOCKER_REPO ?= datadog/docker-library
+BUILD_CONTAINER ?= true
 
 include Makefile.docker
 
@@ -57,7 +58,9 @@ convert-to-json:
 
 build-container:
 ifeq ($(IN_DOCKER),false)
+ifeq ($(BUILD_CONTAINER),true)
 	docker build -t $(DOCKER_IMAGE) -f ./Dockerfile.build .
+endif
 endif
 
 push-ci-container:

@@ -1,79 +1,77 @@
 name: Release
 on:
-  release:
-    types: [created]
   workflow_dispatch:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+env: 
+  # Override `DOCKER_IMAGE` variable in Makefile.docker 
+  # Thus, all Makefile target will use this docker image instead of building it.
+  DOCKER_IMAGE: datadog/docker-library:dd-policy-engine-a0f48dd
+  BUILD_CONTAINER: false
 
 jobs:
-  build-and-package-linux:
-    runs-on: ubuntu-22.04
+  package-libpolicies-linux:
+    strategy:
+      fail-fast: true
+      matrix:
+        arch: [x64, arm64]
+        include:
+          - arch: x64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
-    container:
-      image: datadog/docker-library:dd-policy-engine-10949a6
-    environment:
-      name: dev-env
     permissions:
       contents: read
       packages: read
-    env:
-      IN_DOCKER: "true"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Configure
-        run: cmake -B build --preset gcc-release .
+        run: make docker-run "cmake -B build --preset gcc-release ."
       - name: Build
-        run: cmake --build build --target dd-policy-engine.static-lib -j
+        run: make docker-run "cmake --build build --target dd-policy-engine.static-lib -j"
       - name: Install
-        run: cmake --install build --prefix=dist
+        run: make docker-run "cmake --install build --prefix=libpolicies"
+      - name: Package
+        run: tar -czf libpolicies-linux-${{ matrix.arch }}.tar.gz libpolicies
       - name: Export library
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: libpolicies-linux
-          path: dist
+          name: libpolicies-linux-${{ matrix.arch }}
+          path: libpolicies-linux-${{ matrix.arch }}.tar.gz
 
-  # Dedicated job for building dd-compile-policy
-  build-dd-compile-policy:
+  package-dd-compile-policy-linux:
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        arch: [amd64, arm64]
+        arch: [x64, arm64]
         include:
-          - arch: amd64
+          - arch: x64
             runner: ubuntu-22.04
-            docker-image: datadog/docker-library:dd-policy-engine-10949a6-amd64
           - arch: arm64
             runner: ubuntu-22.04-arm
-            docker-image: datadog/docker-library:dd-policy-engine-10949a6-arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
-    environment:
-      name: dev-env
     permissions:
-      contents: write
+      contents: read
       packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Build docker image  # TODO: use {{ matrix.docker-image }} once it's up to date
-        run: make build-container
       - name: Build dd-compile-policy
         run: make build-dd-compile-policy
-      - name: Create tarball for dd-compile-policy
+      - name: Package dd-compile-policy
         run: tar -czf dd-compile-policy-linux-${{ matrix.arch }}.tar.gz -C dd-compile-policy/bin dd-compile-policy
-      - name: Upload release assets
-        if: github.event_name == 'release'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ github.event.release.tag_name }} dd-compile-policy-linux-${{ matrix.arch }}.tar.gz --clobber
       - name: Upload test artifacts
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
           path: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
 
-  build-and-package-windows:
+  package-libpolicies-windows:
     strategy:
       fail-fast: false
       matrix:
@@ -83,8 +81,6 @@ jobs:
     defaults:
       run:
         shell: powershell
-    environment:
-      name: dev-env
     permissions:
       contents: read
       packages: read
@@ -107,9 +103,31 @@ jobs:
         run: |
           cmake -B build --preset msvc-release .
           cmake --build build --target dd-policy-engine.static-lib -j
-          cmake --install build --prefix=dist
+          cmake --install build --prefix=libpolicies
+      - name: Package
+        run: Compress-Archive -Path ./libpolicies -DestinationPath libpolicies-win-${{ matrix.arch }}.zip
       - name: Export library
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: libpolicies-win-${{ matrix.arch }}
-          path: dist
+          path: libpolicies-win-${{ matrix.arch }}.zip
+
+  generate-github-draft-release:
+    needs: [package-libpolicies-windows, package-libpolicies-linux, package-dd-compile-policy-linux]
+    runs-on: ubuntu-22.04-arm
+    environment:
+      name: release
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create release
+        run: gh release create ${{ github.ref }} --draft --generate-notes --verify-tag artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
