@@ -18,6 +18,10 @@ jobs:
 
   # TODO: Add GCC compiler
   build-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [gcc, clang]
     needs: checks
     runs-on: ubuntu-22.04
     timeout-minutes: 10
@@ -40,7 +44,7 @@ jobs:
         run: make test-build
         working-directory: c
         env:
-          CMAKE_PRESET: gcc-ci
+          CMAKE_PRESET: ${{ matrix.toolchain }}-ci
       - run: ctest --test-dir build --schedule-random --output-junit test-report.xml
         working-directory: c
       # - name: Report test coverage
