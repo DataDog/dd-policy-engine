@@ -6,8 +6,8 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 env: 
-  # Override `DOCKER_IMAGE` variable in Makefile.docker 
-  # Thus, all Makefile target will use this docker image instead of building it.
+  # Override the `DOCKER_IMAGE` variable in Makefile.docker  
+  # This makes all Makefile targets use the specified Docker image instead of building a new one.
   DOCKER_IMAGE: datadog/docker-library:dd-policy-engine-a0f48dd
   BUILD_CONTAINER: false
 
