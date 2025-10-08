@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     container:
-      image: datadog/docker-library:dd-policy-engine-10949a6
+      image: datadog/docker-library:dd-policy-engine-a0f48dd
     env:
       IN_DOCKER: "true"
     permissions:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     container:
-      image: datadog/docker-library:dd-policy-engine-10949a6
+      image: datadog/docker-library:dd-policy-engine-a0f48dd
     environment:
       name: dev-env
     permissions:
@@ -40,9 +40,7 @@ jobs:
         run: make test-build
         working-directory: c
         env:
-          CC: clang
-          CXX: clang
-          CMAKE_PRESET: clang-ci
+          CMAKE_PRESET: gcc-ci
       - run: ctest --test-dir build --schedule-random --output-junit test-report.xml
         working-directory: c
       # - name: Report test coverage
@@ -61,10 +59,10 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-22.04
-            docker-image: datadog/docker-library:dd-policy-engine-10949a6-amd64
+            docker-image: datadog/docker-library:dd-policy-engine-a0f48dd-amd64
           - arch: arm64
             runner: ubuntu-22.04-arm
-            docker-image: datadog/docker-library:dd-policy-engine-10949a6-arm64
+            docker-image: datadog/docker-library:dd-policy-engine-a0f48dd-arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     environment:
@@ -134,7 +132,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     container:
-      image: datadog/docker-library:dd-policy-engine-10949a6
+      image: datadog/docker-library:dd-policy-engine-a0f48dd
     environment:
       name: dev-env
     permissions:
@@ -144,9 +142,6 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: make coverage
         working-directory: c
-        env:
-          CC: clang
-          CXX: clang
       # - name: Upload coverage reports
       #   run: |
       #     curl -L --fail "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_linux-x64" --output "/tmp/datadog-ci"

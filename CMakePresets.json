@@ -7,7 +7,7 @@
       "name": "msvc-base",
       "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} /wd4477"
+        "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} /std:c17 /wd4477"
       }
     },
     {
@@ -15,8 +15,8 @@
       "name": "clang-base",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} -Wall -Wextra -fvisibility=hidden -fstrict-aliasing -funsigned-char -fwrapv -fno-stack-protector -Wconversion -Wno-implicit-int-conversion -Wno-sign-conversion -Wmissing-format-attribute -Wpointer-arith -Wformat-nonliteral -Winit-self -Wwrite-strings -Wshadow -Wparentheses -Wenum-conversion -Wswitch-enum -Wvla"
+        "CMAKE_CXX_COMPILER": "clang",
+        "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} -std=c23 -Wall -Wextra -fvisibility=hidden -fstrict-aliasing -funsigned-char -fwrapv -fno-stack-protector -Wconversion -Wno-implicit-int-conversion -Wno-sign-conversion -Wmissing-format-attribute -Wpointer-arith -Wformat-nonliteral -Winit-self -Wwrite-strings -Wshadow -Wparentheses -Wenum-conversion -Wswitch-enum -Wvla -Wstrict-prototypes"
       }
     },
     {
@@ -24,8 +24,17 @@
       "name": "clang-base-pedantic",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} -pedantic-errors -Wall -Wextra -fvisibility=hidden -fstrict-aliasing -funsigned-char -fwrapv -fno-stack-protector -Wconversion -Wcast-align -Wno-sign-conversion -Wmissing-format-attribute -Wpointer-arith -Wformat-nonliteral -Winit-self -Wwrite-strings -Wshadow -Wparentheses -Wenum-conversion -Wswitch-enum -Wvla"
+        "CMAKE_CXX_COMPILER": "clang",
+        "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} -std=c23 -pedantic-errors -Wall -Wextra -fvisibility=hidden -fstrict-aliasing -funsigned-char -fwrapv -fno-stack-protector -Wconversion -Wcast-align -Wno-sign-conversion -Wmissing-format-attribute -Wpointer-arith -Wformat-nonliteral -Winit-self -Wwrite-strings -Wshadow -Wparentheses -Wenum-conversion -Wswitch-enum -Wvla -Wstrict-prototypes"
+      }
+    },
+    {
+      "hidden": true,
+      "name": "gcc-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_FLAGS": "$env{ADDITIONAL_C_FLAGS} -std=c23 -pedantic-errors -Wall -Wextra -fvisibility=hidden -fstrict-aliasing -funsigned-char -fwrapv -fno-stack-protector -Wconversion -Wcast-align -Wno-sign-conversion -Wmissing-format-attribute -Wpointer-arith -Wformat-nonliteral -Winit-self -Wwrite-strings -Wshadow -Wparentheses -Wenum-conversion -Wswitch-enum -Wvla -Wstrict-prototypes"
       }
     },
     {
@@ -37,7 +46,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "/std:c17 /fsanitize=address"
+        "ADDITIONAL_C_FLAGS": "/fsanitize=address"
       }
     },
     {
@@ -49,7 +58,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "/std:c17 /fsanitize=address"
+        "ADDITIONAL_C_FLAGS": "/fsanitize=address"
       }
     },
     {
@@ -58,9 +67,6 @@
       "inherits": "msvc-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-      },
-      "environment": {
-        "ADDITIONAL_C_FLAGS": "/std:c17"
       }
     },
     {
@@ -70,9 +76,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
-      },
-      "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c23"
       }
     },
     {
@@ -84,7 +87,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c23 -fno-optimize-sibiling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined"
+        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibiling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined"
       }
     },
     {
@@ -110,7 +113,7 @@
         "DD_POLICY_BUILD_FUZZERS": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c23 -fsanitize=fuzzer,address"
+        "ADDITIONAL_C_FLAGS": "-fsanitize=fuzzer,address"
       }
     },
     {
@@ -119,9 +122,35 @@
       "inherits": "clang-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "gcc-dev",
+      "displayName": "GNU Toolchain for Development",
+      "inherits": "gcc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
+      }
+    },
+    {
+      "name": "gcc-ci",
+      "displayName": "GNU Toolchain for CI",
+      "inherits": "gcc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-std=c23"
+        "ADDITIONAL_C_FLAGS": "-fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=address,leak,undefined"
+      }
+    },
+    {
+      "name": "gcc-release",
+      "displayName": "GNU Toolchain for Release",
+      "inherits": "gcc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     }
   ]
