@@ -10,7 +10,7 @@ OUT = bin/dd-compile-policy
 # Include headers and source files for formatting
 FILES_TO_FORMAT = $(wildcard ./*/*.cpp ./*/*.hpp ./*/*.c ./*/*.h)
 
-CXX = g++
+CXX = clang++
 CXXFLAGS = -std=c++17 -Os -flto -g0 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden -DCXXOPTS_NO_EXCEPTIONS -DCXXOPTS_NO_RTTI
 LDFLAGS = 
 ifeq ($(shell uname), Linux)
