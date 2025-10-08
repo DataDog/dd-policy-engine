@@ -34,5 +34,5 @@ if(NOT TARGET flatccrt-obj)
   message(FATAL_ERROR "Required target flatccrt-obj was not imported")
 endif()
 
-# Update target to ALWAYS disable `-Werror`.
+# Update target to ALWAYS disable `-Werror` when compiling flatcc.
 set_target_properties(flatccrt-obj PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
