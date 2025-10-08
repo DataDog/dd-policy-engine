@@ -3,25 +3,28 @@
 # Datadog (https://www.datadoghq.com/).
 #
 # Copyright 2025-Present Datadog, Inc.
-FROM public.ecr.aws/docker/library/alpine:3.22
+FROM alpine:3.22
 
 ARG GO_VER="1.24.4"
-
+ARG GCC_VERSION=14.2
 ARG CLANG_VERSION=18
 
 RUN apk update \
-    && apk add musl-dev gcc make python3 patchelf bash clang${CLANG_VERSION} clang${CLANG_VERSION}-extra-tools clang${CLANG_VERSION}-rtlib \
-    llvm${CLANG_VERSION} ruff ninja-build git xxd openjdk17-jre
+    && apk add --no-cache musl-dev gcc~${GCC_VERSION} g++~${GCC_VERSION} make python3 patchelf bash clang${CLANG_VERSION} clang${CLANG_VERSION}-extra-tools clang${CLANG_VERSION}-rtlib \
+    llvm${CLANG_VERSION} ruff ninja-build git xxd openjdk17-jre lcov
 
 # for some reason clang-format installation dir is not included in PATH
 ENV PATH="$PATH:/usr/lib/llvm18/bin/"
-ARG TARGETPLATFORM
-RUN echo "TARGETPLATFORM: '$TARGETPLATFORM'"
-RUN echo `echo $TARGETPLATFORM | cut -d "/" -f 2 `
+
+# Expose Docker's predefined platform ARGs
+# For more information: <https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope>
+ARG TARGETARCH
+RUN echo "TARGETARCH: '$TARGETARCH'"
 
 # Download & Install GO
-RUN wget https://go.dev/dl/go$GO_VER.linux-`echo $TARGETPLATFORM | cut -d "/" -f 2 `.tar.gz
-RUN tar -C /usr/local -xzf ./go$GO_VER.linux-`echo $TARGETPLATFORM | cut -d "/" -f 2 `.tar.gz
+ADD https://go.dev/dl/go${GO_VER}.linux-${TARGETARCH}.tar.gz go.tar.gz
+RUN tar -C /usr/local -xzf ./go.tar.gz \
+ && rm go.tar.gz
 ENV PATH="$PATH:/usr/local/go/bin"
 # verify go installed succesfully (othwerwise the docker build will fail)
 RUN go version
@@ -38,7 +41,7 @@ ENV PATH="$PATH:/go/bin/"
 ENV IN_DOCKER=true
 
 # Install CMake
-RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main cmake=4.1.2-r0
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main cmake>4.0
 
 # Add flatcc
 ARG FLATCC_COMMIT_ID=47af7e6
@@ -54,15 +57,13 @@ RUN cp ~/flatcc/lib/libflatcc.a /usr/lib/
 RUN cp ~/flatcc/lib/libflatcc_d.a /usr/lib/
 RUN cp ~/flatcc/lib/libflatccrt.a /usr/lib/
 RUN cp ~/flatcc/lib/libflatccrt_d.a /usr/lib/
+RUN rm -rf ~/flatcc
 
 # Add flatbuffers
-RUN apk add flatbuffers flatbuffers-dev
-
-# Add lcov
-RUN apk add lcov
+RUN apk add --no-cache flatbuffers flatbuffers-dev
 
 # Install ANTLR4
 ADD https://www.antlr.org/download/antlr-4.13.2-complete.jar /usr/local/lib/antlr4-tool.jar
 RUN echo '#!/bin/bash' > /usr/local/bin/antlr4 \
-  && echo 'java -Xmx500M -cp /usr/local/lib/antlr4-tool.jar org.antlr.v4.Tool "$@"' >> /usr/local/bin/antlr4 \
+ && echo 'java -Xmx500M -cp /usr/local/lib/antlr4-tool.jar org.antlr.v4.Tool "$@"' >> /usr/local/bin/antlr4 \
  && chmod +x /usr/local/bin/antlr4

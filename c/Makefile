@@ -14,7 +14,7 @@ SCHEMA_DIR := $(POLICIES_ROOT)/fbs-schema
 SCHEMA_OUTPUT_DIR := $(PREFIX)/src/schema
 
 # Run `cmake --list-presets` to get the list of all available presets.
-CMAKE_PRESET := clang-dev
+CMAKE_PRESET := gcc-dev
 
 .PHONY: all clean fmt $(SCHEMA_OUTPUT_DIR) lib/libpolicies.a $(EXAMPLES) coverage
 

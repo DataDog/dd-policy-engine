@@ -69,5 +69,4 @@ ifeq ($(IN_DOCKER),false)
 	docker buildx imagetools create -t $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA) \
 			$(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-amd64 \
 			$(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)-arm64
-	docker push $(DOCKER_REPO):dd-policy-engine-$(COMMIT_SHA)
 endif
