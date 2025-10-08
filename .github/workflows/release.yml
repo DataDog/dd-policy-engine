@@ -1,5 +1,8 @@
 name: Release
-on: [workflow_dispatch]
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
 
 jobs:
   build-and-package-linux:
@@ -56,12 +59,19 @@ jobs:
       - name: Build dd-compile-policy
         run: make build-dd-compile-policy
       - name: Create tarball for dd-compile-policy
-        run: |
-          tar -czf dd-compile-policy-linux-${{ matrix.arch }}.tar.gz -C dd-compile-policy/bin dd-compile-policy
+        run: tar -czf dd-compile-policy-linux-${{ matrix.arch }}.tar.gz -C dd-compile-policy/bin dd-compile-policy
       - name: Upload release assets
-        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} dd-compile-policy-linux-${{ matrix.arch }}.tar.gz --clobber
+      - name: Upload test artifacts
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
         with:
-          files: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
+          name: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
+          path: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
 
   build-and-package-windows:
     strategy:
