@@ -113,7 +113,7 @@ jobs:
           path: libpolicies-win-${{ matrix.arch }}.zip
 
   generate-github-draft-release:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'workflow_dispatch'
     needs: [package-libpolicies-windows, package-libpolicies-linux, package-dd-compile-policy-linux]
     runs-on: ubuntu-22.04-arm
     environment:
