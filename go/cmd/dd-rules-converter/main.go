@@ -113,10 +113,14 @@ func createNode(builder *flatbuffers.Builder, node *parser.TermNode) (flatbuffer
 	cmp := toStrComparator(node.Comparator)
 
 	switch node.Field {
-	case "process.name":
+	case "process.executable":
 		return createStrEvaluatorNode(builder, wls.StringEvaluatorsPROCESS_EXE, node.Value, cmp, "Check process is "+node.Value), nil
-	case "runtime":
+	case "dotnet.dll":
+		return createStrEvaluatorNode(builder, wls.StringEvaluatorsRUNTIME_ENTRY_POINT_FILE, node.Value, cmp, "Check process DLL is "+node.Value), nil
+	case "runtime.language":
 		return createStrEvaluatorNode(builder, wls.StringEvaluatorsRUNTIME_LANGUAGE, node.Value, cmp, "Check runtime is "+node.Value), nil
+	case "iis.application_pool":
+		return createStrEvaluatorNode(builder, wls.StringEvaluatorsIIS_APPLICATION_POOL, node.Value, cmp, "Check IIS application pool is "+node.Value), nil
 	}
 
 	return 0, fmt.Errorf("unsupported field \"%s\"", node.Field)
