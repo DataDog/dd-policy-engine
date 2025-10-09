@@ -16,9 +16,9 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        arch: [x64, arm64]
+        arch: [amd64, arm64]
         include:
-          - arch: x64
+          - arch: amd64
             runner: ubuntu-22.04
           - arch: arm64
             runner: ubuntu-22.04-arm
@@ -47,9 +47,9 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        arch: [x64, arm64]
+        arch: [amd64, arm64]
         include:
-          - arch: x64
+          - arch: amd64
             runner: ubuntu-22.04
           - arch: arm64
             runner: ubuntu-22.04-arm
