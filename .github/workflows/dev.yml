@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         toolchain: [gcc, clang]
-        arch: [x86, arm64]
+        arch: [amd64, arm64]
         include:
           - arch: x86
             runner: ubuntu-22.04
