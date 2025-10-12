@@ -25,7 +25,7 @@ jobs:
         toolchain: [gcc, clang]
         arch: [amd64, arm64]
         include:
-          - arch: x86
+          - arch: amd64
             runner: ubuntu-22.04
           - arch: arm64
             runner: ubuntu-22.04-arm
