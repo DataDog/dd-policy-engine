@@ -16,7 +16,9 @@ typedef struct {
   size_t offset;
 } plcs_arena_allocator;
 
-plcs_arena_allocator plcs_arena_new(void *buffer, size_t size);
+plcs_arena_allocator *plcs_arena_new(size_t size);
+
+void plcs_arena_free(plcs_arena_allocator *arena);
 
 void plcs_arena_reset(plcs_arena_allocator *arena);
 

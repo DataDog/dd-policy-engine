@@ -13,7 +13,8 @@
 #include "arena_allocator.h"
 #include "wire/evaluator_types.h"
 
-#define PLCS_MAX_STR_PARAM_LENGTH 1024
+// Based on Linux's maximum path length.
+#define PLCS_MAX_STR_PARAM_LENGTH 4096
 
 /**
  * @brief String evaluator entry structure.
@@ -115,7 +116,7 @@ typedef struct plcs_eval_ctx {
   plcs_errors error;
 
   /**< string parameters allocator */
-  plcs_arena_allocator allocator;
+  plcs_arena_allocator *allocator;
 
 } plcs_eval_ctx;
 

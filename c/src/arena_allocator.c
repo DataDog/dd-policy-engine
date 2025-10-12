@@ -7,15 +7,32 @@
  */
 #include "arena_allocator.h"
 
+#include <stdlib.h>
 #include <string.h>
 
-plcs_arena_allocator plcs_arena_new(void *buffer, size_t size) {
-  plcs_arena_allocator arena;
-  arena.buffer = (uint8_t *)buffer;
-  arena.size = size;
-  arena.offset = 0;
+plcs_arena_allocator *plcs_arena_new(size_t size) {
+  if (size == 0) {
+    return NULL;
+  }
 
+  void *buffer = malloc(size);
+  if (buffer == NULL) {
+    return NULL;
+  }
+
+  plcs_arena_allocator *arena = (plcs_arena_allocator *)malloc(sizeof(plcs_arena_allocator));
+  arena->buffer = (uint8_t *)buffer;
+  arena->size = size;
+  arena->offset = 0;
   return arena;
+}
+
+void plcs_arena_free(plcs_arena_allocator *arena) {
+  free(arena->buffer);
+  arena->buffer = NULL;
+
+  arena->size = 0;
+  arena->offset = 0;
 }
 
 void plcs_arena_reset(plcs_arena_allocator *arena) {
