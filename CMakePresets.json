@@ -91,7 +91,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined"
+        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined -fsanitize-ignorelist=${sourceDir}/.sanitizers.supp"
       }
     },
     {

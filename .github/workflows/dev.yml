@@ -45,9 +45,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Build
-        run: make docker-run "CMAKE_PRESET=${{ matrix.toolchain }}-ci make -C c test-build"
+        run: make docker-run "make -C c test-build"
+        env:
+          DOCKER_ENVARS: "-e CMAKE_PRESET=${{ matrix.toolchain }}-ci"
       - name: Run Tests
-        run: make docker-run "LSAN_OPTIONS:suppressions=.lsan.supp ctest --test-dir c/build --schedule-random --output-junit test-report.xml"
+        run: make docker-run "./c/build/c/src/test/dd-policy-engine.unit-tests --random-order --output test-report.xml"
+        env:
+          DOCKER_ENVARS: "-e LSAN_OPTIONS=suppressions=.lsan.supp"
       - name: Report test coverage
         uses: datadog/junit-upload-github-action@762867566348d59ac9bcf479ebb4ec040db8940a # v2.0.0
         with:
