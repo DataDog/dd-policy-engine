@@ -91,7 +91,7 @@
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       },
       "environment": {
-        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined -fsanitize-ignorelist=${sourceDir}/.sanitizers.supp"
+        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined"
       }
     },
     {
@@ -136,9 +136,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
-      },
-      "environment": {
-        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined -fsanitize-ignorelist=${sourceDir}/.sanitizers.supp"
       }
     },
     {
@@ -148,9 +145,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
-      },
-      "environment": {
-        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined -fsanitize-ignorelist=${sourceDir}/.sanitizers.supp"
       }
     },
     {

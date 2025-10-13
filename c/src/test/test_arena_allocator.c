@@ -32,5 +32,5 @@ UTEST(arena, alloc) {
 
 UTEST(arena, zero_size) {
   plcs_arena_allocator *arena = plcs_arena_new(0);
-  EXPECT_EQ(NULL, arena);
+  EXPECT_TRUE(arena == NULL);
 }
