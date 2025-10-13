@@ -50,6 +50,8 @@ jobs:
           CMAKE_PRESET: ${{ matrix.toolchain }}-ci
       - name: Run Tests
         run: make docker-run "ctest --test-dir c/build --schedule-random --output-junit test-report.xml"
+        env:
+          LSAN_OPTIONS:suppressions=.lsan.supp
       - name: Report test coverage
         uses: datadog/junit-upload-github-action@762867566348d59ac9bcf479ebb4ec040db8940a # v2.0.0
         with:

@@ -31,8 +31,8 @@ void plcs_arena_free(plcs_arena_allocator *arena) {
   free(arena->buffer);
   arena->buffer = NULL;
 
-  arena->size = 0;
-  arena->offset = 0;
+  free(arena);
+  arena = NULL;
 }
 
 void plcs_arena_reset(plcs_arena_allocator *arena) {

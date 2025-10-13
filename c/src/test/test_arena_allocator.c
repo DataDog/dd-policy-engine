@@ -26,6 +26,8 @@ UTEST(arena, alloc) {
 
   buf7 *ptr4 = plcs_arena_alloc(arena, 7, alignof(uint8_t));
   ASSERT_TRUE(ptr4 != NULL);
+
+  plcs_arena_free(arena);
 }
 
 UTEST(arena, zero_size) {
