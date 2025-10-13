@@ -25,10 +25,13 @@ clean:
 	-find $(SCHEMA_OUTPUT_DIR)/dd/wls -type f ! -name 'json.go' -delete
 	@rm -rf $(addsuffix /out,$(EXAMPLES))
 
-
 build: generate-schema-headers generate-antlr-grammar
 	go mod tidy
 	CGO_ENABLED=0 go build -ldflags="-s -w" ./cmd/... 
+
+test:
+	go test ./internal/...
+	go test ./cmd/...
 
 # Verify by unmarshalling compiled policy to JSON
 verify_json:
