@@ -19,11 +19,12 @@ func writeBufferToFile(buffer []byte, fileName string) {
 	if err != nil {
 		log.Fatalf("Failed to write buffer to file: %v", err)
 	}
-	fmt.Printf("Wrote %d bytes to: %s\n", len(buffer), fileName)
+	log.Printf("Wrote %d bytes to: %s", len(buffer), fileName)
 }
 
 type Rule struct {
 	Description string `toml:"description"`
+  Instrument bool `toml:"instrument"`
 	Expression  string `toml:"expression"`
 }
 
@@ -43,7 +44,7 @@ func NewPolicyBuilder() *PolicyBuilder {
 
 func main() {
 	rulesFile := flag.String("rules", "", "TOML rule files")
-	outputFile := flag.String("output", "policy.fb", "Location of the generated policy")
+	outputFile := flag.String("output", "policy.fb", "Location of the generated policy. Default to ./policy.fb")
 	flag.Parse()
 
 	if *rulesFile == "" {
@@ -56,7 +57,7 @@ func main() {
 	}
 
 	var rules Rules
-	_, err := toml.DecodeFile(*rulesFile, &rules)
+	meta, err := toml.DecodeFile(*rulesFile, &rules)
 	if err != nil {
 		log.Fatalf("failed to decode rules file %q: %v", *rulesFile, err)
 	}
@@ -64,21 +65,26 @@ func main() {
 	builder := NewPolicyBuilder()
 
 	n_rules := len(rules)
-	fmt.Printf("Found %d rules defined in %s\n", n_rules, *rulesFile)
+	log.Printf("Found %d rules defined in %s", n_rules, *rulesFile)
 
 	i := 0
 	for id, rule := range rules {
 		i += 1
-		fmt.Printf("[%d/%d] Parsing rule \"%s\" \n", i, n_rules, id)
+    log.Printf("[%d/%d] Processing rule %q", i, n_rules, id)
+    log.Printf("  - Validating...")
+    err = validateRule(meta, id)
+    if err != nil {
+      log.Fatalf("  Error: %s", err)
+    }
+
+		log.Printf("  - Parsing...")
 		ruleAst, err := parser.Parse(rule.Expression)
 		if err != nil {
-			fmt.Printf("Parsing error: \n%s\n", err)
-			os.Exit(1)
+			log.Fatalf("  Parsing error: %s", err)
 		}
 
-		if err = addRule(builder, id, rule.Description, ruleAst); err != nil {
-			fmt.Printf("Error: \n%s", err)
-			os.Exit(1)
+		if err = addRule(builder, id, rule.Description, ruleAst, rule.Instrument); err != nil {
+			log.Fatalf("  Error: %s", err)
 		}
 	}
 
@@ -87,6 +93,18 @@ func main() {
 	buffer := builder.builder.FinishedBytes()
 	writeBufferToFile(buffer, *outputFile)
 	os.Exit(0)
+}
+
+func validateRule(meta toml.MetaData, ruleId string) error {
+  requiredFields := []string{ "expression", "instrument" }
+
+  for _, fieldName := range requiredFields {
+    if !meta.IsDefined(ruleId, fieldName) {
+      return fmt.Errorf("mandatory field %q is missing from rule %q", fieldName, ruleId)
+    }
+  }
+
+  return nil
 }
 
 func createStrEvaluatorNode(builder *flatbuffers.Builder, evaluatorId wls.StringEvaluators, value string, cmpp wls.CmpTypeSTR, description string) flatbuffers.UOffsetT {
@@ -192,18 +210,22 @@ func processAST(nodes *[]flatbuffers.UOffsetT, builder *flatbuffers.Builder, nod
 	return errors.New("unexpected node type")
 }
 
-func addRule(builder *PolicyBuilder, id string, description string, ast parser.AST) error {
+func addRule(builder *PolicyBuilder, id string, description string, ast parser.AST, enableInstrumentation bool) error {
 	var nodes []flatbuffers.UOffsetT
 
 	// Create tree
 	if err := processAST(&nodes, builder.builder, ast.Node); err != nil {
-		fmt.Printf("Error: %s\n", err)
 		return err
 	}
 
 	// Create root and action nodes
+  actionKind := wls.ActionIdINJECT_DENY
+  if (enableInstrumentation) {
+    actionKind = wls.ActionIdINJECT_ALLOW
+  }
+
 	nodeRoot := createConditionalNode(builder.builder, wls.BoolOperationBOOL_AND, id, nodes)
-	action := schema.ActionCreate(builder.builder, wls.ActionIdINJECT_ALLOW, id, []string{})
+	action := schema.ActionCreate(builder.builder, actionKind, id, []string{})
 
 	builder.offsets = append(builder.offsets, schema.PolicyCreate(builder.builder, description, nodeRoot, []flatbuffers.UOffsetT{action}))
 	return nil
