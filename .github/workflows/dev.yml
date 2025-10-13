@@ -45,7 +45,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Build
-        run: make docker-run "CMAKE_PRESET: ${{ matrix.toolchain }}-ci make -C c test-build"
+        run: make docker-run "CMAKE_PRESET=${{ matrix.toolchain }}-ci make -C c test-build"
       - name: Run Tests
         run: make docker-run "LSAN_OPTIONS:suppressions=.lsan.supp ctest --test-dir c/build --schedule-random --output-junit test-report.xml"
       - name: Report test coverage
