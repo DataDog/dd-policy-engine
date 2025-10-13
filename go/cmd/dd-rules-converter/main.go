@@ -1,6 +1,7 @@
 package main
 
 import (
+  "sort"
 	"errors"
 	"flag"
 	"fmt"
@@ -13,14 +14,6 @@ import (
 	wls "github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
-
-func writeBufferToFile(buffer []byte, fileName string) {
-	err := os.WriteFile(fileName, buffer, 0644)
-	if err != nil {
-		log.Fatalf("Failed to write buffer to file: %v", err)
-	}
-	log.Printf("Wrote %d bytes to: %s", len(buffer), fileName)
-}
 
 type Rule struct {
 	Description string `toml:"description"`
@@ -42,56 +35,84 @@ func NewPolicyBuilder() *PolicyBuilder {
 	}
 }
 
-func main() {
-	rulesFile := flag.String("rules", "", "TOML rule files")
-	outputFile := flag.String("output", "policy.fb", "Location of the generated policy. Default to ./policy.fb")
-	flag.Parse()
-
-	if *rulesFile == "" {
-		fmt.Fprintln(os.Stderr, "error: -rules flag is required")
-		flag.Usage()
-	}
-
-	if _, err := os.Stat(*rulesFile); err != nil {
-		log.Fatalf("failed to access rules file %q: %v", *rulesFile, err)
-	}
-
+func run(data string) ([]byte, error) {
 	var rules Rules
-	meta, err := toml.DecodeFile(*rulesFile, &rules)
+	meta, err := toml.Decode(data, &rules)
 	if err != nil {
-		log.Fatalf("failed to decode rules file %q: %v", *rulesFile, err)
+		log.Printf("failed to decode rules: %v", err)
+    return nil, err
 	}
+
+  // Sort to create rules in a deterministic order to ensure the generated flatbuffer is consistent for the same rule file.
+  rulesId := make([]string, 0, len(rules))
+	for k := range rules {
+		rulesId = append(rulesId, k)
+	}
+	sort.Strings(rulesId)
 
 	builder := NewPolicyBuilder()
 
 	n_rules := len(rules)
-	log.Printf("Found %d rules defined in %s", n_rules, *rulesFile)
+	log.Printf("Found %d rules", n_rules)
 
 	i := 0
-	for id, rule := range rules {
+	for _, id := range rulesId {
 		i += 1
+    rule := rules[id]
     log.Printf("[%d/%d] Processing rule %q", i, n_rules, id)
     log.Printf("  - Validating...")
     err = validateRule(meta, id)
     if err != nil {
-      log.Fatalf("  Error: %s", err)
+      log.Printf("  Error: %s", err)
+      return nil, err
     }
 
 		log.Printf("  - Parsing...")
 		ruleAst, err := parser.Parse(rule.Expression)
 		if err != nil {
-			log.Fatalf("  Parsing error: %s", err)
+			log.Printf("  Parsing error: %s", err)
+      return nil, err
 		}
 
 		if err = addRule(builder, id, rule.Description, ruleAst, rule.Instrument); err != nil {
-			log.Fatalf("  Error: %s", err)
+			log.Printf("  Error: %s", err)
+      return nil, err
 		}
 	}
 
 	policies := schema.PoliciesCreate(builder.builder, builder.offsets)
 	builder.builder.Finish(policies)
 	buffer := builder.builder.FinishedBytes()
-	writeBufferToFile(buffer, *outputFile)
+  return buffer, nil
+}
+
+func main() {
+	ruleFile := flag.String("rules", "", "TOML rule file")
+	outputFile := flag.String("output", "policy.fb", "Location of the generated policy. Default to ./policy.fb")
+	flag.Parse()
+
+	if *ruleFile == "" {
+		fmt.Fprintln(os.Stderr, "error: -rules flag is required")
+		flag.Usage()
+	}
+
+  log.Printf("Reading %q", *ruleFile)
+  fileContent, err := os.ReadFile(*ruleFile)
+	if err != nil {
+		log.Fatalf("failed to access rules file %q: %v", *ruleFile, err)
+	}
+
+  buffer, err := run(string(fileContent))
+  if err != nil {
+    os.Exit(1)
+  }
+
+	err = os.WriteFile(*outputFile, buffer, 0644)
+	if err != nil {
+		log.Fatalf("Failed to write buffer to file: %v", err)
+	}
+
+	log.Printf("Wrote %d bytes to: %s", len(buffer), *outputFile)
 	os.Exit(0)
 }
 
