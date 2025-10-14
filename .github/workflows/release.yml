@@ -8,11 +8,11 @@ on:
 env: 
   # Override the `DOCKER_IMAGE` variable in Makefile.docker  
   # This makes all Makefile targets use the specified Docker image instead of building a new one.
-  DOCKER_IMAGE: datadog/docker-library:dd-policy-engine-a0f48dd
+  DOCKER_IMAGE: datadog/docker-library:dd-policy-engine-88ce93f
   BUILD_CONTAINER: false
 
 jobs:
-  package-libpolicies-linux:
+  package-linux:
     strategy:
       fail-fast: true
       matrix:
@@ -31,17 +31,23 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Configure
         run: make docker-run "cmake -B build --preset gcc-release ."
-      - name: Build
-        run: make docker-run "cmake --build build --target dd-policy-engine.static-lib -j"
-      - name: Install
-        run: make docker-run "cmake --install build --prefix=libpolicies"
-      - name: Package
+      - name: Build libpolicies
+        run: |
+          make docker-run "cmake --build build --target dd-policy-engine.static-lib -j"
+          make docker-run "cmake --install build --prefix=libpolicies"
+      - name: Package libpolicies
         run: tar -czf libpolicies-linux-${{ matrix.arch }}.tar.gz libpolicies
+      - name: Build dd-rules-converter
+        run: make docker-run "make -C go build"
+      - name: Package dd-rules-converter
+        run: tar -czf dd-rules-converter-linux-${{ matrix.arch }}.tar.gz go/dd-rules-converter
       - name: Export library
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: libpolicies-linux-${{ matrix.arch }}
-          path: libpolicies-linux-${{ matrix.arch }}.tar.gz
+          path: |
+            libpolicies-linux-${{ matrix.arch }}.tar.gz
+            dd-rules-converter-linux-${{ matrix.arch }}.tar.gz
 
   package-dd-compile-policy-linux:
     strategy:
@@ -71,7 +77,7 @@ jobs:
           name: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
           path: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
 
-  package-libpolicies-windows:
+  package-windows:
     strategy:
       fail-fast: false
       matrix:
@@ -98,23 +104,30 @@ jobs:
           Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
       - name: Install Dependencies
-        run: scoop install main/cmake@4.0.1
+        run: scoop install main/cmake@4.0.1 go
       - name: Build
         run: |
           cmake -B build --preset msvc-release .
           cmake --build build --target dd-policy-engine.static-lib -j
           cmake --install build --prefix=libpolicies
-      - name: Package
+      - name: Package libpolicies
         run: Compress-Archive -Path ./libpolicies -DestinationPath libpolicies-win-${{ matrix.arch }}.zip
+      - name: Build dd-rules-converter
+        run: go build ./cmd/dd-rules-converter
+        working-directory: go
+      - name: Package dd-rules-converter
+        run: Compress-Archive -Path ./go/dd-rules-converter.exe -DestinationPath dd-rules-converter-win-${{ matrix.arch }}.zip
       - name: Export library
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: libpolicies-win-${{ matrix.arch }}
-          path: libpolicies-win-${{ matrix.arch }}.zip
+          path: |
+            libpolicies-win-${{ matrix.arch }}.zip
+            dd-rules-converter-win-${{ matrix.arch }}.zip
 
   generate-github-draft-release:
     if: github.event_name != 'workflow_dispatch'
-    needs: [package-libpolicies-windows, package-libpolicies-linux, package-dd-compile-policy-linux]
+    needs: [package-windows, package-linux, package-dd-compile-policy-linux]
     runs-on: ubuntu-22.04-arm
     environment:
       name: release

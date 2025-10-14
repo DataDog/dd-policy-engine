@@ -66,4 +66,5 @@ RUN apk add --no-cache flatbuffers flatbuffers-dev
 ADD https://www.antlr.org/download/antlr-4.13.2-complete.jar /usr/local/lib/antlr4-tool.jar
 RUN echo '#!/bin/bash' > /usr/local/bin/antlr4 \
  && echo 'java -Xmx500M -cp /usr/local/lib/antlr4-tool.jar org.antlr.v4.Tool "$@"' >> /usr/local/bin/antlr4 \
- && chmod +x /usr/local/bin/antlr4
+ && chmod a+rx /usr/local/bin/antlr4 \
+ && chmod a+r /usr/local/lib/antlr4-tool.jar
