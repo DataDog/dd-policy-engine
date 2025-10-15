@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
   // Load JSON content based on input method
   if (has_input_file) {
-    bool ok = flatbuffers::LoadFile(json_file.c_str(), false, &json_str);
+    const bool ok = flatbuffers::LoadFile(json_file.c_str(), false, &json_str);
     if (!ok) {
       std::cerr << "failed to open file " << json_file << std::endl;
       return EXIT_FAILURE;
