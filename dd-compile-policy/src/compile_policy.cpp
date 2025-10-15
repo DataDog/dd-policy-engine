@@ -21,9 +21,10 @@ int main(int argc, char *argv[]) {
   cxxopts::Options options("dd-compile-policy",
                            "Compile policy JSON to FlatBuffer binary");
 
-  options.add_options()("input-json", "Input JSON file path",
+  options.add_options()("input-file", "Input JSON file path",
                         cxxopts::value<std::string>())(
-      "output", "Output binary file path",
+      "input-string", "Input JSON string", cxxopts::value<std::string>())(
+      "output-file", "Output binary file path",
       cxxopts::value<std::string>())("h,help", "Print usage");
 
   auto result = options.parse(argc, argv);
@@ -33,15 +34,38 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
   }
 
-  if (!result.count("input-json") || !result.count("output")) {
-    std::cerr << "Error: Both --input-json and --output are required."
+  // Validate that exactly one input method is provided
+  bool has_input_file = result.count("input-file");
+  bool has_input_string = result.count("input-string");
+
+  if (!has_input_file && !has_input_string) {
+    std::cerr << "Error: Either --input-file or --input-string is required."
               << std::endl;
     std::cerr << options.help() << std::endl;
     return EXIT_FAILURE;
   }
 
-  json_file = result["input-json"].as<std::string>();
-  output_path = result["output"].as<std::string>();
+  if (has_input_file && has_input_string) {
+    std::cerr << "Error: Cannot specify both --input-file and --input-string. "
+                 "Use only one."
+              << std::endl;
+    std::cerr << options.help() << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  if (!result.count("output-file")) {
+    std::cerr << "Error: --output-file is required." << std::endl;
+    std::cerr << options.help() << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  if (has_input_file) {
+    json_file = result["input-file"].as<std::string>();
+  }
+  if (has_input_string) {
+    json_str = result["input-string"].as<std::string>();
+  }
+  output_path = result["output-file"].as<std::string>();
 
   flatbuffers::Parser parser;
 
@@ -52,12 +76,15 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  std::cout << json_file << std::endl;
-  bool ok = flatbuffers::LoadFile(json_file.c_str(), false, &json_str);
-  if (!ok) {
-    std::cerr << "failed to open file " << json_file << std::endl;
-    return EXIT_FAILURE;
+  // Load JSON content based on input method
+  if (has_input_file) {
+    bool ok = flatbuffers::LoadFile(json_file.c_str(), false, &json_str);
+    if (!ok) {
+      std::cerr << "failed to open file " << json_file << std::endl;
+      return EXIT_FAILURE;
+    }
   }
+  // For input-string, json_str is already set from command line argument
 
   // Parse JSON string
   if (!parser.ParseJson(json_str.c_str())) {
