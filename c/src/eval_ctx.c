@@ -88,7 +88,7 @@ plcs_errors plcs_eval_ctx_set_str_eval_param(plcs_string_evaluators ix, const ch
   }
 
   if (ctx.string_evaluators[ix].value != NULL) {
-    free(ctx.string_evaluators[ix].value);
+    free((void *)ctx.string_evaluators[ix].value);
   }
   ctx.string_evaluators[ix].value = maybe_dup;
   return PLCS_ESUCCESS;
@@ -253,7 +253,7 @@ void plcs_eval_ctx_reset(void) {
     ctx.string_evaluators[i].error = PLCS_ESUCCESS;
     ctx.string_evaluators[i].function_ptr = NULL;
     if (ctx.string_evaluators[i].value != NULL) {
-      free(ctx.string_evaluators[i].value);
+      free((void *)ctx.string_evaluators[i].value);
     }
     ctx.string_evaluators[i].value = PLCS_STR_NOT_SET;
   }
