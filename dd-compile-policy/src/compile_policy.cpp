@@ -35,8 +35,8 @@ int main(int argc, char *argv[]) {
   }
 
   // Validate that exactly one input method is provided
-  bool has_input_file = result.count("input-file");
-  bool has_input_string = result.count("input-string");
+  const bool has_input_file = result.count("input-file");
+  const bool has_input_string = result.count("input-string");
 
   if (!has_input_file && !has_input_string) {
     std::cerr << "Error: Either --input-file or --input-string is required."
