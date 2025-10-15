@@ -129,7 +129,8 @@ UTEST(eval_ctx, register_and_get_string_evaluator_and_param) {
 
   param = plcs_eval_ctx_get_string_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE);
   ASSERT_TRUE(param != NULL);
-  ASSERT_EQ(0, strcmp(param, ctx_value));
+  ASSERT_NE(param, ctx_value);
+  ASSERT_STREQ(param, ctx_value);
 
   /* Ensure evaluator behaves as expected */
   int r = f("jvm", PLCS_STR_CMP_EXACT, param, "desc", PLCS_STR_EVAL_RUNTIME_LANGUAGE);
