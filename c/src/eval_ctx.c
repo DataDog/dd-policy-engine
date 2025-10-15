@@ -87,6 +87,9 @@ plcs_errors plcs_eval_ctx_set_str_eval_param(plcs_string_evaluators ix, const ch
     return PLCS_EALLOCATION;
   }
 
+  if (ctx.string_evaluators[ix].value != NULL) {
+     free(ctx.string_evaluators[ix].value);
+  }
   ctx.string_evaluators[ix].value = maybe_dup;
   return PLCS_ESUCCESS;
 }
