@@ -10,7 +10,7 @@ DOCKER_IMAGE      ?= dd-policies-build-container:$(DOCKER_TAG)
 DOCKER_CONTAINER  := run --rm -t --platform $(DOCKER_PLATFORM) --hostname "test-hostname"
 DOCKER_WORKDIR    := -v $(CURDIR):/work -w /work
 DOCKER_EXTRA_OPTS :=
-DOCKER_ENVARS     := 
+DOCKER_ENVARS     ?= 
 ifeq ($(shell uname -s),Linux)
   DOCKER_EXTRA_OS := --user "$(shell id -u):$(shell id -g)" -e GOPATH=/work/.docker/go/path -e GOCACHE=/work/.docker/go/cache
 else
