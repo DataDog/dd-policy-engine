@@ -111,8 +111,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to write buffer to file: %v", err)
 	}
-
 	log.Printf("Wrote %d bytes to: %s", len(buffer), *outputFile)
+
+  log.Printf("Setting permissions on: %s", *outputFile)
+  err = SetPermissions(*outputFile)
+  if err != nil {
+    log.Fatalf("Failed to set permissions to file: %v", err)
+  }
+
 	os.Exit(0)
 }
 
