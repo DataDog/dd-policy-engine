@@ -122,7 +122,7 @@ void print_policies(const uint8_t *buffer, size_t size) {
 
   size_t policies_count = dd_ns(Policy_vec_len)(policies);
   for (size_t ix = 0; ix < policies_count; ++ix) {
-    printf("\n---------------[%lu]---------------\n", ix);
+    printf("\n---------------[%zu]---------------\n", ix);
     dd_ns(Policy_table_t) policy = dd_ns(Policy_vec_at)(policies, ix);
     if (!policy) {
       // not necessarily an error, could be empty policy
@@ -131,7 +131,7 @@ void print_policies(const uint8_t *buffer, size_t size) {
     dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
     printTree(rules, "", true);
     // printActions()
-    printf("---------------[%lu]---------------\n\n", ix);
+    printf("---------------[%zu]---------------\n\n", ix);
   }
 }
 static uint8_t *read_file_contents(const char *filepath, size_t *out_size) {

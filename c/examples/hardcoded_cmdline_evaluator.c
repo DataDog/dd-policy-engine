@@ -48,7 +48,7 @@ plcs_errors ACTION_INJECT_DENY(
   );
 
   for (size_t ix = 0; ix < value_len; ++ix) {
-    printf("  -> Value[%lu]: '%s'\n", ix, values[ix]);
+    printf("  -> Value[%zu]: '%s'\n", ix, values[ix]);
   }
 
   switch (res) {
@@ -81,7 +81,7 @@ plcs_errors ACTION_INJECT_ALLOW(
   );
 
   for (size_t ix = 0; ix < value_len; ++ix) {
-    printf("  -> Value[%lu]: '%s'\n", ix, values[ix]);
+    printf("  -> Value[%zu]: '%s'\n", ix, values[ix]);
   }
 
   switch (res) {
