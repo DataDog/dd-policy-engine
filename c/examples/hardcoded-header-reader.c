@@ -28,7 +28,7 @@ plcs_errors ACTION_INJECT_DENY(
   printf("Result: %s\n", res == PLCS_EVAL_RESULT_FALSE ? "false" : res == PLCS_EVAL_RESULT_TRUE ? "true" : "dont-care");
 
   for (size_t ix = 0; ix < value_len; ++ix) {
-    printf("Value[%lu]: '%s'\n", ix, values[ix]);
+    printf("Value[%zu]: '%s'\n", ix, values[ix]);
   }
   return PLCS_ESUCCESS;
 }
@@ -46,7 +46,7 @@ plcs_errors ACTION_INJECT_ALLOW(
   printf("Result: %s\n", res == PLCS_EVAL_RESULT_FALSE ? "false" : res == PLCS_EVAL_RESULT_TRUE ? "true" : "dont-care");
 
   for (size_t ix = 0; ix < value_len; ++ix) {
-    printf("Value[%lu]: '%s'\n", ix, values[ix]);
+    printf("Value[%zu]: '%s'\n", ix, values[ix]);
   }
   return PLCS_ESUCCESS;
 }
