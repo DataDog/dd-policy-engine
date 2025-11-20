@@ -141,12 +141,12 @@ void print_actions(dd_ns(Policy_table_t) policy) {
     flatbuffers_string_vec_t vals = dd_ns(Action_values)(act);
     size_t vlen = vals ? flatbuffers_string_vec_len(vals) : 0;
 
-      printf("      values[%zu]: ", vlen);
-      for (size_t j = 0; j < vlen; j++) {
-        const char *v = flatbuffers_string_vec_at(vals, j);
-        printf("%s'%s'", j == 0 ? "" : ", ", v ? v : "");
-      }
-      printf("\n");
+    printf("      values[%zu]: ", vlen);
+    for (size_t j = 0; j < vlen; j++) {
+      const char *v = flatbuffers_string_vec_at(vals, j);
+      printf("%s'%s'", j == 0 ? "" : ", ", v ? v : "");
+    }
+    printf("\n");
   }
 }
 
