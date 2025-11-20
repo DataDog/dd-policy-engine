@@ -127,7 +127,7 @@ void print_actions(dd_ns(Policy_table_t) policy) {
 
     // action ID
     dd_wls_ActionId_enum_t aid = dd_ns(Action_action)(act);
-    const char *aid_name = dd_wls_ActionId_name(aid);
+    const char *aid_name = dd_ns(ActionId_name)(aid);
 
     // description
     const char *desc = dd_ns(Action_description)(act);
