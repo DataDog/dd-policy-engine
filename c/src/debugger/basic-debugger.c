@@ -113,6 +113,43 @@ void printTree(dd_ns(NodeTypeWrapper_table_t) node, const char *prefix, bool is_
     printTree(dd_ns(NodeTypeWrapper_vec_at)(children, i), newPrefix, i == children_len - 1);
 }
 
+void print_actions(dd_ns(Policy_table_t) policy) {
+  dd_ns(Action_vec_t) actions = dd_ns(Policy_actions)(policy);
+  size_t actions_len = actions ? dd_ns(Action_vec_len)(actions) : 0;
+
+  printf("  actions[%zu]\n", actions_len);
+
+  for (size_t i = 0; i < actions_len; i++) {
+    dd_ns(Action_table_t) act = dd_ns(Action_vec_at)(actions, i);
+    if (!act) {
+      continue;
+    }
+
+    // action ID
+    dd_ns(ActionId_enum_t) aid = dd_ns(Action_action)(act);
+    const char *aid_name = dd_ns(ActionId_name)(aid);
+
+    // description
+    const char *desc = dd_ns(Action_description)(act);
+    if (!desc) {
+      desc = "";
+    }
+
+    printf("    - id=%s desc='%s'\n", aid_name, desc);
+
+    // values: vector<string>
+    flatbuffers_string_vec_t vals = dd_ns(Action_values)(act);
+    size_t vlen = vals ? flatbuffers_string_vec_len(vals) : 0;
+
+    printf("      values[%zu]: ", vlen);
+    for (size_t j = 0; j < vlen; j++) {
+      const char *v = flatbuffers_string_vec_at(vals, j);
+      printf("%s'%s'", j == 0 ? "" : ", ", v ? v : "");
+    }
+    printf("\n");
+  }
+}
+
 void print_policies(const uint8_t *buffer, size_t size) {
   dd_ns(Policy_vec_t) policies = plcs_get_policies(buffer, size);
   if (!policies) {
@@ -128,12 +165,20 @@ void print_policies(const uint8_t *buffer, size_t size) {
       // not necessarily an error, could be empty policy
       continue;
     }
+
+    const char *p_desc = dd_ns(Policy_description)(policy);
+    int64_t version = dd_ns(Policy_version)(policy);
+    printf("Policy[%zu]: desc='%s' version=%" PRId64 "\n", ix, p_desc ? p_desc : "", version);
+
     dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
     printTree(rules, "", true);
-    // printActions()
+
+    print_actions(policy);
+
     printf("---------------[%zu]---------------\n\n", ix);
   }
 }
+
 static uint8_t *read_file_contents(const char *filepath, size_t *out_size) {
   FILE *file = fopen(filepath, "rb");
   if (!file) {
