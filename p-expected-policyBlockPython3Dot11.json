@@ -1,0 +1,80 @@
+{
+    policies: [
+        {
+            description: 'Workload Selection Policy / default',
+            rules: {
+                node_type: 'EvaluatorNode',
+                node: {
+                    description: 'catch-all',
+                    eval_type: 'StrEvaluator',
+                    eval: {
+                        id: 'RUNTIME_LANGUAGE',
+                        cmp: 'CMP_CONTAINS',
+                        value: '',
+                    },
+                },
+            },
+            actions: [
+                {
+                    action: 'INJECT_DENY',
+                    description: 'default',
+                },
+            ],
+        },
+        {
+            rules: {
+                node_type: 'EvaluatorNode',
+                node: {
+                    eval_type: 'StrEvaluator',
+                    eval: {
+                        id: 'RUNTIME_LANGUAGE',
+                        cmp: 'CMP_EXACT',
+                        value: 'python',
+                    },
+                },
+            },
+            actions: [
+                {
+                    action: 'INJECT_ALLOW',
+                },
+            ],
+        },
+        {
+            rules: {
+                node_type: 'CompositeNode',
+                node: {
+                    op: 'BOOL_AND',
+                    children: [
+                        {
+                            node_type: 'EvaluatorNode',
+                            node: {
+                                eval_type: 'StrEvaluator',
+                                eval: {
+                                    id: 'RUNTIME_LANGUAGE',
+                                    cmp: 'CMP_EXACT',
+                                    value: 'python',
+                                },
+                            },
+                        },
+                        {
+                            node_type: 'EvaluatorNode',
+                            node: {
+                                eval_type: 'StrEvaluator',
+                                eval: {
+                                    id: 'PROCESS_EXE',
+                                    cmp: 'CMP_CONTAINS',
+                                    value: '3.11',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+            actions: [
+                {
+                    action: 'INJECT_DENY',
+                },
+            ],
+        },
+    ],
+}
