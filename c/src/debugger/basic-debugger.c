@@ -120,38 +120,37 @@ void print_actions(dd_ns(Policy_table_t) policy) {
   printf("  actions[%zu]\n", actions_len);
 
   for (size_t i = 0; i < actions_len; i++) {
-      dd_ns(Action_table_t) act = dd_ns(Action_vec_at)(actions, i);
+    dd_ns(Action_table_t) act = dd_ns(Action_vec_at)(actions, i);
+    if (!act) {
+      continue;
+    }
 
-      if (!act) {
-          continue;
+    // action ID
+    dd_wls_ActionId_enum_t aid = dd_ns(Action_action)(act);
+    const char *aid_name = dd_wls_ActionId_name(aid);
+
+    // description
+    const char *desc = dd_ns(Action_description)(act);
+    if (!desc) {
+      desc = "";
+    }
+
+    printf("    - id=%s desc='%s'\n", aid_name, desc);
+
+    // values: vector<string>
+    flatbuffers_string_vec_t vals = dd_ns(Action_values)(act);
+    size_t vlen = vals ? flatbuffers_string_vec_len(vals) : 0;
+
+    if (vlen > 0) {
+      printf("      values[%zu]: ", vlen);
+      for (size_t j = 0; j < vlen; j++) {
+        const char *v = flatbuffers_string_vec_at(vals, j);
+        printf("%s'%s'", j == 0 ? "" : ", ", v ? v : "");
       }
-
-      // action ID
-      dd_wls_ActionId_enum_t aid = dd_ns(Action_action)(act);
-      const char *aid_name = dd_wls_ActionId_name(aid);
-
-      // description
-      const char *desc = dd_ns(Action_description)(act);
-      if (!desc) desc = "";
-
-      printf("    - id=%s desc='%s'\n", aid_name, desc);
-
-      // values: vector of flatbuffers_string_t
-      flatbuffers_string_vec_t vals = dd_ns(Action_values)(act);
-      size_t vlen = vals ? flatbuffers_string_vec_len(vals) : 0;
-
-      if (vlen > 0) {
-          printf("      values[%zu]: ", vlen);
-          for (size_t j = 0; j < vlen; j++) {
-              const char *v = flatbuffers_string_vec_at(vals, j);
-              printf("%s'%s'", (j == 0 ? "" : ", "), v ? v : "");
-          }
-          printf("\n");
-      }
+      printf("\n");
+    }
   }
 }
-
-
 
 void print_policies(const uint8_t *buffer, size_t size) {
   dd_ns(Policy_vec_t) policies = plcs_get_policies(buffer, size);
