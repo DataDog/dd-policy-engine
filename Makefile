@@ -54,8 +54,8 @@ shell:
 	DOCKER_EXTRA_OPTS=-i; $(DOCKER_RUN_I) sh
 
 run-in-shell:
-	@cmd="$(filter-out $@,$(MAKECMDGOALS))"; \
-	if [ -z "$$cmd" ]; then echo "[!] No command provided. Usage: make run-in-shell <command...>"; exit 1; fi; \
+	@cmd="$(if $(CMD),$(CMD),$(filter-out $@,$(MAKECMDGOALS)))"; \
+	if [ -z "$$cmd" ]; then echo "[!] No command provided. Usage: make run-in-shell CMD='<command...>'  OR  make run-in-shell <command...>"; exit 1; fi; \
 	DOCKER_EXTRA_OPTS=-i; $(DOCKER_RUN_I) sh -lc "cd /work && $$cmd"
 
 convert-to-json:
