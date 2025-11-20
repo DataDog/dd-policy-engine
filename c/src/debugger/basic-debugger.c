@@ -171,12 +171,10 @@ void print_policies(const uint8_t *buffer, size_t size) {
     // 🔎 NEW: show policy description + version
     const char *p_desc = dd_ns(Policy_description)(policy);
     int64_t version = dd_ns(Policy_version)(policy);
-    printf(
-      "Policy[%zu]: desc='%s' version=%" PRId64 "\n",
+    printf("Policy[%zu]: desc='%s' version=%" PRId64 "\n",
       ix,
       p_desc ? p_desc : "",
-      version
-    );
+      version);
 
     dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
     printTree(rules, "", true);
