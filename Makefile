@@ -8,7 +8,7 @@ BUILD_CONTAINER ?= true
 
 include Makefile.docker
 
-.PHONY: all build build-container test examples clean $(LANGUAGES)
+.PHONY: all build build-container test examples clean shell run-in-shell $(LANGUAGES)
 
 %-all: 
 	$(DOCKER_RUN) make -C $(patsubst %-all,%,$@) all
@@ -52,6 +52,11 @@ generate-jsonschema: build-container
 
 shell:
 	DOCKER_EXTRA_OPTS=-i; $(DOCKER_RUN_I) sh
+
+run-in-shell:
+	@cmd="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -z "$$cmd" ]; then echo "[!] No command provided. Usage: make run-in-shell <command...>"; exit 1; fi; \
+	DOCKER_EXTRA_OPTS=-i; $(DOCKER_RUN_I) sh -lc "cd /work && $$cmd"
 
 convert-to-json:
 	@$(DOCKER_RUN) flatc --json --raw-binary $(SCHEMA_DIR)/policy.fbs -- $(FILE)
