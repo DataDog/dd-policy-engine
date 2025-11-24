@@ -1,3 +1,10 @@
+# Detect operating system
+ifeq ($(OS),Windows_NT)
+	DETECTED_OS := Windows
+else
+	DETECTED_OS := $(shell uname)
+endif
+
 LANGUAGES := c go
 SHELL := /bin/bash
 SCHEMA_DIR := ./fbs-schema
@@ -6,7 +13,9 @@ COMMIT_SHA ?= $(shell git rev-parse --short HEAD)
 DOCKER_REPO ?= datadog/docker-library
 BUILD_CONTAINER ?= true
 
+ifneq ($(DETECTED_OS),Windows)
 include Makefile.docker
+endif
 
 .PHONY: all build build-container test examples clean $(LANGUAGES)
 
@@ -15,16 +24,32 @@ include Makefile.docker
 all: build-container build-dd-compile-policy $(addsuffix -all,$(LANGUAGES)) examples
 
 build-dd-compile-policy:
+ifeq ($(DETECTED_OS),Windows)
+	cd dd-compile-policy && $(MAKE) build
+else
 	$(DOCKER_RUN) make -C dd-compile-policy build
+endif
 
 clean-dd-compile-policy:
+ifeq ($(DETECTED_OS),Windows)
+	cd dd-compile-policy && $(MAKE) clean
+else
 	$(DOCKER_RUN) make -C dd-compile-policy clean
+endif
 
 fmt-dd-compile-policy:
+ifeq ($(DETECTED_OS),Windows)
+	cd dd-compile-policy && $(MAKE) fmt
+else
 	$(DOCKER_RUN) make -C dd-compile-policy fmt
+endif
 
 fmt-dd-compile-policy-check:
+ifeq ($(DETECTED_OS),Windows)
+	cd dd-compile-policy && $(MAKE) fmt-check
+else
 	$(DOCKER_RUN) make -C dd-compile-policy fmt-check
+endif
 
 %-examples:
 	$(DOCKER_RUN) make -C $(patsubst %-examples,%,$@) examples
