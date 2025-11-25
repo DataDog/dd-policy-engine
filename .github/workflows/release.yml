@@ -81,7 +81,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        arch: [x64]
     runs-on: windows-2022
     timeout-minutes: 10
     defaults:
@@ -97,23 +97,15 @@ jobs:
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
           arch: ${{ matrix.arch }}
-      - name: Fix ARM64 compiler PATH
-        if: matrix.arch == 'arm64'
+      - name: Install Dependency Manager (scoop)
         run: |
-          $vsPath = "${env:PROGRAMFILES}\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC"
-          $msvcVersion = Get-ChildItem $vsPath | Sort-Object Name -Descending | Select-Object -First 1
-          $arm64CompilerPath = "$vsPath\$($msvcVersion.Name)\bin\Hostx64\arm64"
-          $env:PATH = "$arm64CompilerPath;$env:PATH"
-          echo "PATH=$env:PATH" >> $env:GITHUB_ENV
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
       - name: Install Dependencies
-        run: |
-          choco install cmake make --installargs 'ADD_CMAKE_TO_PATH=System'
-          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+        run: scoop install main/cmake@4.0.1 main/make@4.4.1
       - name: Build dd-compile-policy
-        run: |
-          cd dd-compile-policy
-          try { make clean } catch { }
-          make build CMAKE_ARCH=${{ matrix.arch }}
+        run: make -C dd-compile-policy build CMAKE_ARCH=${{ matrix.arch }}
       - name: Package dd-compile-policy
         run: Compress-Archive -Path ./dd-compile-policy/bin/dd-compile-policy.exe -DestinationPath dd-compile-policy-windows-${{ matrix.arch }}.zip
       - name: Upload dd-compile-policy

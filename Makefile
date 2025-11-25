@@ -15,6 +15,9 @@ BUILD_CONTAINER ?= true
 
 ifneq ($(DETECTED_OS),Windows)
 include Makefile.docker
+else
+# On Windows, set DOCKER_RUN to empty so we can use the same commands as Linux
+DOCKER_RUN :=
 endif
 
 .PHONY: all build build-container test examples clean $(LANGUAGES)
@@ -24,32 +27,16 @@ endif
 all: build-container build-dd-compile-policy $(addsuffix -all,$(LANGUAGES)) examples
 
 build-dd-compile-policy:
-ifeq ($(DETECTED_OS),Windows)
-	cd dd-compile-policy && $(MAKE) build
-else
 	$(DOCKER_RUN) make -C dd-compile-policy build
-endif
 
 clean-dd-compile-policy:
-ifeq ($(DETECTED_OS),Windows)
-	cd dd-compile-policy && $(MAKE) clean
-else
 	$(DOCKER_RUN) make -C dd-compile-policy clean
-endif
 
 fmt-dd-compile-policy:
-ifeq ($(DETECTED_OS),Windows)
-	cd dd-compile-policy && $(MAKE) fmt
-else
 	$(DOCKER_RUN) make -C dd-compile-policy fmt
-endif
 
 fmt-dd-compile-policy-check:
-ifeq ($(DETECTED_OS),Windows)
-	cd dd-compile-policy && $(MAKE) fmt-check
-else
 	$(DOCKER_RUN) make -C dd-compile-policy fmt-check
-endif
 
 %-examples:
 	$(DOCKER_RUN) make -C $(patsubst %-examples,%,$@) examples
