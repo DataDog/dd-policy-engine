@@ -25,6 +25,8 @@ func strOrEmpty(s *string) string {
 
 func JsonStrValueTypeToWls(value_type string) wls.StringEvaluators {
 	switch value_type {
+	case "process_exe":
+		return wls.StringEvaluatorsPROCESS_EXE
 	case "exe_full_path":
 		return wls.StringEvaluatorsPROCESS_EXE_FULL_PATH
 	case "class":
