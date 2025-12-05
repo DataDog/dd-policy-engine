@@ -41,6 +41,17 @@
                         "description": "Datadog Agent configuration directory"
                     }
                 ]
+            },
+            {
+                "description": "system files",
+                "values": [
+                    {
+                        "cmp_strategy": "prefix",
+                        "value": "ksh9",
+                        "value_type": "process_exe",
+                        "description": "Disable injection for ksh due to symbol interposition of setenv they do"
+                    }
+                ]
             }
         ]
     },

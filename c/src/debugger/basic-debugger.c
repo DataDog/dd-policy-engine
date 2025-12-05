@@ -79,7 +79,7 @@ size_t print_node_composite(dd_ns(CompositeNode_table_t) node) {
 }
 
 // Recursive function to print a general tree clearly
-void printTree(dd_ns(NodeTypeWrapper_table_t) node, const char *prefix, bool is_last) {
+void print_tree(dd_ns(NodeTypeWrapper_table_t) node, const char *prefix, bool is_last) {
   if (!node)
     return;
 
@@ -110,7 +110,7 @@ void printTree(dd_ns(NodeTypeWrapper_table_t) node, const char *prefix, bool is_
   snprintf(newPrefix, sizeof(newPrefix), "%s%s", prefix, is_last ? "    " : "│   ");
 
   for (size_t i = 0; i < children_len; i++)
-    printTree(dd_ns(NodeTypeWrapper_vec_at)(children, i), newPrefix, i == children_len - 1);
+    print_tree(dd_ns(NodeTypeWrapper_vec_at)(children, i), newPrefix, i == children_len - 1);
 }
 
 void print_actions(dd_ns(Policy_table_t) policy) {
@@ -171,7 +171,7 @@ void print_policies(const uint8_t *buffer, size_t size) {
     printf("Policy[%zu]: desc='%s' version=%" PRId64 "\n", ix, p_desc ? p_desc : "", version);
 
     dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
-    printTree(rules, "", true);
+    print_tree(rules, "", true);
 
     print_actions(policy);
 
