@@ -34,7 +34,7 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 
 	fmt.Printf("Converting %d glibc requirements:\n", len(r.NativeDeps.Glibc))
 	for i, glibc := range r.NativeDeps.Glibc {
-		glibc, err := glibc.ConvertToWLS(builder)
+		glibc, err := glibc.ConvertToWLS(builder, "glibc")
 		if err != nil {
 			return 0, err
 		}
@@ -43,7 +43,7 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 
 	fmt.Printf("Converting %d musl requirements:\n", len(r.NativeDeps.Musl))
 	for i, musl := range r.NativeDeps.Musl {
-		musl, err := musl.ConvertToWLS(builder)
+		musl, err := musl.ConvertToWLS(builder, "musl")
 		if err != nil {
 			return 0, err
 		}

@@ -54,15 +54,15 @@ func parseSemver(version string) (int64, int64, int64, error) {
 }
 
 // ConvertToWLS converts a JSONGlibc requirement to a WLS policy
-func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
+func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (flatbuffers.UOffsetT, error) {
 	var nodes []flatbuffers.UOffsetT
 	
 	archEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsMACHINE_ARCHITECTURE, l.Arch, wls.CmpTypeSTRCMP_EXACT)
 	archNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "architecture matching", archEval)
 	nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, archNode, wls.NodeTypeEvaluatorNode))
 	
-	libcEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsLIBC_FLAVOR, "glibc", wls.CmpTypeSTRCMP_EXACT)
-	libcNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "glic flavor matching", libcEval)
+	libcEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsLIBC_FLAVOR, flavor, wls.CmpTypeSTRCMP_EXACT)
+	libcNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "flavor matching", libcEval)
 	nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, libcNode, wls.NodeTypeEvaluatorNode))
 	
 	if l.Min != "" {
