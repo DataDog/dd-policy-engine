@@ -21,13 +21,20 @@ func getArgvEvaluatorForPosition(position *int) wls.StringEvaluators {
 	}
 
 	switch *position {
-	case 0: return wls.StringEvaluatorsPROCESS_ARGV_0
-	case 1: return wls.StringEvaluatorsPROCESS_ARGV_1
-	case 2: return wls.StringEvaluatorsPROCESS_ARGV_2
-	case 3: return wls.StringEvaluatorsPROCESS_ARGV_3
-	case 4: return wls.StringEvaluatorsPROCESS_ARGV_4
-	case 5: return wls.StringEvaluatorsPROCESS_ARGV_5
-	case -1: return wls.StringEvaluatorsPROCESS_ARGV_N
+	case 0:
+		return wls.StringEvaluatorsPROCESS_ARGV_0
+	case 1:
+		return wls.StringEvaluatorsPROCESS_ARGV_1
+	case 2:
+		return wls.StringEvaluatorsPROCESS_ARGV_2
+	case 3:
+		return wls.StringEvaluatorsPROCESS_ARGV_3
+	case 4:
+		return wls.StringEvaluatorsPROCESS_ARGV_4
+	case 5:
+		return wls.StringEvaluatorsPROCESS_ARGV_5
+	case -1:
+		return wls.StringEvaluatorsPROCESS_ARGV_N
 	}
 
 	return wls.StringEvaluatorsPROCESS_ARGV
@@ -115,7 +122,7 @@ func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UO
 	if len(nodes) == 0 {
 		return 0, errors.New("pattern has no matchable parts")
 	}
-	
+
 	if len(nodes) == 1 {
 		return nodes[0], nil
 	}
@@ -124,8 +131,8 @@ func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UO
 	// e.g. { "args": ["-version", "1.*"], "position": 1 }
 	// will be converted to:
 	// AND(
-		// EvaluatorNode: arg matches "-version" at position 1
-		// EvaluatorNode: arg matches "1.*" at position 2
+	// EvaluatorNode: arg matches "-version" at position 1
+	// EvaluatorNode: arg matches "1.*" at position 2
 	// )
 	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match argument pattern: "+strings.Join(a.Arguments, " "), nodes)
 	return schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode), nil

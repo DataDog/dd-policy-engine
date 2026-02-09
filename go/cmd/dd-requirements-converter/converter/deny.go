@@ -70,6 +70,27 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
 	}
 
+	var envNodes []flatbuffers.UOffsetT
+	for key, value := range d.Envs {
+		var kv string
+		if value == nil {
+			kv = key + "="
+		} else {
+			kv = key + "=" + *value
+		}
+
+		strEvaluator := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsPROCESS_ENVAR, kv, wls.CmpTypeSTRCMP_EXACT)
+		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Environment variable matching: "+kv, strEvaluator)
+		envNodes = append(envNodes, schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode))
+	}
+
+	if len(envNodes) == 1 {
+		nodes = append(nodes, envNodes[0])
+	} else if len(envNodes) > 1 {
+		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match all environment variable patterns", envNodes)
+		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
+	}
+
 	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, d.Description, nil)
 
 	var root flatbuffers.UOffsetT

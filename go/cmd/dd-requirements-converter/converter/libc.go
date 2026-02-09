@@ -1,8 +1,8 @@
 package converter
 
 import (
-	"log"
 	"encoding/json"
+	"log"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
