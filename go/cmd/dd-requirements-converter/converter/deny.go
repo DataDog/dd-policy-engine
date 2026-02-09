@@ -26,8 +26,8 @@ func isValidOS(os string) bool {
 func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
 	var nodes []flatbuffers.UOffsetT
 
-	if d.Os == "" && len(d.Cmds) == 0 && len(d.Args) == 0 && len(d.EnVars) == 0 {
-		return 0, nil
+	if d.Os == "" && len(d.Cmds) == 0 && len(d.Args) == 0 && len(d.Envs) == 0 {
+		return 0, errors.New("no conditions to match")
 	}
 
 	if d.Os != "" && isValidOS(d.Os) {
@@ -71,12 +71,14 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
 	}
 
-	// if there is only one node, return it
+	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, d.Description)
+
+	// if there is only one node, return a policy with one EvaluatorNode and the deny action
 	if len(nodes) == 1 {
-		return nodes[0], nil
+		return schema.PolicyCreate(builder, d.Description, nodes[0], []flatbuffers.UOffsetT{action}), nil
 	}
 
-	// if there are multiple nodes, combine them with AND
-	rootNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes)
-	return schema.NodeTypeWrapperCreate(builder, rootNode, wls.NodeTypeCompositeNode), nil
+	// if there are multiple nodes, combine them with AND and return a policy with the composite node and the deny action
+	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes)
+	return schema.PolicyCreate(builder, d.Description, andNode, []flatbuffers.UOffsetT{action}), nil
 }

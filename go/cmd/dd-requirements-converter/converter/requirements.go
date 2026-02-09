@@ -26,33 +26,29 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 	fmt.Printf("Converting %d deny rules:\n", len(r.Deny))
 	for i, denyRule := range r.Deny {
 		fmt.Printf("- deny #%d\n", i)
-		denyNode, err := denyRule.ConvertToWLS(builder)
+		denyPolicy, err := denyRule.ConvertToWLS(builder)
 		if err != nil {
 			return 0, err
 		}
-		if denyNode != 0 {
-			denyAction := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, denyRule.Description)
-			denyPolicy := schema.PolicyCreate(builder, denyRule.Description, denyNode, []flatbuffers.UOffsetT{denyAction})
-			policies = append(policies, denyPolicy)
-		}
+		policies = append(policies, denyPolicy)
 	}
 
 	fmt.Printf("Converting %d glibc requirements:\n", len(r.NativeDeps.Glibc))
-	for i, glibc := range r.NativeDeps.Glibc {
-		glibc, err := glibc.ConvertToWLS(builder, "glibc")
+	for _, glibc := range r.NativeDeps.Glibc {
+		glibcPolicy, err := glibc.ConvertToWLS(builder, "glibc")
 		if err != nil {
 			return 0, err
 		}
-		policies = append(policies, glibc)
+		policies = append(policies, glibcPolicy)
 	}
 
 	fmt.Printf("Converting %d musl requirements:\n", len(r.NativeDeps.Musl))
-	for i, musl := range r.NativeDeps.Musl {
-		musl, err := musl.ConvertToWLS(builder, "musl")
+	for _, musl := range r.NativeDeps.Musl {
+		muslPolicy, err := musl.ConvertToWLS(builder, "musl")
 		if err != nil {
 			return 0, err
 		}
-		policies = append(policies, musl)
+		policies = append(policies, muslPolicy)
 	}
 
 	return schema.PoliciesCreate(builder, policies), nil
