@@ -2,7 +2,6 @@ package converter
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
@@ -71,7 +70,7 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
 	}
 
-	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, d.Description)
+	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, d.Description, nil)
 
 	// if there is only one node, return a policy with one EvaluatorNode and the deny action
 	if len(nodes) == 1 {
@@ -80,5 +79,6 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 
 	// if there are multiple nodes, combine them with AND and return a policy with the composite node and the deny action
 	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes)
-	return schema.PolicyCreate(builder, d.Description, andNode, []flatbuffers.UOffsetT{action}), nil
+	composite := schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode)
+	return schema.PolicyCreate(builder, d.Description, composite, []flatbuffers.UOffsetT{action}), nil
 }

@@ -1,9 +1,8 @@
 package converter
 
 import (
-	"errors"
 	"log"
-	"strings"
+	"encoding/json"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
@@ -58,11 +57,11 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 	archNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "architecture matching", archEval)
 	nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, archNode, wls.NodeTypeEvaluatorNode))
 
-	libcEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsLIBC_FLAVOR, flavor, wls.CmpTypeSTRCMP_EXACT)
-	libcNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "flavor matching", libcEval)
-	nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, libcNode, wls.NodeTypeEvaluatorNode))
+	flavorEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsLIBC_FLAVOR, flavor, wls.CmpTypeSTRCMP_EXACT)
+	flavorNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "flavor matching", flavorEval)
+	nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, flavorNode, wls.NodeTypeEvaluatorNode))
 
-	if l.RequiredMinVersion != "" {
+	if l.RequiredMinVersion != nil {
 		segments := l.RequiredMinVersion.Segments()
 
 		if len(segments) < 2 {
@@ -77,15 +76,15 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 			patch = segments[2]
 		}
 
-		majorEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MAJOR, major, wls.CmpTypeNUMCMP_GTE)
+		majorEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MAJOR, int64(major), wls.CmpTypeNUMCMP_GTE)
 		majorNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "major version matching", majorEval)
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, majorNode, wls.NodeTypeEvaluatorNode))
 
-		minorEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MINOR, minor, wls.CmpTypeNUMCMP_GTE)
+		minorEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MINOR, int64(minor), wls.CmpTypeNUMCMP_GTE)
 		minorNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "minor version matching", minorEval)
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, minorNode, wls.NodeTypeEvaluatorNode))
 
-		patchEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_PATCH, patch, wls.CmpTypeNUMCMP_GTE)
+		patchEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_PATCH, int64(patch), wls.CmpTypeNUMCMP_GTE)
 		patchNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "patch version matching", patchEval)
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, patchNode, wls.NodeTypeEvaluatorNode))
 	}
@@ -98,7 +97,7 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 	// Determine action based on supported flag
 	actionId := getActionId(l.IsSupported)
 
-	action := schema.ActionCreate(builder, actionId, l.Description, []string{l.Arch, l.RequiredMinVersion})
+	action := schema.ActionCreate(builder, actionId, l.Description, nil)
 
 	// Create and return the policy
 	return schema.PolicyCreate(builder, l.Description, libcNode, []flatbuffers.UOffsetT{action}), nil

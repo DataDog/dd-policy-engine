@@ -60,7 +60,7 @@ func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string) (fl
 
 func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
 	if len(a.Arguments) == 0 {
-		return 0, nil
+		return 0, errors.New("no arguments provided")
 	}
 
 	var nodes []flatbuffers.UOffsetT
