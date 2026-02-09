@@ -72,13 +72,14 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 
 	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, d.Description, nil)
 
+	var root flatbuffers.UOffsetT
 	// if there is only one node, return a policy with one EvaluatorNode and the deny action
 	if len(nodes) == 1 {
-		return schema.PolicyCreate(builder, d.Description, nodes[0], []flatbuffers.UOffsetT{action}), nil
+		root = schema.NodeTypeWrapperCreate(builder, nodes[0], wls.NodeTypeEvaluatorNode)
+	} else if len(nodes) > 1 {
+		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes)
+		root = schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode)
 	}
 
-	// if there are multiple nodes, combine them with AND and return a policy with the composite node and the deny action
-	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes)
-	composite := schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode)
-	return schema.PolicyCreate(builder, d.Description, composite, []flatbuffers.UOffsetT{action}), nil
+	return schema.PolicyCreate(builder, d.Description, root, []flatbuffers.UOffsetT{action}), nil
 }
