@@ -66,10 +66,18 @@ const (
 	StringEvaluatorsALWAYS_FALSE                StringEvaluators = 32
 	StringEvaluatorsALWAYS_ABSTAIN              StringEvaluators = 33
 	StringEvaluatorsIIS_APPLICATION_POOL        StringEvaluators = 34
+	StringEvaluatorsPROCESS_ARGV_0              StringEvaluators = 35
+	StringEvaluatorsPROCESS_ARGV_1              StringEvaluators = 36
+	StringEvaluatorsPROCESS_ARGV_2              StringEvaluators = 37
+	StringEvaluatorsPROCESS_ARGV_3              StringEvaluators = 38
+	StringEvaluatorsPROCESS_ARGV_4              StringEvaluators = 39
+	StringEvaluatorsPROCESS_ARGV_5              StringEvaluators = 40
+	StringEvaluatorsPROCESS_ARGV_N              StringEvaluators = 41
+	StringEvaluatorsPROCESS_ENVAR               StringEvaluators = 42
 	/// Represents the count of String evaluators.
 	/// This is used to ensure that the enum is always in sync with the number of evaluators.
 	/// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
-	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 35
+	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 43
 )
 
 var EnumNamesStringEvaluators = map[StringEvaluators]string{
@@ -108,6 +116,14 @@ var EnumNamesStringEvaluators = map[StringEvaluators]string{
 	StringEvaluatorsALWAYS_FALSE:                "ALWAYS_FALSE",
 	StringEvaluatorsALWAYS_ABSTAIN:              "ALWAYS_ABSTAIN",
 	StringEvaluatorsIIS_APPLICATION_POOL:        "IIS_APPLICATION_POOL",
+	StringEvaluatorsPROCESS_ARGV_0:              "PROCESS_ARGV_0",
+	StringEvaluatorsPROCESS_ARGV_1:              "PROCESS_ARGV_1",
+	StringEvaluatorsPROCESS_ARGV_2:              "PROCESS_ARGV_2",
+	StringEvaluatorsPROCESS_ARGV_3:              "PROCESS_ARGV_3",
+	StringEvaluatorsPROCESS_ARGV_4:              "PROCESS_ARGV_4",
+	StringEvaluatorsPROCESS_ARGV_5:              "PROCESS_ARGV_5",
+	StringEvaluatorsPROCESS_ARGV_N:              "PROCESS_ARGV_N",
+	StringEvaluatorsPROCESS_ENVAR:               "PROCESS_ENVAR",
 	StringEvaluatorsSTR_EVAL_COUNT:              "STR_EVAL_COUNT",
 }
 
@@ -147,6 +163,14 @@ var EnumValuesStringEvaluators = map[string]StringEvaluators{
 	"ALWAYS_FALSE":                StringEvaluatorsALWAYS_FALSE,
 	"ALWAYS_ABSTAIN":              StringEvaluatorsALWAYS_ABSTAIN,
 	"IIS_APPLICATION_POOL":        StringEvaluatorsIIS_APPLICATION_POOL,
+	"PROCESS_ARGV_0":              StringEvaluatorsPROCESS_ARGV_0,
+	"PROCESS_ARGV_1":              StringEvaluatorsPROCESS_ARGV_1,
+	"PROCESS_ARGV_2":              StringEvaluatorsPROCESS_ARGV_2,
+	"PROCESS_ARGV_3":              StringEvaluatorsPROCESS_ARGV_3,
+	"PROCESS_ARGV_4":              StringEvaluatorsPROCESS_ARGV_4,
+	"PROCESS_ARGV_5":              StringEvaluatorsPROCESS_ARGV_5,
+	"PROCESS_ARGV_N":              StringEvaluatorsPROCESS_ARGV_N,
+	"PROCESS_ENVAR":               StringEvaluatorsPROCESS_ENVAR,
 	"STR_EVAL_COUNT":              StringEvaluatorsSTR_EVAL_COUNT,
 }
 

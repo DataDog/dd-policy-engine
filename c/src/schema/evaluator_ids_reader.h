@@ -61,7 +61,15 @@ __flatbuffers_define_integer_type(dd_wls_StringEvaluators, dd_wls_StringEvaluato
 #define dd_wls_StringEvaluators_ALWAYS_FALSE ((dd_wls_StringEvaluators_enum_t)INT8_C(32))
 #define dd_wls_StringEvaluators_ALWAYS_ABSTAIN ((dd_wls_StringEvaluators_enum_t)INT8_C(33))
 #define dd_wls_StringEvaluators_IIS_APPLICATION_POOL ((dd_wls_StringEvaluators_enum_t)INT8_C(34))
-#define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(35))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_0 ((dd_wls_StringEvaluators_enum_t)INT8_C(35))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_1 ((dd_wls_StringEvaluators_enum_t)INT8_C(36))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_2 ((dd_wls_StringEvaluators_enum_t)INT8_C(37))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_3 ((dd_wls_StringEvaluators_enum_t)INT8_C(38))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_4 ((dd_wls_StringEvaluators_enum_t)INT8_C(39))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_5 ((dd_wls_StringEvaluators_enum_t)INT8_C(40))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_N ((dd_wls_StringEvaluators_enum_t)INT8_C(41))
+#define dd_wls_StringEvaluators_PROCESS_ENVAR ((dd_wls_StringEvaluators_enum_t)INT8_C(42))
+#define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(43))
 
 static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_enum_t value)
 {
@@ -101,6 +109,14 @@ static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_e
     case dd_wls_StringEvaluators_ALWAYS_FALSE: return "ALWAYS_FALSE";
     case dd_wls_StringEvaluators_ALWAYS_ABSTAIN: return "ALWAYS_ABSTAIN";
     case dd_wls_StringEvaluators_IIS_APPLICATION_POOL: return "IIS_APPLICATION_POOL";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_0: return "PROCESS_ARGV_0";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_1: return "PROCESS_ARGV_1";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_2: return "PROCESS_ARGV_2";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_3: return "PROCESS_ARGV_3";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_4: return "PROCESS_ARGV_4";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_5: return "PROCESS_ARGV_5";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N: return "PROCESS_ARGV_N";
+    case dd_wls_StringEvaluators_PROCESS_ENVAR: return "PROCESS_ENVAR";
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return "STR_EVAL_COUNT";
     default: return "";
     }
@@ -144,6 +160,14 @@ static inline int dd_wls_StringEvaluators_is_known_value(dd_wls_StringEvaluators
     case dd_wls_StringEvaluators_ALWAYS_FALSE: return 1;
     case dd_wls_StringEvaluators_ALWAYS_ABSTAIN: return 1;
     case dd_wls_StringEvaluators_IIS_APPLICATION_POOL: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_0: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_1: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_2: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_3: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_4: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_5: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ENVAR: return 1;
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return 1;
     default: return 0;
     }
