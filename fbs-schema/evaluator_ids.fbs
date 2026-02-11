@@ -77,6 +77,16 @@ enum StringEvaluators : byte {
 
     IIS_APPLICATION_POOL,
 
+    PROCESS_ARGV_0,
+    PROCESS_ARGV_1,
+    PROCESS_ARGV_2,
+    PROCESS_ARGV_3,
+    PROCESS_ARGV_4,
+    PROCESS_ARGV_5,
+    PROCESS_ARGV_N,
+
+    PROCESS_ENVAR,  // Check "KEY=VALUE" pattern
+
     /// Represents the count of String evaluators.
     /// This is used to ensure that the enum is always in sync with the number of evaluators.
     /// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.

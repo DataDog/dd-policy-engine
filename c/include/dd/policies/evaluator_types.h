@@ -85,7 +85,15 @@ typedef enum plcs_numeric_comparator {
   X(ALWAYS_TRUE, 31)                                                                                                   \
   X(ALWAYS_FALSE, 32)                                                                                                  \
   X(ALWAYS_ABSTAIN, 33)                                                                                                \
-  X(IIS_APPLICATION_POOL, 34)
+  X(IIS_APPLICATION_POOL, 34)                                                                                          \
+  X(PROCESS_ARGV_0, 35)                                                                                                \
+  X(PROCESS_ARGV_1, 36)                                                                                                \
+  X(PROCESS_ARGV_2, 37)                                                                                                \
+  X(PROCESS_ARGV_3, 38)                                                                                                \
+  X(PROCESS_ARGV_4, 39)                                                                                                \
+  X(PROCESS_ARGV_5, 40)                                                                                                \
+  X(PROCESS_ARGV_N, 41)                                                                                                \
+  X(PROCESS_ENVAR, 42)
 
 #define ENUM_STR_CMP_EVAL(ID, IX) PLCS_STR_EVAL_##ID = IX,
 typedef enum plcs_string_evaluators {
