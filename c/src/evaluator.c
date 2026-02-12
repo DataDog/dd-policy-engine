@@ -18,7 +18,9 @@
 #include "wire/boolean_operation.h"
 #include "wire/dd_types.h"
 #include "wire/evaluation_result.h"
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node);
+#define PLCS_MAX_EVAL_DEPTH 64
+
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
 
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
   if (!eval_str) {
@@ -166,7 +168,7 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
-plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node) {
+plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -197,13 +199,13 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node) {
         // log error
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
-      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0)));
+      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1));
       break;
   }
 
   // keep iterating recursively over the tree
   for (size_t ix = 0; ix < children_len; ++ix) {
-    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix)));
+    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1));
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
@@ -219,7 +221,11 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node) {
   return res;
 }
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node) {
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+  if (depth > PLCS_MAX_EVAL_DEPTH) {
+    return PLCS_EVAL_RESULT_ABSTAIN;
+  }
+
   switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
     case dd_ns(NodeType_EvaluatorNode):
       dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
@@ -228,7 +234,7 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node) {
 
     case dd_ns(NodeType_CompositeNode):
       dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-      return composite_evaluator(composite_node);
+      return composite_evaluator(composite_node, depth);
       break;
 
     default:
@@ -252,6 +258,11 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
       continue;
     }
     size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
+    // something went wrong, we need to bail
+    if (values_len >= (size_t)PLCS_ACTION_VALUES_MAX) {
+      res = PLCS_EIX_OVERFLOW;
+      break;
+    }
     char *values[PLCS_ACTION_VALUES_MAX];
     for (size_t v_ix = 0; v_ix < values_len; ++v_ix) {
       values[v_ix] = (char *)flatbuffers_string_vec_at(dd_ns(Action_values(action)), v_ix);
@@ -276,7 +287,7 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
-  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules) : PLCS_EVAL_RESULT_ABSTAIN;
+  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
   // perform actions given evaluation result
   return perform_actions(eval_res, actions);

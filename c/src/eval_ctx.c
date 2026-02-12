@@ -22,7 +22,7 @@ plcs_eval_ctx_register_str_evaluator(plcs_string_evaluator_function_ptr func_ptr
     return PLCS_EREGISTER_EVAL_PTR;
   }
 
-  if (ix >= PLCS_STR_EVAL__COUNT) {
+  if (ix < 0 || ix >= PLCS_STR_EVAL__COUNT) {
     return PLCS_EIX_OVERFLOW;
   }
 
@@ -36,7 +36,7 @@ plcs_eval_ctx_register_num_evaluator(plcs_numeric_evaluator_function_ptr func_pt
     return PLCS_EREGISTER_EVAL_PTR;
   }
 
-  if (ix >= PLCS_NUM_EVAL__COUNT) {
+  if (ix < 0 || ix >= PLCS_NUM_EVAL__COUNT) {
     return PLCS_EIX_OVERFLOW;
   }
 
@@ -50,7 +50,7 @@ plcs_eval_ctx_register_unum_evaluator(plcs_unumeric_evaluator_function_ptr func_
     return PLCS_EREGISTER_EVAL_PTR;
   }
 
-  if (ix >= PLCS_NUM_EVAL__COUNT) {
+  if (ix < 0 || ix >= PLCS_NUM_EVAL__COUNT) {
     return PLCS_EIX_OVERFLOW;
   }
 
@@ -59,7 +59,7 @@ plcs_eval_ctx_register_unum_evaluator(plcs_unumeric_evaluator_function_ptr func_
 }
 
 plcs_errors plcs_eval_ctx_set_str_eval_param(plcs_string_evaluators ix, const char *value) {
-  if (ix >= PLCS_STR_EVAL__COUNT) {
+  if (ix < 0 || ix >= PLCS_STR_EVAL__COUNT) {
     return PLCS_EIX_OVERFLOW;
   }
 
@@ -68,7 +68,7 @@ plcs_errors plcs_eval_ctx_set_str_eval_param(plcs_string_evaluators ix, const ch
 }
 
 plcs_errors plcs_eval_ctx_set_num_eval_param(plcs_numeric_evaluators ix, const long value) {
-  if (ix >= PLCS_NUM_EVAL__COUNT) {
+  if (ix < 0 || ix >= PLCS_NUM_EVAL__COUNT) {
     return PLCS_EIX_OVERFLOW;
   }
 
@@ -77,7 +77,7 @@ plcs_errors plcs_eval_ctx_set_num_eval_param(plcs_numeric_evaluators ix, const l
 }
 
 plcs_errors plcs_eval_ctx_set_unum_eval_param(plcs_numeric_evaluators ix, const unsigned long value) {
-  if (ix >= PLCS_NUM_EVAL__COUNT) {
+  if (ix < 0 || ix >= PLCS_NUM_EVAL__COUNT) {
     return PLCS_EIX_OVERFLOW;
   }
 
@@ -86,7 +86,7 @@ plcs_errors plcs_eval_ctx_set_unum_eval_param(plcs_numeric_evaluators ix, const 
 }
 
 plcs_errors plcs_eval_ctx_register_action(plcs_action_function_ptr action, plcs_actions ix) {
-  if (ix >= PLCS_ACTIONS__COUNT) {
+  if (ix < 0 || ix >= PLCS_ACTIONS__COUNT) {
     return PLCS_EIX_OVERFLOW;
   }
 
@@ -95,7 +95,7 @@ plcs_errors plcs_eval_ctx_register_action(plcs_action_function_ptr action, plcs_
 }
 
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix) {
-  if (ix >= PLCS_ACTIONS__COUNT) {
+  if (ix < 0 || ix >= PLCS_ACTIONS__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
     return NULL;
   }
@@ -104,7 +104,7 @@ plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix) {
 }
 
 plcs_string_evaluator_function_ptr plcs_eval_ctx_get_string_evaluator(plcs_string_evaluators id) {
-  if (id >= PLCS_STR_EVAL__COUNT) {
+  if (id < 0 || id >= PLCS_STR_EVAL__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
     return NULL;
   }
@@ -113,7 +113,7 @@ plcs_string_evaluator_function_ptr plcs_eval_ctx_get_string_evaluator(plcs_strin
 }
 
 const char *plcs_eval_ctx_get_string_param(plcs_string_evaluators id) {
-  if (id >= PLCS_STR_EVAL__COUNT) {
+  if (id < 0 || id >= PLCS_STR_EVAL__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
     return PLCS_STR_NOT_SET;
   }
@@ -122,7 +122,7 @@ const char *plcs_eval_ctx_get_string_param(plcs_string_evaluators id) {
 }
 
 plcs_numeric_evaluator_function_ptr plcs_eval_ctx_get_numeric_evaluator(plcs_numeric_evaluators id) {
-  if (id >= PLCS_NUM_EVAL__COUNT) {
+  if (id < 0 || id >= PLCS_NUM_EVAL__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
     return NULL;
   }
@@ -131,7 +131,7 @@ plcs_numeric_evaluator_function_ptr plcs_eval_ctx_get_numeric_evaluator(plcs_num
 }
 
 long plcs_eval_ctx_get_numeric_param(plcs_numeric_evaluators id) {
-  if (id >= PLCS_NUM_EVAL__COUNT) {
+  if (id < 0 || id >= PLCS_NUM_EVAL__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
     return PLCS_NUM_NOT_SET;
   }
@@ -140,7 +140,7 @@ long plcs_eval_ctx_get_numeric_param(plcs_numeric_evaluators id) {
 }
 
 plcs_unumeric_evaluator_function_ptr plcs_eval_ctx_get_unumeric_evaluator(plcs_numeric_evaluators id) {
-  if (id >= PLCS_NUM_EVAL__COUNT) {
+  if (id < 0 || id >= PLCS_NUM_EVAL__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
     return NULL;
   }
@@ -149,7 +149,7 @@ plcs_unumeric_evaluator_function_ptr plcs_eval_ctx_get_unumeric_evaluator(plcs_n
 }
 
 unsigned long plcs_eval_ctx_get_unumeric_param(plcs_numeric_evaluators id) {
-  if (id >= PLCS_NUM_EVAL__COUNT) {
+  if (id < 0 || id >= PLCS_NUM_EVAL__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
     return PLCS_UNUM_NOT_SET;
   }
@@ -164,45 +164,45 @@ void plcs_eval_ctx_set_error(plcs_errors error) {
 
 // TODO: consider implementing it as a stack to preserve error history
 void plcs_eval_ctx_set_action_error(plcs_actions ix, plcs_errors error) {
-  if (ix < PLCS_ACTIONS__COUNT) {
+  if (ix >= 0 && ix < PLCS_ACTIONS__COUNT) {
     ctx.actions[ix].error = error;
   }
 }
 
 void plcs_eval_ctx_set_str_eval_error(plcs_string_evaluators ix, plcs_errors error) {
-  if (ix < PLCS_STR_EVAL__COUNT) {
+  if (ix >= 0 && ix < PLCS_STR_EVAL__COUNT) {
     ctx.string_evaluators[ix].error = error;
   }
 }
 
 plcs_errors plcs_eval_ctx_get_str_eval_error(plcs_string_evaluators ix) {
-  if (ix < PLCS_STR_EVAL__COUNT) {
+  if (ix >= 0 && ix < PLCS_STR_EVAL__COUNT) {
     return ctx.string_evaluators[ix].error;
   }
   return PLCS_EIX_OVERFLOW;
 }
 
 void plcs_eval_ctx_set_num_eval_error(plcs_numeric_evaluators ix, plcs_errors error) {
-  if (ix < PLCS_NUM_EVAL__COUNT) {
+  if (ix >= 0 && ix < PLCS_NUM_EVAL__COUNT) {
     ctx.numeric_evaluators[ix].error = error;
   }
 }
 
 plcs_errors plcs_eval_ctx_get_num_eval_error(plcs_numeric_evaluators ix) {
-  if (ix < PLCS_NUM_EVAL__COUNT) {
+  if (ix >= 0 && ix < PLCS_NUM_EVAL__COUNT) {
     return ctx.numeric_evaluators[ix].error;
   }
   return PLCS_EIX_OVERFLOW;
 }
 
 void plcs_eval_ctx_set_unum_eval_error(plcs_numeric_evaluators ix, plcs_errors error) {
-  if (ix < PLCS_NUM_EVAL__COUNT) {
+  if (ix >= 0 && ix < PLCS_NUM_EVAL__COUNT) {
     ctx.unumeric_evaluators[ix].error = error;
   }
 }
 
 plcs_errors plcs_eval_ctx_get_unum_eval_error(plcs_numeric_evaluators ix) {
-  if (ix < PLCS_NUM_EVAL__COUNT) {
+  if (ix >= 0 && ix < PLCS_NUM_EVAL__COUNT) {
     return ctx.unumeric_evaluators[ix].error;
   }
   return PLCS_EIX_OVERFLOW;
