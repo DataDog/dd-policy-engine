@@ -17,15 +17,11 @@ type JSONPolicy struct {
 }
 
 func AddRuntimeCondition(runtime string) bool {
-	switch runtime {
-	case "all":
+	if runtime == "all" {
 		return false
-
-	case "python", "java", "nodejs", "dotnet", "ruby", "go", "php":
-		return true
 	}
-
-	return false
+	_, ok := schema.RuntimeLanguageFromString[runtime]
+	return ok
 }
 
 func GetActionId(skip bool) wls.ActionId {

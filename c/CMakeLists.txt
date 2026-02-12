@@ -25,6 +25,7 @@ target_sources(dd-policy-engine.objects
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_default.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_types.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/policies.h
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/value_sets.h
   PUBLIC
     $<TARGET_OBJECTS:flatccrt-obj>
   PRIVATE
@@ -32,6 +33,7 @@ target_sources(dd-policy-engine.objects
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator_default.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/policy.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/value_sets.c
 )
 
 target_include_directories(dd-policy-engine.objects
