@@ -1,0 +1,32 @@
+/// Unless explicitly stated otherwise all files in this repository are licensed
+/// under the Apache 2.0 License. This product includes software developed at
+/// Datadog (https://www.datadoghq.com/).
+///
+/// Copyright 2025-Present Datadog, Inc.
+
+namespace dd.wls;
+
+/// Canonical set of runtime languages recognized by the policy engine.
+/// The string representation uses lowercase (e.g. "jvm", "python").
+/// IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
+enum RuntimeLanguage : byte {
+    RUNTIME_LANGUAGE_UNKNOWN = 0,
+    JVM,
+    PYTHON,
+    RUBY,
+    DOTNET,
+    NODEJS,
+    PHP,
+    RUNTIME_LANGUAGE_COUNT
+}
+
+/// Canonical set of operating systems recognized by the policy engine.
+/// The string representation uses lowercase (e.g. "linux", "windows").
+/// IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
+enum OperatingSystem : byte {
+    OS_UNKNOWN = 0,
+    LINUX,
+    WINDOWS,
+    MACOS,
+    OS_COUNT
+}
