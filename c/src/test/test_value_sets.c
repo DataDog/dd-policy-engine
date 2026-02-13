@@ -27,27 +27,6 @@ UTEST(value_sets, runtime_language_to_string_invalid) {
   ASSERT_TRUE(plcs_runtime_language_to_string((enum plcs_runtime_language)99) == NULL);
 }
 
-/* ---- RuntimeLanguage: string → enum ---- */
-
-UTEST(value_sets, runtime_language_from_string_known) {
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_JVM, (int)plcs_runtime_language_from_string("jvm"));
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_PYTHON, (int)plcs_runtime_language_from_string("python"));
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_RUBY, (int)plcs_runtime_language_from_string("ruby"));
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_DOTNET, (int)plcs_runtime_language_from_string("dotnet"));
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_NODEJS, (int)plcs_runtime_language_from_string("nodejs"));
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_PHP, (int)plcs_runtime_language_from_string("php"));
-}
-
-UTEST(value_sets, runtime_language_from_string_java_alias) {
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_JVM, (int)plcs_runtime_language_from_string("java"));
-}
-
-UTEST(value_sets, runtime_language_from_string_unknown) {
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_UNKNOWN, (int)plcs_runtime_language_from_string("go"));
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_UNKNOWN, (int)plcs_runtime_language_from_string(""));
-  ASSERT_EQ((int)PLCS_RUNTIME_LANG_UNKNOWN, (int)plcs_runtime_language_from_string(NULL));
-}
-
 /* ---- OperatingSystem: enum → string ---- */
 
 UTEST(value_sets, operating_system_to_string_known) {

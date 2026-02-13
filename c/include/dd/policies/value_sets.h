@@ -47,13 +47,6 @@ typedef enum plcs_operating_system { PLCS_LIST_OPERATING_SYSTEMS(ENUM_OS_VAL) PL
 const char *plcs_runtime_language_to_string(enum plcs_runtime_language v);
 
 /**
- * @brief Converts a canonical lowercase string to a plcs_runtime_language enum.
- * @param s The string to look up.
- * @return The enum value, or PLCS_RUNTIME_LANG_UNKNOWN if not found.
- */
-enum plcs_runtime_language plcs_runtime_language_from_string(const char *s);
-
-/**
  * @brief Converts a plcs_operating_system enum to its canonical lowercase string.
  * @param v The enum value.
  * @return The string representation, or NULL if invalid.

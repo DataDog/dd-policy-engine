@@ -39,21 +39,6 @@ const char *plcs_runtime_language_to_string(enum plcs_runtime_language v) {
   return NULL;
 }
 
-enum plcs_runtime_language plcs_runtime_language_from_string(const char *s) {
-  if (s == NULL) {
-    return PLCS_RUNTIME_LANG_UNKNOWN;
-  }
-  for (size_t i = 0; i < runtime_language_count; i++) {
-    if (strcmp(runtime_language_table[i].str, s) == 0) {
-      return runtime_language_table[i].value;
-    }
-  }
-  if (strcmp(s, "java") == 0) {
-    return PLCS_RUNTIME_LANG_JVM;
-  }
-  return PLCS_RUNTIME_LANG_UNKNOWN;
-}
-
 const char *plcs_operating_system_to_string(enum plcs_operating_system v) {
   for (size_t i = 0; i < operating_system_count; i++) {
     if (operating_system_table[i].value == v) {
