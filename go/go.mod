@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.3
 
 require (
-	github.com/BurntSushi/toml v1.5.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/google/flatbuffers v25.2.10+incompatible
 	github.com/stretchr/testify v1.11.1
