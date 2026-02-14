@@ -23,9 +23,8 @@ type JSONNativeDeps struct {
 func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
 	var policies []flatbuffers.UOffsetT
 
-	fmt.Printf("Converting %d deny rules:\n", len(r.Deny))
-	for i, denyRule := range r.Deny {
-		fmt.Printf("- deny #%d\n", i)
+	fmt.Printf("Converting %d deny rules\n", len(r.Deny))
+	for _, denyRule := range r.Deny {
 		denyPolicy, err := denyRule.ConvertToWLS(builder)
 		if err != nil {
 			return 0, err
@@ -33,7 +32,7 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 		policies = append(policies, denyPolicy)
 	}
 
-	fmt.Printf("Converting %d glibc requirements:\n", len(r.NativeDeps.Glibc))
+	fmt.Printf("Converting %d glibc requirements\n", len(r.NativeDeps.Glibc))
 	for _, glibc := range r.NativeDeps.Glibc {
 		glibcPolicy, err := glibc.ConvertToWLS(builder, "glibc")
 		if err != nil {
@@ -42,7 +41,7 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 		policies = append(policies, glibcPolicy)
 	}
 
-	fmt.Printf("Converting %d musl requirements:\n", len(r.NativeDeps.Musl))
+	fmt.Printf("Converting %d musl requirements\n", len(r.NativeDeps.Musl))
 	for _, musl := range r.NativeDeps.Musl {
 		muslPolicy, err := musl.ConvertToWLS(builder, "musl")
 		if err != nil {
