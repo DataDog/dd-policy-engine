@@ -23,6 +23,9 @@ __flatbuffers_build_scalar(flatbuffers_, dd_wls_RuntimeLanguage, dd_wls_RuntimeL
 #define __dd_wls_OperatingSystem_formal_args , dd_wls_OperatingSystem_enum_t v0
 #define __dd_wls_OperatingSystem_call_args , v0
 __flatbuffers_build_scalar(flatbuffers_, dd_wls_OperatingSystem, dd_wls_OperatingSystem_enum_t)
+#define __dd_wls_MachineArchitecture_formal_args , dd_wls_MachineArchitecture_enum_t v0
+#define __dd_wls_MachineArchitecture_call_args , v0
+__flatbuffers_build_scalar(flatbuffers_, dd_wls_MachineArchitecture, dd_wls_MachineArchitecture_enum_t)
 
 #include "flatcc/flatcc_epilogue.h"
 #endif /* VALUE_SETS_BUILDER_H */

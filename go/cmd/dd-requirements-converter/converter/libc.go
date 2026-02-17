@@ -2,6 +2,7 @@ package converter
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
@@ -53,7 +54,12 @@ func getActionId(supported bool) wls.ActionId {
 func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (flatbuffers.UOffsetT, error) {
 	var nodes []flatbuffers.UOffsetT
 
-	archEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsMACHINE_ARCHITECTURE, l.Arch, wls.CmpTypeSTRCMP_EXACT)
+	// Normalize architecture string to canonical form (e.g., "arm64" -> "aarch64")
+	archEnum, ok := schema.MachineArchitectureFromString[l.Arch]
+	if !ok {
+		return 0, errors.New("unknown architecture")
+	}
+	archEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsMACHINE_ARCHITECTURE, schema.MachineArchitectureToString[archEnum], wls.CmpTypeSTRCMP_EXACT)
 	archNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "architecture matching", archEval)
 	nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, archNode, wls.NodeTypeEvaluatorNode))
 
@@ -122,10 +128,7 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 	composite := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, l.Description, nodes)
 	libcNode = schema.NodeTypeWrapperCreate(builder, composite, wls.NodeTypeCompositeNode)
 
-	// determine action based on supported flag
-	actionId := getActionId(l.IsSupported)
-
-	action := schema.ActionCreate(builder, actionId, l.Description, nil)
+	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, l.Description, nil)
 
 	return schema.PolicyCreate(builder, l.Description, libcNode, []flatbuffers.UOffsetT{action}), nil
 }
