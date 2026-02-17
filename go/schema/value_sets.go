@@ -50,6 +50,32 @@ var OperatingSystemFromString = map[string]wls.OperatingSystem{
 	"macos":   wls.OperatingSystemMACOS,
 }
 
+// MachineArchitectureToString maps MachineArchitecture enum values to their canonical
+// string representation used in policy evaluation (matching kernel-reported values).
+var MachineArchitectureToString = map[wls.MachineArchitecture]string{
+	wls.MachineArchitectureAARCH64: "aarch64",
+	wls.MachineArchitectureX86_64:  "x86_64",
+}
+
+// MachineArchitectureFromString maps various architecture strings to MachineArchitecture
+// enum values. This handles the arm64/aarch64 and x64/x86_64/amd64 aliasing.
+var MachineArchitectureFromString = map[string]wls.MachineArchitecture{
+	"aarch64": wls.MachineArchitectureAARCH64,
+	"arm64":   wls.MachineArchitectureAARCH64, // alias
+	"x86_64":  wls.MachineArchitectureX86_64,
+	"x64":     wls.MachineArchitectureX86_64, // alias
+	"amd64":   wls.MachineArchitectureX86_64, // alias
+}
+
+// ValidateMachineArchitecture checks whether the given string is a recognized
+// machine architecture value.
+func ValidateMachineArchitecture(s string) error {
+	if _, ok := MachineArchitectureFromString[s]; !ok {
+		return fmt.Errorf("unknown machine architecture: %q", s)
+	}
+	return nil
+}
+
 // ValidateRuntimeLanguage checks whether the given string is a recognized
 // runtime language value.
 func ValidateRuntimeLanguage(s string) error {
