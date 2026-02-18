@@ -7,7 +7,7 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/google/flatbuffers v25.2.10+incompatible
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/sys v0.37.0
+	golang.org/x/sys v0.40.0
 )
 
 require (
