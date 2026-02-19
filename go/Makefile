@@ -27,7 +27,8 @@ clean:
 
 build: generate-schema-headers generate-antlr-grammar
 	go mod tidy
-	CGO_ENABLED=0 go build -ldflags="-s -w" ./cmd/... 
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o dd-rules-converter ./cmd/dd-rules-converter
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o dd-requirements-converter ./cmd/dd-requirements-converter
 
 test:
 	go test ./internal/...
