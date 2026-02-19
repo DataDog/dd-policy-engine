@@ -43,6 +43,10 @@ func getArgvEvaluatorForPosition(position *int) wls.StringEvaluators {
 // if the pattern is a single string, return an evaluator node
 // if the pattern contains wildcards, return a composite node with parts of the pattern as evaluator nodes
 func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string, position *int) (flatbuffers.UOffsetT, error) {
+	if pattern == "*" {
+		return 0, nil
+	}
+
 	if !strings.Contains(pattern, "*") {
 		strEvaluator := schema.StrEvaluatorCreate(builder, getArgvEvaluatorForPosition(position), pattern, wls.CmpTypeSTRCMP_EXACT)
 		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Argument matching: "+pattern, strEvaluator)
@@ -114,6 +118,11 @@ func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UO
 		argNode, err := wildcardMatchToEvaluators(builder, argument, pos)
 		if err != nil {
 			return 0, err
+		}
+
+		// Skip pure wildcards (they match anything)
+		if argNode == 0 {
+			continue
 		}
 
 		nodes = append(nodes, argNode)
