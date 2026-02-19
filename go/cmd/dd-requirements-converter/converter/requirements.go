@@ -38,7 +38,9 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 		if err != nil {
 			return 0, err
 		}
-		policies = append(policies, glibcPolicy)
+		if glibcPolicy != 0 {
+			policies = append(policies, glibcPolicy)
+		}
 	}
 
 	fmt.Printf("Converting %d musl requirements\n", len(r.NativeDeps.Musl))
@@ -47,7 +49,9 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 		if err != nil {
 			return 0, err
 		}
-		policies = append(policies, muslPolicy)
+		if muslPolicy != 0 {
+			policies = append(policies, muslPolicy)
+		}
 	}
 
 	return schema.PoliciesCreate(builder, policies), nil
