@@ -259,24 +259,19 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 
 			if tt.expectNil {
 				if offset != 0 {
-					t.Errorf("Expected no policy (offset=0), got offset=%d", offset)
+					t.Errorf("Expected no node (offset=0), got offset=%d", offset)
 				}
 				return
 			}
 
 			if offset == 0 {
-				t.Fatal("Expected a policy, got offset=0")
+				t.Fatal("Expected a node, got offset=0")
 			}
 
 			builder.Finish(offset)
-			policy := wls.GetRootAsPolicy(builder.FinishedBytes(), 0)
+			wrapper := wls.GetRootAsNodeTypeWrapper(builder.FinishedBytes(), 0)
 
-			rules := policy.Rules(nil)
-			if rules == nil {
-				t.Fatal("Expected rules node, got nil")
-			}
-
-			compareNode(t, "root", rules, tt.expectedRoot)
+			compareNode(t, "root", wrapper, tt.expectedRoot)
 		})
 	}
 }
@@ -490,28 +485,23 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 			}
 
 			builder.Finish(offset)
-			policy := wls.GetRootAsPolicy(builder.FinishedBytes(), 0)
+			wrapper := wls.GetRootAsNodeTypeWrapper(builder.FinishedBytes(), 0)
 
-			rules := policy.Rules(nil)
-			if rules == nil {
-				t.Fatal("Expected rules node, got nil")
-			}
-
-			compareNode(t, "root", rules, tt.expectedRoot)
+			compareNode(t, "root", wrapper, tt.expectedRoot)
 		})
 	}
 }
 
 func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 	tests := []struct {
-		name                string
-		inputJSON           string
-		expectedPolicyCount int
+		name              string
+		inputJSON         string
+		expectedRuleCount int // number of rules ORed together in the single policy
 	}{
 		{
-			name:                "empty requirements",
-			inputJSON:           `{}`,
-			expectedPolicyCount: 0,
+			name:              "empty requirements",
+			inputJSON:         `{}`,
+			expectedRuleCount: 0,
 		},
 		{
 			name: "glibc + musl + deny combined",
@@ -522,7 +512,7 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 					"musl": [{"arch": "arm64", "supported": false}]
 				}
 			}`,
-			expectedPolicyCount: 3, // 1 deny + 1 glibc + 1 musl
+			expectedRuleCount: 3, // 1 deny + 1 glibc + 1 musl ORed together
 		},
 	}
 
@@ -542,8 +532,41 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 			builder.Finish(offset)
 			policies := wls.GetRootAsPolicies(builder.FinishedBytes(), 0)
 
-			if policies.PoliciesLength() != tt.expectedPolicyCount {
-				t.Errorf("Expected %d policies, got %d", tt.expectedPolicyCount, policies.PoliciesLength())
+			// Always 1 policy now (all rules ORed together)
+			if policies.PoliciesLength() != 1 {
+				t.Errorf("Expected 1 policy, got %d", policies.PoliciesLength())
+				return
+			}
+
+			var policy wls.Policy
+			if !policies.Policies(&policy, 0) {
+				t.Fatal("Failed to get policy")
+			}
+
+			rules := policy.Rules(nil)
+			if rules == nil {
+				t.Fatal("Expected rules node, got nil")
+			}
+
+			// The root should be an OR node with the expected number of children
+			if rules.NodeType() != wls.NodeTypeCompositeNode {
+				t.Fatalf("Expected composite node, got %s", rules.NodeType().String())
+			}
+
+			var table flatbuffers.Table
+			if !rules.Node(&table) {
+				t.Fatal("Failed to get node table")
+			}
+
+			var composite wls.CompositeNode
+			composite.Init(table.Bytes, table.Pos)
+
+			if composite.Op() != wls.BoolOperationBOOL_OR {
+				t.Errorf("Expected OR operation, got %s", composite.Op().String())
+			}
+
+			if composite.ChildrenLength() != tt.expectedRuleCount {
+				t.Errorf("Expected %d rules, got %d", tt.expectedRuleCount, composite.ChildrenLength())
 			}
 		})
 	}

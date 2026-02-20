@@ -105,11 +105,7 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 
 	// combine all evaluators with AND
 	composite := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, l.Description, nodes)
-	libcNode := schema.NodeTypeWrapperCreate(builder, composite, wls.NodeTypeCompositeNode)
-
-	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, l.Description, nil)
-
-	return schema.PolicyCreate(builder, l.Description, libcNode, []flatbuffers.UOffsetT{action}), nil
+	return schema.NodeTypeWrapperCreate(builder, composite, wls.NodeTypeCompositeNode), nil
 }
 
 // buildVersionLessThan creates a node that matches when version < major.minor.patch
