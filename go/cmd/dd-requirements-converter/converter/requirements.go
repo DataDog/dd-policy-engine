@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
+	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -21,38 +22,43 @@ type JSONNativeDeps struct {
 }
 
 func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
-	var policies []flatbuffers.UOffsetT
+	var rules []flatbuffers.UOffsetT
 
 	fmt.Printf("Converting %d deny rules\n", len(r.Deny))
 	for _, denyRule := range r.Deny {
-		denyPolicy, err := denyRule.ConvertToWLS(builder)
+		denyNode, err := denyRule.ConvertToWLS(builder)
 		if err != nil {
 			return 0, err
 		}
-		policies = append(policies, denyPolicy)
+		rules = append(rules, denyNode)
 	}
 
 	fmt.Printf("Converting %d glibc requirements\n", len(r.NativeDeps.Glibc))
 	for _, glibc := range r.NativeDeps.Glibc {
-		glibcPolicy, err := glibc.ConvertToWLS(builder, "glibc")
+		glibcNode, err := glibc.ConvertToWLS(builder, "glibc")
 		if err != nil {
 			return 0, err
 		}
-		if glibcPolicy != 0 {
-			policies = append(policies, glibcPolicy)
+		if glibcNode != 0 {
+			rules = append(rules, glibcNode)
 		}
 	}
 
 	fmt.Printf("Converting %d musl requirements\n", len(r.NativeDeps.Musl))
 	for _, musl := range r.NativeDeps.Musl {
-		muslPolicy, err := musl.ConvertToWLS(builder, "musl")
+		muslNode, err := musl.ConvertToWLS(builder, "musl")
 		if err != nil {
 			return 0, err
 		}
-		if muslPolicy != 0 {
-			policies = append(policies, muslPolicy)
+		if muslNode != 0 {
+			rules = append(rules, muslNode)
 		}
 	}
 
-	return schema.PoliciesCreate(builder, policies), nil
+	composite := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "requirements", rules)
+	compositeNode := schema.NodeTypeWrapperCreate(builder, composite, wls.NodeTypeCompositeNode)
+
+	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, "requirements", nil)
+	policy := schema.PolicyCreate(builder, "All requirements", compositeNode, []flatbuffers.UOffsetT{action})
+	return schema.PoliciesCreate(builder, []flatbuffers.UOffsetT{policy}), nil
 }
