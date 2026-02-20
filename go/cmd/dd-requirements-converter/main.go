@@ -1,4 +1,3 @@
-
 // Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache 2.0 License. This product includes software developed at
 // Datadog (https://www.datadoghq.com/).
@@ -8,11 +7,11 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/DataDog/dd-policy-engine/go/cmd/dd-requirements-converter/converter"
 
@@ -20,17 +19,19 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <input.json>\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Example: %s requirements.json  # outputs requirements.bin\n", os.Args[0])
+	inputFile := flag.String("input-file", "", "Input JSON file path (required)")
+	outputFile := flag.String("output-file", "", "Output binary file path (required)")
+	flag.Parse()
+
+	if *inputFile == "" || *outputFile == "" {
+		fmt.Fprintf(os.Stderr, "Error: --input-file and --output-file are required.\n\n")
+		flag.Usage()
 		os.Exit(1)
 	}
 
-	inputFile := os.Args[1]
-
-	file, err := os.Open(inputFile)
+	file, err := os.Open(*inputFile)
 	if err != nil {
-		log.Fatalf("Failed to open input file %s: %v", inputFile, err)
+		log.Fatalf("Failed to open input file %s: %v", *inputFile, err)
 	}
 	defer file.Close()
 
@@ -54,9 +55,8 @@ func main() {
 	builder.Finish(policies)
 	buffer := builder.FinishedBytes()
 
-	outputFile := strings.TrimSuffix(inputFile, ".json") + ".bin"
-	if err := os.WriteFile(outputFile, buffer, 0644); err != nil {
+	if err := os.WriteFile(*outputFile, buffer, 0644); err != nil {
 		log.Fatalf("Failed to write output: %v", err)
 	}
-	fmt.Printf("Wrote %d bytes to %s\n", len(buffer), outputFile)
+	fmt.Printf("Wrote %d bytes to %s\n", len(buffer), *outputFile)
 }
