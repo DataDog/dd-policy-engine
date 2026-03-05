@@ -8,7 +8,7 @@ require (
 	github.com/google/flatbuffers v25.2.10+incompatible
 	github.com/hashicorp/go-version v1.8.0
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/sys v0.40.0
+	golang.org/x/sys v0.41.0
 )
 
 require (
