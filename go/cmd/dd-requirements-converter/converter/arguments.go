@@ -43,11 +43,11 @@ func getArgvEvaluatorForPosition(position *int) wls.StringEvaluators {
 // if the pattern is a single string, return an evaluator node
 // if the pattern contains wildcards, return a composite node with parts of the pattern as evaluator nodes
 func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string, position *int) (flatbuffers.UOffsetT, error) {
-	if pattern == "*" {
+	if pattern == "*" || pattern == "?" {
 		return 0, nil
 	}
 
-	if !strings.Contains(pattern, "*") {
+	if !strings.Contains(pattern, "*") && !strings.Contains(pattern, "?") {
 		strEvaluator := schema.StrEvaluatorCreate(builder, getArgvEvaluatorForPosition(position), pattern, wls.CmpTypeSTRCMP_EXACT)
 		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Argument matching: "+pattern, strEvaluator)
 		return schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode), nil
@@ -55,8 +55,9 @@ func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string, pos
 
 	var nodes []flatbuffers.UOffsetT
 
-	// split by *
-	parts := strings.Split(pattern, "*")
+	// split by * and ? (normalize ? to * so both act as wildcards)
+	normalized := strings.ReplaceAll(pattern, "?", "*")
+	parts := strings.Split(normalized, "*")
 
 	for i, part := range parts {
 		if part == "" {
