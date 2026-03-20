@@ -179,8 +179,7 @@ UTEST(evaluator, test_string_evaluator) {
 
 UTEST(evaluator, test_string_evaluator_wildcard) {
   /* NULL parameters */
-  int  
-  res = string_evaluator_wildcard(NULL, "test");
+  int res = string_evaluator_wildcard(NULL, "test");
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   res = string_evaluator_wildcard("test", NULL);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
