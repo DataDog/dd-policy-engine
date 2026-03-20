@@ -30,6 +30,7 @@ enum CmpTypeNUM : byte {
 /// CMP_SUFFIX : Compare if the string ends with the value
 /// CMP_CONTAINS : Compare if the string contains the value
 /// CMP_EXACT : Compare if the string is exactly equal to the value
+/// CMP_WILDCARD : Compare using wildcard matching ('?' single char, '*' any chars)
 enum CmpTypeSTR : byte {
   /// An enum representing the type of action to take.
   CMP_STR_UNKNOWN = 0,
@@ -37,6 +38,7 @@ enum CmpTypeSTR : byte {
   CMP_SUFFIX,
   CMP_CONTAINS,
   CMP_EXACT,
+  CMP_WILDCARD,
   CMP_COUNT
 }
 

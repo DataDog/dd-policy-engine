@@ -287,46 +287,49 @@ func TestCmdPattern_ConvertToWLS(t *testing.T) {
 			// → StrEvaluator(PROCESS_EXE_FULL_PATH, EXACT, "/usr/bin/python")
 			name:         "exact path match",
 			pattern:      "/usr/bin/python",
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/python"),
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/python", wls.CmpTypeSTRCMP_EXACT),
 		},
 		{
 			// Wildcard suffix: "/usr/bin/*"
-			// → StrEvaluator(PROCESS_EXE_FULL_PATH, PREFIX, "/usr/bin/")
+			// → StrEvaluator(PROCESS_EXE_FULL_PATH, WILDCARD, "/usr/bin/")
 			name:         "wildcard suffix - prefix match",
 			pattern:      "/usr/bin/*",
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/", wls.CmpTypeSTRCMP_PREFIX),
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/*", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 		{
 			// Wildcard prefix: "**/python"
-			// → StrEvaluator(PROCESS_EXE_FULL_PATH, SUFFIX, "/python")
+			// → StrEvaluator(PROCESS_EXE_FULL_PATH, WILDCARD, "**/python")
 			name:         "wildcard prefix - suffix match",
 			pattern:      "**/python",
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/python", wls.CmpTypeSTRCMP_SUFFIX),
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "**/python", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 		{
 			// Middle wildcard: "/usr/*/python"
-			// → AND(PREFIX "/usr/", SUFFIX "/python")
-			name:    "middle wildcard",
-			pattern: "/usr/*/python",
-			expectedRoot: andNode(
-				strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/", wls.CmpTypeSTRCMP_PREFIX),
-				strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/python", wls.CmpTypeSTRCMP_SUFFIX),
-			),
+			// → StrEvaluator(PROCESS_EXE_FULL_PATH, WILDCARD "/usr/*/python")
+			name:         "middle wildcard",
+			pattern:      "/usr/*/python",
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/*/python", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 		{
 			// Double wildcard both ends: "**/bin/*"
-			// → StrEvaluator(PROCESS_EXE_FULL_PATH, CONTAINS, "/bin/")
+			// → StrEvaluator(PROCESS_EXE_FULL_PATH, WILDCARD, "**/bin/*")
 			name:         "wildcards both ends - contains match",
 			pattern:      "**/bin/*",
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/bin/", wls.CmpTypeSTRCMP_CONTAINS),
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "**/bin/*", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 		{
-			name:    "wildcards both ends - multiple contains matches",
-			pattern: "**/bin/**/python*",
-			expectedRoot: andNode(
-				strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/bin/", wls.CmpTypeSTRCMP_CONTAINS),
-				strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/python", wls.CmpTypeSTRCMP_CONTAINS),
-			),
+			// Wildcards both ends: "**/bin/**/python*"
+			// → StrEvaluator(PROCESS_EXE_FULL_PATH, WILDCARD, "**/bin/**/python*")
+			name:         "wildcards both ends - multiple contains matches",
+			pattern:      "**/bin/**/python*",
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "**/bin/**/python*", wls.CmpTypeSTRCMP_WILDCARD),
+		},
+		{
+			// Wildcard suffix: "/usr/b?n"
+			// → StrEvaluator(PROCESS_EXE_FULL_PATH, WILDCARD, "/usr/b?n")
+			name:         "wildcard suffix - prefix match",
+			pattern:      "/usr/b?n",
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/b?n", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 	}
 

@@ -9,6 +9,7 @@ import "strconv"
 /// CMP_SUFFIX : Compare if the string ends with the value
 /// CMP_CONTAINS : Compare if the string contains the value
 /// CMP_EXACT : Compare if the string is exactly equal to the value
+/// CMP_WILDCARD : Compare using wildcard matching ('?' single char, '*' any chars)
 type CmpTypeSTR int8
 
 const (
@@ -18,7 +19,8 @@ const (
 	CmpTypeSTRCMP_SUFFIX      CmpTypeSTR = 2
 	CmpTypeSTRCMP_CONTAINS    CmpTypeSTR = 3
 	CmpTypeSTRCMP_EXACT       CmpTypeSTR = 4
-	CmpTypeSTRCMP_COUNT       CmpTypeSTR = 5
+	CmpTypeSTRCMP_WILDCARD    CmpTypeSTR = 5
+	CmpTypeSTRCMP_COUNT       CmpTypeSTR = 6
 )
 
 var EnumNamesCmpTypeSTR = map[CmpTypeSTR]string{
@@ -27,6 +29,7 @@ var EnumNamesCmpTypeSTR = map[CmpTypeSTR]string{
 	CmpTypeSTRCMP_SUFFIX:      "CMP_SUFFIX",
 	CmpTypeSTRCMP_CONTAINS:    "CMP_CONTAINS",
 	CmpTypeSTRCMP_EXACT:       "CMP_EXACT",
+	CmpTypeSTRCMP_WILDCARD:    "CMP_WILDCARD",
 	CmpTypeSTRCMP_COUNT:       "CMP_COUNT",
 }
 
@@ -36,6 +39,7 @@ var EnumValuesCmpTypeSTR = map[string]CmpTypeSTR{
 	"CMP_SUFFIX":      CmpTypeSTRCMP_SUFFIX,
 	"CMP_CONTAINS":    CmpTypeSTRCMP_CONTAINS,
 	"CMP_EXACT":       CmpTypeSTRCMP_EXACT,
+	"CMP_WILDCARD":    CmpTypeSTRCMP_WILDCARD,
 	"CMP_COUNT":       CmpTypeSTRCMP_COUNT,
 }
 
