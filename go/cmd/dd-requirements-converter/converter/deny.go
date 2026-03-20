@@ -2,6 +2,7 @@ package converter
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
@@ -79,7 +80,15 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 			kv = key + "=" + *value
 		}
 
-		strEvaluator := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsPROCESS_ENVAR, kv, wls.CmpTypeSTRCMP_EXACT)
+		var comparator wls.CmpTypeSTR
+
+		if strings.ContainsAny(kv, "*?") {
+			comparator = wls.CmpTypeSTRCMP_WILDCARD
+		} else {
+			comparator = wls.CmpTypeSTRCMP_EXACT
+		}
+
+		strEvaluator := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsPROCESS_ENVAR, kv, comparator)
 		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Environment variable matching: "+kv, strEvaluator)
 		envNodes = append(envNodes, schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode))
 	}

@@ -382,18 +382,19 @@ func TestArgumentList_ConvertToWLS(t *testing.T) {
 			),
 		},
 		{
-			// Wildcard argument: {"args": ["--config=*"]}
-			// → StrEvaluator(PROCESS_ARGV, PREFIX, "--config=")
-			name:         "wildcard suffix in argument",
+			name:         "wildcard in argument",
 			inputJSON:    `{"args": ["--config=*"]}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV, "--config=", wls.CmpTypeSTRCMP_PREFIX),
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV, "--config=*", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 		{
-			// Last argument position (-1): {"args": ["*.txt"], "position": -1}
-			// → StrEvaluator(PROCESS_ARGV_N, SUFFIX, ".txt")
 			name:         "last argument position with wildcard",
 			inputJSON:    `{"args": ["*.txt"], "position": -1}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV_N, ".txt", wls.CmpTypeSTRCMP_SUFFIX),
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV_N, "*.txt", wls.CmpTypeSTRCMP_WILDCARD),
+		},
+		{
+			name:         "question mark wildcard in argument",
+			inputJSON:    `{"args": ["file-?.log"]}`,
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV, "file-?.log", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 	}
 
@@ -464,6 +465,21 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 			name:         "single environment variable",
 			inputJSON:    `{"envars": {"DEBUG": "1"}, "description": "deny debug mode"}`,
 			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "DEBUG=1"),
+		},
+		{
+			name:         "environment variable wildcard asterisk in value",
+			inputJSON:    `{"envars": {"PATH": "/usr/*/bin"}, "description": "deny path pattern"}`,
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "PATH=/usr/*/bin", wls.CmpTypeSTRCMP_WILDCARD),
+		},
+		{
+			name:         "environment variable wildcard question in value",
+			inputJSON:    `{"envars": {"TERM": "xterm-?56color"}, "description": "deny term pattern"}`,
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "TERM=xterm-?56color", wls.CmpTypeSTRCMP_WILDCARD),
+		},
+		{
+			name:         "environment variable key only",
+			inputJSON:    `{"envars": {"DEBUG": null}, "description": "deny unset-style match"}`,
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "DEBUG="),
 		},
 		{
 			// Single arg: {"args": [{"args": ["-rf"]}]}
