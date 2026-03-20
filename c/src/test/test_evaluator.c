@@ -64,6 +64,7 @@ extern plcs_evaluation_result string_evaluator_exact(const char *eval, const cha
 extern plcs_evaluation_result string_evaluator_prefix(const char *eval, const char *param);
 extern plcs_evaluation_result string_evaluator_suffix(const char *eval, const char *param);
 extern plcs_evaluation_result string_evaluator_contains(const char *eval, const char *param);
+extern plcs_evaluation_result string_evaluator_wildcard(const char *pattern, const char *str);
 
 extern void plcs_eval_ctx_set_str_eval_error(plcs_string_evaluators ix, plcs_errors error);
 extern void plcs_eval_ctx_set_num_eval_error(plcs_numeric_evaluators ix, plcs_errors error);
@@ -176,6 +177,168 @@ UTEST(evaluator, test_string_evaluator) {
   ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 }
 
+UTEST(evaluator, test_string_evaluator_wildcard) {
+  /* NULL parameters */
+  int res = string_evaluator_wildcard(NULL, "test");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
+  res = string_evaluator_wildcard("test", NULL);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
+  res = string_evaluator_wildcard(NULL, NULL);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
+
+  /* Exact match (no wildcards) */
+  res = string_evaluator_wildcard("hello", "hello");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("hello", "world");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("", "");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("", "a");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("a", "");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+
+  /* ? matches exactly one character */
+  res = string_evaluator_wildcard("?", "a");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("?", "");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("?", "ab");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("a?c", "abc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a?c", "aXc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a?c", "ac");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("a?c", "abbc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("???", "abc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("???", "ab");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("???", "abcd");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+
+  /* * matches zero or more characters */
+  res = string_evaluator_wildcard("*", "");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*", "anything");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a*", "a");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a*", "abc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a*", "b");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("*c", "c");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*c", "abc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*c", "abd");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("a*c", "ac");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a*c", "abc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a*c", "aXYZc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a*c", "aXYZd");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+
+  /* Multiple * wildcards */
+  res = string_evaluator_wildcard("*foo*", "foo");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*foo*", "XXfooYY");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*foo*bar*", "foobar");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*foo*bar*", "XXfooYYbarZZ");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*foo*bar*", "barfoo");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("*foo*bar*", "fooXXbaz");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+
+  /* Consecutive * treated as single * */
+  res = string_evaluator_wildcard("a***b", "ab");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a***b", "aXXXb");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+
+  /* Mixed ? and * */
+  res = string_evaluator_wildcard("a?*", "ab");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a?*", "abc");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("a?*", "a");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("*?", "a");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*?", "");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+
+  /* RFC-style patterns: executable path matching */
+  res = string_evaluator_wildcard("**/java", "/usr/bin/java");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("**/java-1.5*/**/java", "/usr/lib/java-1.5.0/bin/java");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("**/java-1.5*/**/java", "/usr/lib/java-1.8.0/bin/java");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+
+  /* RFC-style patterns: exe? matching single char suffix */
+  res = string_evaluator_wildcard("**/exe?", "/some/exe2");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("**/exe?", "/some/other/exeA");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("**/exe?", "/some/exe");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("**/exe?", "/some/exe22");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+
+  /* RFC-style patterns: argument matching */
+  res = string_evaluator_wildcard("1.*", "1.2.3");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("1.*", "2.0.0");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("*csc.dll", "csc.dll");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*csc.dll", "/path/to/csc.dll");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("*csc.dll", "other.dll");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+
+  /* Pathological patterns: ensure no excessive backtracking */
+  res = string_evaluator_wildcard("*a*a*a*a*b", "aaaaaaaaaaac");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("*a*a*a*a*b", "aaaaaaaaaaab");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+}
+
+UTEST(evaluator, default_string_eval_wildcard) {
+  /* Test wildcard through the plcs_default_string_evaluator dispatch */
+  ASSERT_EQ(
+      plcs_default_string_evaluator("*.dll", PLCS_STR_CMP_WILDCARD, "test.dll", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      plcs_default_string_evaluator("*.dll", PLCS_STR_CMP_WILDCARD, "test.exe", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_FALSE
+  );
+  ASSERT_EQ(
+      plcs_default_string_evaluator("he??o", PLCS_STR_CMP_WILDCARD, "hello", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      plcs_default_string_evaluator(NULL, PLCS_STR_CMP_WILDCARD, "test", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_ABSTAIN
+  );
+  ASSERT_EQ(
+      plcs_default_string_evaluator("test", PLCS_STR_CMP_WILDCARD, NULL, "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_ABSTAIN
+  );
+}
+
 UTEST(evaluator, out_of_bounds_eval_error_setters) {
   plcs_eval_ctx_set_str_eval_error(PLCS_STR_EVAL__COUNT, PLCS_EUNKNOWN_EVAL_IX);
   int err = plcs_eval_ctx_get_str_eval_error(PLCS_STR_EVAL__COUNT);
@@ -206,6 +369,10 @@ UTEST(evaluator, default_string_eval_sanity) {
   );
   ASSERT_EQ(
       plcs_default_string_evaluator("b", PLCS_STR_CMP_CONTAINS, "abc", "d", PLCS_STR_EVAL_COMPONENT),
+      (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
+  );
+  ASSERT_EQ(
+      plcs_default_string_evaluator("a?c", PLCS_STR_CMP_WILDCARD, "abc", "d", PLCS_STR_EVAL_COMPONENT),
       (plcs_evaluation_result)PLCS_EVAL_RESULT_TRUE
   );
 

@@ -120,7 +120,8 @@ static inline int dd_wls_CmpTypeNUM_is_known_value(dd_wls_CmpTypeNUM_enum_t valu
  *  CMP_PREFIX : Compare if the string starts with the value
  *  CMP_SUFFIX : Compare if the string ends with the value
  *  CMP_CONTAINS : Compare if the string contains the value
- *  CMP_EXACT : Compare if the string is exactly equal to the value */
+ *  CMP_EXACT : Compare if the string is exactly equal to the value
+ *  CMP_WILDCARD : Compare using wildcard matching ('?' single char, '*' any chars) */
 typedef int8_t dd_wls_CmpTypeSTR_enum_t;
 __flatbuffers_define_integer_type(dd_wls_CmpTypeSTR, dd_wls_CmpTypeSTR_enum_t, 8)
 /**  An enum representing the type of action to take. */
@@ -129,7 +130,8 @@ __flatbuffers_define_integer_type(dd_wls_CmpTypeSTR, dd_wls_CmpTypeSTR_enum_t, 8
 #define dd_wls_CmpTypeSTR_CMP_SUFFIX ((dd_wls_CmpTypeSTR_enum_t)INT8_C(2))
 #define dd_wls_CmpTypeSTR_CMP_CONTAINS ((dd_wls_CmpTypeSTR_enum_t)INT8_C(3))
 #define dd_wls_CmpTypeSTR_CMP_EXACT ((dd_wls_CmpTypeSTR_enum_t)INT8_C(4))
-#define dd_wls_CmpTypeSTR_CMP_COUNT ((dd_wls_CmpTypeSTR_enum_t)INT8_C(5))
+#define dd_wls_CmpTypeSTR_CMP_WILDCARD ((dd_wls_CmpTypeSTR_enum_t)INT8_C(5))
+#define dd_wls_CmpTypeSTR_CMP_COUNT ((dd_wls_CmpTypeSTR_enum_t)INT8_C(6))
 
 static inline const char *dd_wls_CmpTypeSTR_name(dd_wls_CmpTypeSTR_enum_t value)
 {
@@ -139,6 +141,7 @@ static inline const char *dd_wls_CmpTypeSTR_name(dd_wls_CmpTypeSTR_enum_t value)
     case dd_wls_CmpTypeSTR_CMP_SUFFIX: return "CMP_SUFFIX";
     case dd_wls_CmpTypeSTR_CMP_CONTAINS: return "CMP_CONTAINS";
     case dd_wls_CmpTypeSTR_CMP_EXACT: return "CMP_EXACT";
+    case dd_wls_CmpTypeSTR_CMP_WILDCARD: return "CMP_WILDCARD";
     case dd_wls_CmpTypeSTR_CMP_COUNT: return "CMP_COUNT";
     default: return "";
     }
@@ -152,6 +155,7 @@ static inline int dd_wls_CmpTypeSTR_is_known_value(dd_wls_CmpTypeSTR_enum_t valu
     case dd_wls_CmpTypeSTR_CMP_SUFFIX: return 1;
     case dd_wls_CmpTypeSTR_CMP_CONTAINS: return 1;
     case dd_wls_CmpTypeSTR_CMP_EXACT: return 1;
+    case dd_wls_CmpTypeSTR_CMP_WILDCARD: return 1;
     case dd_wls_CmpTypeSTR_CMP_COUNT: return 1;
     default: return 0;
     }

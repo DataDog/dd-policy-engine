@@ -100,6 +100,53 @@ plcs_evaluation_result string_evaluator_contains(const char *eval, const char *p
   return (strstr(param, eval) != NULL) ? PLCS_EVAL_RESULT_TRUE : PLCS_EVAL_RESULT_FALSE;
 }
 
+plcs_evaluation_result string_evaluator_wildcard(const char *pattern, const char *str) {
+  if (!pattern || !str) {
+    return PLCS_EVAL_RESULT_ABSTAIN;  // 'dont-care' state
+  }
+
+  // no need to check lengths :)
+  const char *star_pattern = NULL;
+  const char *star_str = NULL;
+
+  while (*str) {
+    // Exact match, or '?' matches any single character
+    if (*pattern == *str || *pattern == '?') {
+      pattern++;
+      str++;
+      continue;
+    }
+
+    if (*pattern == '*') {
+      // skip multiple '***'
+      while (*pattern == '*') {
+        pattern++;
+      }
+      // break soon :)
+      if (*pattern == '\0') {
+        return PLCS_EVAL_RESULT_TRUE;
+      }
+      star_pattern = pattern;
+      star_str = str;
+      continue;
+    }
+
+    if (star_pattern) {
+      pattern = star_pattern;
+      str = ++star_str;
+      continue;
+    }
+
+    return PLCS_EVAL_RESULT_FALSE;
+  }
+
+  while (*pattern == '*') {
+    pattern++;
+  }
+
+  return *pattern == '\0' ? PLCS_EVAL_RESULT_TRUE : PLCS_EVAL_RESULT_FALSE;
+}
+
 plcs_evaluation_result plcs_default_string_evaluator(
     const char *policy,
     const plcs_string_comparator cmp,
@@ -135,6 +182,10 @@ plcs_evaluation_result plcs_default_string_evaluator(
 
     case PLCS_STR_CMP_CONTAINS:
       return string_evaluator_contains(policy, ctx);
+      break;
+
+    case PLCS_STR_CMP_WILDCARD:
+      return string_evaluator_wildcard(policy, ctx);
       break;
 
     case PLCS_STR_CMP_STR_UNKNOWN:

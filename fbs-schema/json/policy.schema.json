@@ -27,7 +27,7 @@
     },
     "dd_wls_CmpTypeSTR" : {
       "type" : "string",
-      "enum": ["CMP_PREFIX", "CMP_SUFFIX", "CMP_CONTAINS", "CMP_EXACT", "CMP_COUNT"]
+      "enum": ["CMP_PREFIX", "CMP_SUFFIX", "CMP_CONTAINS", "CMP_EXACT", "CMP_WILDCARD", "CMP_COUNT"]
     },
     "dd_wls_EvaluatorType" : {
       "type" : "string",

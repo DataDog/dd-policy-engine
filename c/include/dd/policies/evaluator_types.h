@@ -21,7 +21,8 @@
   X(PREFIX, 1)                                                                                                         \
   X(SUFFIX, 2)                                                                                                         \
   X(CONTAINS, 3)                                                                                                       \
-  X(EXACT, 4)
+  X(EXACT, 4)                                                                                                          \
+  X(WILDCARD, 5)
 
 #define ENUM_COMPARATOR_VAL(VAL, IX) PLCS_STR_CMP_##VAL = IX,
 typedef enum plcs_string_comparator {
