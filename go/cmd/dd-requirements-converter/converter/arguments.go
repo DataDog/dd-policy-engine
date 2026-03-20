@@ -40,55 +40,24 @@ func getArgvEvaluatorForPosition(position *int) wls.StringEvaluators {
 	return wls.StringEvaluatorsPROCESS_ARGV
 }
 
-// if the pattern is a single string, return an evaluator node
-// if the pattern contains wildcards, return a composite node with parts of the pattern as evaluator nodes
+// wildcardMatchToEvaluators returns one StrEvaluator per argument pattern: EXACT if there are no
+// glob metacharacters, CMP_WILDCARD if the pattern contains * or ?. A pattern that is only "*" or "?" matches any value and returns offset 0.
 func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string, position *int) (flatbuffers.UOffsetT, error) {
 	if pattern == "*" || pattern == "?" {
 		return 0, nil
 	}
 
-	if !strings.Contains(pattern, "*") && !strings.Contains(pattern, "?") {
-		strEvaluator := schema.StrEvaluatorCreate(builder, getArgvEvaluatorForPosition(position), pattern, wls.CmpTypeSTRCMP_EXACT)
-		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Argument matching: "+pattern, strEvaluator)
-		return schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode), nil
+	ev := getArgvEvaluatorForPosition(position)
+	var cmp wls.CmpTypeSTR
+	if strings.ContainsAny(pattern, "*?") {
+		cmp = wls.CmpTypeSTRCMP_WILDCARD
+	} else {
+		cmp = wls.CmpTypeSTRCMP_EXACT
 	}
 
-	var nodes []flatbuffers.UOffsetT
-
-	// split by * and ? (normalize ? to * so both act as wildcards)
-	normalized := strings.ReplaceAll(pattern, "?", "*")
-	parts := strings.Split(normalized, "*")
-
-	for i, part := range parts {
-		if part == "" {
-			continue
-		}
-
-		isFirst := i == 0
-		isLast := i == len(parts)-1
-
-		var cmp wls.CmpTypeSTR
-		switch {
-		case isFirst:
-			cmp = wls.CmpTypeSTRCMP_PREFIX
-		case isLast:
-			cmp = wls.CmpTypeSTRCMP_SUFFIX
-		default:
-			cmp = wls.CmpTypeSTRCMP_CONTAINS
-		}
-
-		strEvaluator := schema.StrEvaluatorCreate(builder, getArgvEvaluatorForPosition(position), part, cmp)
-
-		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Argument matching for pattern: "+part, strEvaluator)
-		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode))
-	}
-
-	if len(nodes) == 1 {
-		return nodes[0], nil
-	}
-
-	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match argument pattern: "+pattern, nodes)
-	return schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode), nil
+	strEvaluator := schema.StrEvaluatorCreate(builder, ev, pattern, cmp)
+	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Argument matching: "+pattern, strEvaluator)
+	return schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode), nil
 }
 
 // return a NodeTypeWrapper with an evaluator node or a composite node with the argument patterns
@@ -110,23 +79,17 @@ func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UO
 		if argument == "" {
 			continue
 		}
-
-		// increment position for arguments after the first
 		if pos != nil && i > 0 {
-			(*pos)++
+			*pos++
 		}
 
 		argNode, err := wildcardMatchToEvaluators(builder, argument, pos)
 		if err != nil {
 			return 0, err
 		}
-
-		// Skip pure wildcards (they match anything)
-		if argNode == 0 {
-			continue
+		if argNode != 0 {
+			nodes = append(nodes, argNode)
 		}
-
-		nodes = append(nodes, argNode)
 	}
 
 	if len(nodes) == 0 {
