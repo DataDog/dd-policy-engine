@@ -5,7 +5,7 @@ package wls
 import "strconv"
 
 /// Canonical set of machine architectures recognized by the policy engine.
-/// The string representation uses the kernel-reported format (e.g. "aarch64", "x86_64").
+/// The string representation uses the kernel-reported format (e.g. "aarch64", "x86_64", "arm", "x86").
 /// IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
 type MachineArchitecture int8
 
@@ -13,13 +13,17 @@ const (
 	MachineArchitectureARCH_UNKNOWN               MachineArchitecture = 0
 	MachineArchitectureAARCH64                    MachineArchitecture = 1
 	MachineArchitectureX86_64                     MachineArchitecture = 2
-	MachineArchitectureMACHINE_ARCHITECTURE_COUNT MachineArchitecture = 3
+	MachineArchitectureARM                        MachineArchitecture = 3
+	MachineArchitectureX86_32                     MachineArchitecture = 4
+	MachineArchitectureMACHINE_ARCHITECTURE_COUNT MachineArchitecture = 5
 )
 
 var EnumNamesMachineArchitecture = map[MachineArchitecture]string{
 	MachineArchitectureARCH_UNKNOWN:               "ARCH_UNKNOWN",
 	MachineArchitectureAARCH64:                    "AARCH64",
 	MachineArchitectureX86_64:                     "X86_64",
+	MachineArchitectureARM:                        "ARM",
+	MachineArchitectureX86_32:                     "X86_32",
 	MachineArchitectureMACHINE_ARCHITECTURE_COUNT: "MACHINE_ARCHITECTURE_COUNT",
 }
 
@@ -27,6 +31,8 @@ var EnumValuesMachineArchitecture = map[string]MachineArchitecture{
 	"ARCH_UNKNOWN":               MachineArchitectureARCH_UNKNOWN,
 	"AARCH64":                    MachineArchitectureAARCH64,
 	"X86_64":                     MachineArchitectureX86_64,
+	"ARM":                        MachineArchitectureARM,
+	"X86_32":                     MachineArchitectureX86_32,
 	"MACHINE_ARCHITECTURE_COUNT": MachineArchitectureMACHINE_ARCHITECTURE_COUNT,
 }
 
