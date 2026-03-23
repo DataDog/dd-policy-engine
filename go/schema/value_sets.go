@@ -55,6 +55,7 @@ var OperatingSystemFromString = map[string]wls.OperatingSystem{
 var MachineArchitectureToString = map[wls.MachineArchitecture]string{
 	wls.MachineArchitectureAARCH64: "aarch64",
 	wls.MachineArchitectureX86_64:  "x86_64",
+	wls.MachineArchitectureARM:     "arm",
 }
 
 // MachineArchitectureFromString maps various architecture strings to MachineArchitecture
@@ -65,6 +66,7 @@ var MachineArchitectureFromString = map[string]wls.MachineArchitecture{
 	"x86_64":  wls.MachineArchitectureX86_64,
 	"x64":     wls.MachineArchitectureX86_64, // alias
 	"amd64":   wls.MachineArchitectureX86_64, // alias
+	"arm":     wls.MachineArchitectureARM,
 }
 
 // ValidateMachineArchitecture checks whether the given string is a recognized
