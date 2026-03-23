@@ -219,6 +219,28 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 			),
 		},
 		{
+			// 32-bit x86: JSON "x86" → policy operand "x86"
+			name:      "32-bit x86 architecture",
+			inputJSON: `{"arch": "x86", "supported": false}`,
+			flavor:    "glibc",
+			expectNil: false,
+			expectedRoot: andNode(
+				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "x86"),
+				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "glibc"),
+			),
+		},
+		{
+			// 32-bit ARM: JSON "arm" → policy operand "arm"
+			name:      "32-bit ARM architecture",
+			inputJSON: `{"arch": "arm", "supported": false}`,
+			flavor:    "musl",
+			expectNil: false,
+			expectedRoot: andNode(
+				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "arm"),
+				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "musl"),
+			),
+		},
+		{
 			// JSON: {"arch": "x64", "supported": false, "min": "2.30"}
 			// Policy: DENY if arch=x86_64 AND flavor=glibc AND version >= 2.30
 			name:      "unsupported with version - deny if version >= min",
