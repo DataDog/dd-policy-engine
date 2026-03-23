@@ -100,7 +100,7 @@ static inline int dd_wls_OperatingSystem_is_known_value(dd_wls_OperatingSystem_e
 }
 
 /**  Canonical set of machine architectures recognized by the policy engine.
- *  The string representation uses the kernel-reported format (e.g. "aarch64", "x86_64", "arm").
+ *  The string representation uses the kernel-reported format (e.g. "aarch64", "x86_64", "arm", "x86").
  *  IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry. */
 typedef int8_t dd_wls_MachineArchitecture_enum_t;
 __flatbuffers_define_integer_type(dd_wls_MachineArchitecture, dd_wls_MachineArchitecture_enum_t, 8)
@@ -108,7 +108,8 @@ __flatbuffers_define_integer_type(dd_wls_MachineArchitecture, dd_wls_MachineArch
 #define dd_wls_MachineArchitecture_AARCH64 ((dd_wls_MachineArchitecture_enum_t)INT8_C(1))
 #define dd_wls_MachineArchitecture_X86_64 ((dd_wls_MachineArchitecture_enum_t)INT8_C(2))
 #define dd_wls_MachineArchitecture_ARM ((dd_wls_MachineArchitecture_enum_t)INT8_C(3))
-#define dd_wls_MachineArchitecture_MACHINE_ARCHITECTURE_COUNT ((dd_wls_MachineArchitecture_enum_t)INT8_C(4))
+#define dd_wls_MachineArchitecture_X86_32 ((dd_wls_MachineArchitecture_enum_t)INT8_C(4))
+#define dd_wls_MachineArchitecture_MACHINE_ARCHITECTURE_COUNT ((dd_wls_MachineArchitecture_enum_t)INT8_C(5))
 
 static inline const char *dd_wls_MachineArchitecture_name(dd_wls_MachineArchitecture_enum_t value)
 {
@@ -117,6 +118,7 @@ static inline const char *dd_wls_MachineArchitecture_name(dd_wls_MachineArchitec
     case dd_wls_MachineArchitecture_AARCH64: return "AARCH64";
     case dd_wls_MachineArchitecture_X86_64: return "X86_64";
     case dd_wls_MachineArchitecture_ARM: return "ARM";
+    case dd_wls_MachineArchitecture_X86_32: return "X86_32";
     case dd_wls_MachineArchitecture_MACHINE_ARCHITECTURE_COUNT: return "MACHINE_ARCHITECTURE_COUNT";
     default: return "";
     }
@@ -129,6 +131,7 @@ static inline int dd_wls_MachineArchitecture_is_known_value(dd_wls_MachineArchit
     case dd_wls_MachineArchitecture_AARCH64: return 1;
     case dd_wls_MachineArchitecture_X86_64: return 1;
     case dd_wls_MachineArchitecture_ARM: return 1;
+    case dd_wls_MachineArchitecture_X86_32: return 1;
     case dd_wls_MachineArchitecture_MACHINE_ARCHITECTURE_COUNT: return 1;
     default: return 0;
     }
