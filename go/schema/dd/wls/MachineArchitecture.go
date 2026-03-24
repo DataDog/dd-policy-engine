@@ -14,7 +14,7 @@ const (
 	MachineArchitectureAARCH64                    MachineArchitecture = 1
 	MachineArchitectureX86_64                     MachineArchitecture = 2
 	MachineArchitectureARM                        MachineArchitecture = 3
-	MachineArchitectureX86_32                     MachineArchitecture = 4
+	MachineArchitectureX86                        MachineArchitecture = 4
 	MachineArchitectureMACHINE_ARCHITECTURE_COUNT MachineArchitecture = 5
 )
 
@@ -23,7 +23,7 @@ var EnumNamesMachineArchitecture = map[MachineArchitecture]string{
 	MachineArchitectureAARCH64:                    "AARCH64",
 	MachineArchitectureX86_64:                     "X86_64",
 	MachineArchitectureARM:                        "ARM",
-	MachineArchitectureX86_32:                     "X86_32",
+	MachineArchitectureX86:                        "X86",
 	MachineArchitectureMACHINE_ARCHITECTURE_COUNT: "MACHINE_ARCHITECTURE_COUNT",
 }
 
@@ -32,7 +32,7 @@ var EnumValuesMachineArchitecture = map[string]MachineArchitecture{
 	"AARCH64":                    MachineArchitectureAARCH64,
 	"X86_64":                     MachineArchitectureX86_64,
 	"ARM":                        MachineArchitectureARM,
-	"X86_32":                     MachineArchitectureX86_32,
+	"X86":                        MachineArchitectureX86,
 	"MACHINE_ARCHITECTURE_COUNT": MachineArchitectureMACHINE_ARCHITECTURE_COUNT,
 }
 
