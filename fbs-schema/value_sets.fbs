@@ -39,6 +39,6 @@ enum MachineArchitecture : byte {
     AARCH64,    // arm64, aarch64
     X86_64,     // x64, x86_64, amd64
     ARM,        // 32-bit ARM
-    X86_32,     // 32-bit x86
+    X86,     // 32-bit x86
     MACHINE_ARCHITECTURE_COUNT
 }
