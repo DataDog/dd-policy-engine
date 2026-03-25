@@ -266,6 +266,14 @@ UTEST(evaluator, test_string_evaluator_wildcard) {
   res = string_evaluator_wildcard("a***b", "aXXXb");
   ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
+  /* PROCESS_ENVAR null JSON value: converter emits KEY=*? (non-empty RHS only) */
+  res = string_evaluator_wildcard("FOO=*?", "FOO=");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  res = string_evaluator_wildcard("FOO=*?", "FOO=a");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+  res = string_evaluator_wildcard("FOO=*?", "FOO=ab");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+
   /* Mixed ? and * */
   res = string_evaluator_wildcard("a?*", "ab");
   ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);

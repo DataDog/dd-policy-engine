@@ -75,7 +75,7 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 	for key, value := range d.Envs {
 		var kv string
 		if value == nil {
-			kv = key + "=*"
+			kv = key + "=*?"
 		} else {
 			kv = key + "=" + *value
 		}

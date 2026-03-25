@@ -499,9 +499,10 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "TERM=xterm-?56color", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 		{
-			name:         "environment variable key only",
-			inputJSON:    `{"envars": {"DEBUG": null}, "description": "deny unset-style match"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "DEBUG="),
+			// JSON null value → KEY=*? + CMP_WILDCARD ("any non-empty value" for KEY=)
+			name:         "environment variable null value matches non-empty only",
+			inputJSON:    `{"envars": {"FOO": null}, "description": "deny when FOO set to any non-empty value"}`,
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "FOO=*?", wls.CmpTypeSTRCMP_WILDCARD),
 		},
 		{
 			// Single arg: {"args": [{"args": ["-rf"]}]}
