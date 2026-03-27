@@ -133,7 +133,7 @@ func buildVersionLessThanOrEqual(builder *flatbuffers.Builder, major, minor, pat
 	minorEqNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "minor version ==", minorEqEval)
 	minorEqWrapper := schema.NodeTypeWrapperCreate(builder, minorEqNode, wls.NodeTypeEvaluatorNode)
 
-	patchLteEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_PATCH, int64(patch), wls.CmpTypeNUMCMP_LT)
+	patchLteEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_PATCH, int64(patch), wls.CmpTypeNUMCMP_LTE)
 	patchLteNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "patch version <=", patchLteEval)
 	patchLteWrapper := schema.NodeTypeWrapperCreate(builder, patchLteNode, wls.NodeTypeEvaluatorNode)
 
