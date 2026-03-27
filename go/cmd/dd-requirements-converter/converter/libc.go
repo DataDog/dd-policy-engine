@@ -92,14 +92,14 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 			// 1. (major < minMajor) OR
 			// 2. (major == minMajor AND minor < minMinor) OR
 			// 3. (major == minMajor AND minor == minMinor AND patch < minPatch)
-			nodes = append(nodes, buildVersionLessThan(builder, major, minor, patch))
+			nodes = append(nodes, buildVersionGreaterThan(builder, major, minor, patch))
 		} else {
 			// supported: false + version → DENY if version >= min
 			// Semver comparison: version >= minVersion means:
 			// 1. (major > minMajor) OR
-			// 2. (major == minMajor AND minor > minMinor) OR
+			// 2. (major == minMajor AND minor >= minMinor) OR
 			// 3. (major == minMajor AND minor == minMinor AND patch >= minPatch)
-			nodes = append(nodes, buildVersionGreaterOrEqual(builder, major, minor, patch))
+			nodes = append(nodes, buildVersionLessThanOrEqual(builder, major, minor, patch))
 		}
 	}
 
@@ -109,7 +109,7 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 }
 
 // buildVersionLessThan creates a node that matches when version < major.minor.patch
-func buildVersionLessThan(builder *flatbuffers.Builder, major, minor, patch int) flatbuffers.UOffsetT {
+func buildVersionLessThanOrEqual(builder *flatbuffers.Builder, major, minor, patch int) flatbuffers.UOffsetT {
 	// case 1: major < minMajor
 	majorLtEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MAJOR, int64(major), wls.CmpTypeNUMCMP_LT)
 	majorLtNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "major version <", majorLtEval)
@@ -121,11 +121,11 @@ func buildVersionLessThan(builder *flatbuffers.Builder, major, minor, patch int)
 	majorEqWrapper := schema.NodeTypeWrapperCreate(builder, majorEqNode, wls.NodeTypeEvaluatorNode)
 
 	// case 2: major == minMajor AND minor < minMinor
-	minorLtEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MINOR, int64(minor), wls.CmpTypeNUMCMP_LT)
-	minorLtNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "minor version <", minorLtEval)
-	minorLtWrapper := schema.NodeTypeWrapperCreate(builder, minorLtNode, wls.NodeTypeEvaluatorNode)
+	minorLteEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MINOR, int64(minor), wls.CmpTypeNUMCMP_LTE)
+	minorLteNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "minor version <=", minorLteEval)
+	minorLteWrapper := schema.NodeTypeWrapperCreate(builder, minorLteNode, wls.NodeTypeEvaluatorNode)
 
-	case2And := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "major == && minor <", []flatbuffers.UOffsetT{majorEqWrapper, minorLtWrapper})
+	case2And := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "major == && minor <=", []flatbuffers.UOffsetT{majorEqWrapper, minorLteWrapper})
 	case2 := schema.NodeTypeWrapperCreate(builder, case2And, wls.NodeTypeCompositeNode)
 
 	// case 3: major == minMajor AND minor == minMinor AND patch < minPatch
@@ -133,20 +133,20 @@ func buildVersionLessThan(builder *flatbuffers.Builder, major, minor, patch int)
 	minorEqNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "minor version ==", minorEqEval)
 	minorEqWrapper := schema.NodeTypeWrapperCreate(builder, minorEqNode, wls.NodeTypeEvaluatorNode)
 
-	patchLtEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_PATCH, int64(patch), wls.CmpTypeNUMCMP_LT)
-	patchLtNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "patch version <", patchLtEval)
-	patchLtWrapper := schema.NodeTypeWrapperCreate(builder, patchLtNode, wls.NodeTypeEvaluatorNode)
+	patchLteEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_PATCH, int64(patch), wls.CmpTypeNUMCMP_LTE)
+	patchLteNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "patch version <=", patchLteEval)
+	patchLteWrapper := schema.NodeTypeWrapperCreate(builder, patchLteNode, wls.NodeTypeEvaluatorNode)
 
-	case3And := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "major == && minor == && patch <", []flatbuffers.UOffsetT{majorEqWrapper, minorEqWrapper, patchLtWrapper})
+	case3And := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "major == && minor == && patch <=", []flatbuffers.UOffsetT{majorEqWrapper, minorEqWrapper, patchLteWrapper})
 	case3 := schema.NodeTypeWrapperCreate(builder, case3And, wls.NodeTypeCompositeNode)
 
 	// combine all cases with OR
-	versionOr := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "version < min", []flatbuffers.UOffsetT{case1, case2, case3})
+	versionOr := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "version <= min", []flatbuffers.UOffsetT{case1, case2, case3})
 	return schema.NodeTypeWrapperCreate(builder, versionOr, wls.NodeTypeCompositeNode)
 }
 
 // buildVersionGreaterOrEqual creates a node that matches when version >= major.minor.patch
-func buildVersionGreaterOrEqual(builder *flatbuffers.Builder, major, minor, patch int) flatbuffers.UOffsetT {
+func buildVersionGreaterThan(builder *flatbuffers.Builder, major, minor, patch int) flatbuffers.UOffsetT {
 	// case 1: major > minMajor
 	majorGtEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MAJOR, int64(major), wls.CmpTypeNUMCMP_GT)
 	majorGtNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "major version >", majorGtEval)
@@ -170,14 +170,14 @@ func buildVersionGreaterOrEqual(builder *flatbuffers.Builder, major, minor, patc
 	minorEqNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "minor version ==", minorEqEval)
 	minorEqWrapper := schema.NodeTypeWrapperCreate(builder, minorEqNode, wls.NodeTypeEvaluatorNode)
 
-	patchGteEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_PATCH, int64(patch), wls.CmpTypeNUMCMP_GTE)
-	patchGteNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "patch version >=", patchGteEval)
-	patchGteWrapper := schema.NodeTypeWrapperCreate(builder, patchGteNode, wls.NodeTypeEvaluatorNode)
+	patchGtEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_PATCH, int64(patch), wls.CmpTypeNUMCMP_GT)
+	patchGtNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "patch version >", patchGtEval)
+	patchGtWrapper := schema.NodeTypeWrapperCreate(builder, patchGtNode, wls.NodeTypeEvaluatorNode)
 
-	case3And := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "major == && minor == && patch >=", []flatbuffers.UOffsetT{majorEqWrapper, minorEqWrapper, patchGteWrapper})
+	case3And := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "major == && minor == && patch >", []flatbuffers.UOffsetT{majorEqWrapper, minorEqWrapper, patchGtWrapper})
 	case3 := schema.NodeTypeWrapperCreate(builder, case3And, wls.NodeTypeCompositeNode)
 
 	// combine all cases with OR
-	versionOr := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "version >= min", []flatbuffers.UOffsetT{case1, case2, case3})
+	versionOr := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "version > min", []flatbuffers.UOffsetT{case1, case2, case3})
 	return schema.NodeTypeWrapperCreate(builder, versionOr, wls.NodeTypeCompositeNode)
 }

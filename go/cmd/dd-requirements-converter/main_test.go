@@ -193,15 +193,15 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "x86_64"),
 				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "glibc"),
 				orNode( // version < 2.17
-					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_LT, 2),
+					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_GT, 2),
 					andNode( // major == 2 AND minor < 17
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
-						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LT, 17),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_GT, 17),
 					),
 					andNode( // major == 2 AND minor == 17 AND patch < 0
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_EQ, 17),
-						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_LT, 0),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_GT, 0),
 					),
 				),
 			),
@@ -251,15 +251,15 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "x86_64"),
 				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "glibc"),
 				orNode( // version >= 2.30
-					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_GT, 2),
+					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_LT, 2),
 					andNode( // major == 2 AND minor > 30
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
-						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_GT, 30),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LTE, 30),
 					),
 					andNode( // major == 2 AND minor == 30 AND patch >= 0
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_EQ, 30),
-						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_GTE, 0),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_LTE, 0),
 					),
 				),
 			),
