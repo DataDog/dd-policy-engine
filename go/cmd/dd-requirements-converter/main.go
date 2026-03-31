@@ -19,7 +19,7 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-// parseRequirementsJSON decodes requirements document bytes the same way as the CLI: rejects
+// parseRequirementsJSON decodes the raw bytes for requirements.json the same way as the CLI: rejects
 // empty/whitespace-only input and invalid JSON before conversion.
 func parseRequirementsJSON(raw []byte) (converter.JSONRequirements, error) {
 	var req converter.JSONRequirements
