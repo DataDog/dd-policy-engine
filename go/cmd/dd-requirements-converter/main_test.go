@@ -556,9 +556,14 @@ func TestParseRequirementsJSON(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "empty object missing version",
+			name:    "empty object version zero",
 			input:   "{}",
 			wantErr: true,
+		},
+		{
+			name:    "version one only",
+			input:   `{"version":1}`,
+			wantErr: false,
 		},
 		{
 			name:    "version zero",
@@ -576,8 +581,8 @@ func TestParseRequirementsJSON(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "version one minimal",
-			input:   `{"version":1}`,
+			name:    "version one with empty deny and native_deps",
+			input:   `{"version":1,"deny":[],"native_deps":{"glibc":[],"musl":[]}}`,
 			wantErr: false,
 		},
 		{
@@ -612,13 +617,12 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 	}{
 		{
 			name:              "empty requirements",
-			inputJSON:         `{"version":1}`,
+			inputJSON:         `{}`,
 			expectedRuleCount: 0,
 		},
 		{
 			name: "glibc + musl + deny combined",
 			inputJSON: `{
-				"version": 1,
 				"deny": [{"os": "windows", "description": "no windows"}],
 				"native_deps": {
 					"glibc": [{"arch": "x64", "supported": true, "min": "2.17"}],
