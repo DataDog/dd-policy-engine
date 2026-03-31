@@ -11,167 +11,182 @@ type StringEvaluators int8
 
 const (
 	/// An enum representing the type of action to take.
-	StringEvaluatorsSTRING_EVAL_UNKNOWN         StringEvaluators = 0
-	StringEvaluatorsCOMPONENT                   StringEvaluators = 1
-	StringEvaluatorsPROCESS_EXE                 StringEvaluators = 2
-	StringEvaluatorsPROCESS_EXE_FULL_PATH       StringEvaluators = 3
-	StringEvaluatorsPROCESS_BASEDIR_PATH        StringEvaluators = 4
-	StringEvaluatorsPROCESS_ARGV                StringEvaluators = 5
-	StringEvaluatorsPROCESS_CWD                 StringEvaluators = 6
-	StringEvaluatorsRUNTIME_LANGUAGE            StringEvaluators = 7
+	StringEvaluatorsSTRING_EVAL_UNKNOWN           StringEvaluators = 0
+	StringEvaluatorsCOMPONENT                     StringEvaluators = 1
+	StringEvaluatorsPROCESS_EXE                   StringEvaluators = 2
+	StringEvaluatorsPROCESS_EXE_FULL_PATH         StringEvaluators = 3
+	StringEvaluatorsPROCESS_BASEDIR_PATH          StringEvaluators = 4
+	StringEvaluatorsPROCESS_ARGV                  StringEvaluators = 5
+	StringEvaluatorsPROCESS_CWD                   StringEvaluators = 6
+	StringEvaluatorsRUNTIME_LANGUAGE              StringEvaluators = 7
 	/// [python, node, .NET] the [.py/shebang, .js, .dll] file, 
-	StringEvaluatorsRUNTIME_ENTRY_POINT_FILE    StringEvaluators = 8
+	StringEvaluatorsRUNTIME_ENTRY_POINT_FILE      StringEvaluators = 8
 	/// Used to evaluate the jar file passed to the JVM
-	StringEvaluatorsRUNTIME_ENTRY_POINT_JAR     StringEvaluators = 9
+	StringEvaluatorsRUNTIME_ENTRY_POINT_JAR       StringEvaluators = 9
 	/// Used to evaluate the class passed to the JVM
-	StringEvaluatorsRUNTIME_ENTRY_POINT_CLASS   StringEvaluators = 10
+	StringEvaluatorsRUNTIME_ENTRY_POINT_CLASS     StringEvaluators = 10
 	/// Used to evaluate the class passed to the JVM
-	StringEvaluatorsRUNTIME_ENTRY_POINT_PACKAGE StringEvaluators = 11
-	StringEvaluatorsRUNTIME_ENTRY_POINT_MODULE  StringEvaluators = 12
+	StringEvaluatorsRUNTIME_ENTRY_POINT_PACKAGE   StringEvaluators = 11
+	StringEvaluatorsRUNTIME_ENTRY_POINT_MODULE    StringEvaluators = 12
 	/// Used to evalute the source file passed to the JVM
-	StringEvaluatorsRUNTIME_ENTRY_POINT_SOURCE  StringEvaluators = 13
+	StringEvaluatorsRUNTIME_ENTRY_POINT_SOURCE    StringEvaluators = 13
 	/// Used to evaluate different Doptions passed to the JVM
-	StringEvaluatorsRUNTIME_DOPTION             StringEvaluators = 14
+	StringEvaluatorsRUNTIME_DOPTION               StringEvaluators = 14
 	/// Used to evaluate the runtime version
 	/// Remember current implementation will only support string comparisons!
 	/// For a numeric comparison look at the NumericEvaluators!
-	StringEvaluatorsRUNTIME_VERSION             StringEvaluators = 15
+	StringEvaluatorsRUNTIME_VERSION               StringEvaluators = 15
 	/// Used to evaluate the flavors (glibc, musl, etc.)
-	StringEvaluatorsLIBC_FLAVOR                 StringEvaluators = 16
+	StringEvaluatorsLIBC_FLAVOR                   StringEvaluators = 16
 	/// Used to evaluate the libc version
 	/// Remember current implementation will only support string comparisons!
 	/// For a numeric comparison look at the NumericEvaluators!
-	StringEvaluatorsLIBC_VERSION                StringEvaluators = 17
+	StringEvaluatorsLIBC_VERSION                  StringEvaluators = 17
 	/// Used to evaluate the architecture (x86_64, amd64, aarch64, etc.)
-	StringEvaluatorsMACHINE_ARCHITECTURE        StringEvaluators = 18
+	StringEvaluatorsMACHINE_ARCHITECTURE          StringEvaluators = 18
 	/// Used to evaluate the hostname
 	/// NOTE: the correctness of the hotname really depends heavily on the component implementing this evaluator!
-	StringEvaluatorsHOST_NAME                   StringEvaluators = 19
+	StringEvaluatorsHOST_NAME                     StringEvaluators = 19
 	/// Used to evaluate the IP
 	/// NOTE: the correctness of the hotname really depends heavily on the component implementing this evaluator!
-	StringEvaluatorsHOST_IP                     StringEvaluators = 20
-	StringEvaluatorsOS                          StringEvaluators = 21
-	StringEvaluatorsOS_DISTRO                   StringEvaluators = 22
-	StringEvaluatorsOS_DISTRO_VERSION           StringEvaluators = 23
-	StringEvaluatorsOS_DISTRO_CODENAME          StringEvaluators = 24
-	StringEvaluatorsOS_KERNEL_VERSION           StringEvaluators = 25
-	StringEvaluatorsOS_KERNEL_NAME              StringEvaluators = 26
-	StringEvaluatorsOS_USER                     StringEvaluators = 27
-	StringEvaluatorsOS_USER_GROUP               StringEvaluators = 28
-	StringEvaluatorsCONTAINER_IMAGE             StringEvaluators = 29
-	StringEvaluatorsCONTAINER_ID                StringEvaluators = 30
+	StringEvaluatorsHOST_IP                       StringEvaluators = 20
+	StringEvaluatorsOS                            StringEvaluators = 21
+	StringEvaluatorsOS_DISTRO                     StringEvaluators = 22
+	StringEvaluatorsOS_DISTRO_VERSION             StringEvaluators = 23
+	StringEvaluatorsOS_DISTRO_CODENAME            StringEvaluators = 24
+	StringEvaluatorsOS_KERNEL_VERSION             StringEvaluators = 25
+	StringEvaluatorsOS_KERNEL_NAME                StringEvaluators = 26
+	StringEvaluatorsOS_USER                       StringEvaluators = 27
+	StringEvaluatorsOS_USER_GROUP                 StringEvaluators = 28
+	StringEvaluatorsCONTAINER_IMAGE               StringEvaluators = 29
+	StringEvaluatorsCONTAINER_ID                  StringEvaluators = 30
 	/// When you want to pass a true, false or abstain value to an 
 	/// action without evaluating anything, these can be used
-	StringEvaluatorsALWAYS_TRUE                 StringEvaluators = 31
-	StringEvaluatorsALWAYS_FALSE                StringEvaluators = 32
-	StringEvaluatorsALWAYS_ABSTAIN              StringEvaluators = 33
-	StringEvaluatorsIIS_APPLICATION_POOL        StringEvaluators = 34
-	StringEvaluatorsPROCESS_ARGV_0              StringEvaluators = 35
-	StringEvaluatorsPROCESS_ARGV_1              StringEvaluators = 36
-	StringEvaluatorsPROCESS_ARGV_2              StringEvaluators = 37
-	StringEvaluatorsPROCESS_ARGV_3              StringEvaluators = 38
-	StringEvaluatorsPROCESS_ARGV_4              StringEvaluators = 39
-	StringEvaluatorsPROCESS_ARGV_5              StringEvaluators = 40
-	StringEvaluatorsPROCESS_ARGV_N              StringEvaluators = 41
-	StringEvaluatorsPROCESS_ENVAR               StringEvaluators = 42
+	StringEvaluatorsALWAYS_TRUE                   StringEvaluators = 31
+	StringEvaluatorsALWAYS_FALSE                  StringEvaluators = 32
+	StringEvaluatorsALWAYS_ABSTAIN                StringEvaluators = 33
+	StringEvaluatorsIIS_APPLICATION_POOL          StringEvaluators = 34
+	StringEvaluatorsPROCESS_ARGV_0                StringEvaluators = 35
+	StringEvaluatorsPROCESS_ARGV_1                StringEvaluators = 36
+	StringEvaluatorsPROCESS_ARGV_2                StringEvaluators = 37
+	StringEvaluatorsPROCESS_ARGV_3                StringEvaluators = 38
+	StringEvaluatorsPROCESS_ARGV_4                StringEvaluators = 39
+	StringEvaluatorsPROCESS_ARGV_5                StringEvaluators = 40
+	StringEvaluatorsPROCESS_ARGV_N                StringEvaluators = 41
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_2 StringEvaluators = 42
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_3 StringEvaluators = 43
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_4 StringEvaluators = 44
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_5 StringEvaluators = 45
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_6 StringEvaluators = 46
+	StringEvaluatorsPROCESS_ENVAR                 StringEvaluators = 47
 	/// Represents the count of String evaluators.
 	/// This is used to ensure that the enum is always in sync with the number of evaluators.
 	/// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
-	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 43
+	StringEvaluatorsSTR_EVAL_COUNT                StringEvaluators = 48
 )
 
 var EnumNamesStringEvaluators = map[StringEvaluators]string{
-	StringEvaluatorsSTRING_EVAL_UNKNOWN:         "STRING_EVAL_UNKNOWN",
-	StringEvaluatorsCOMPONENT:                   "COMPONENT",
-	StringEvaluatorsPROCESS_EXE:                 "PROCESS_EXE",
-	StringEvaluatorsPROCESS_EXE_FULL_PATH:       "PROCESS_EXE_FULL_PATH",
-	StringEvaluatorsPROCESS_BASEDIR_PATH:        "PROCESS_BASEDIR_PATH",
-	StringEvaluatorsPROCESS_ARGV:                "PROCESS_ARGV",
-	StringEvaluatorsPROCESS_CWD:                 "PROCESS_CWD",
-	StringEvaluatorsRUNTIME_LANGUAGE:            "RUNTIME_LANGUAGE",
-	StringEvaluatorsRUNTIME_ENTRY_POINT_FILE:    "RUNTIME_ENTRY_POINT_FILE",
-	StringEvaluatorsRUNTIME_ENTRY_POINT_JAR:     "RUNTIME_ENTRY_POINT_JAR",
-	StringEvaluatorsRUNTIME_ENTRY_POINT_CLASS:   "RUNTIME_ENTRY_POINT_CLASS",
-	StringEvaluatorsRUNTIME_ENTRY_POINT_PACKAGE: "RUNTIME_ENTRY_POINT_PACKAGE",
-	StringEvaluatorsRUNTIME_ENTRY_POINT_MODULE:  "RUNTIME_ENTRY_POINT_MODULE",
-	StringEvaluatorsRUNTIME_ENTRY_POINT_SOURCE:  "RUNTIME_ENTRY_POINT_SOURCE",
-	StringEvaluatorsRUNTIME_DOPTION:             "RUNTIME_DOPTION",
-	StringEvaluatorsRUNTIME_VERSION:             "RUNTIME_VERSION",
-	StringEvaluatorsLIBC_FLAVOR:                 "LIBC_FLAVOR",
-	StringEvaluatorsLIBC_VERSION:                "LIBC_VERSION",
-	StringEvaluatorsMACHINE_ARCHITECTURE:        "MACHINE_ARCHITECTURE",
-	StringEvaluatorsHOST_NAME:                   "HOST_NAME",
-	StringEvaluatorsHOST_IP:                     "HOST_IP",
-	StringEvaluatorsOS:                          "OS",
-	StringEvaluatorsOS_DISTRO:                   "OS_DISTRO",
-	StringEvaluatorsOS_DISTRO_VERSION:           "OS_DISTRO_VERSION",
-	StringEvaluatorsOS_DISTRO_CODENAME:          "OS_DISTRO_CODENAME",
-	StringEvaluatorsOS_KERNEL_VERSION:           "OS_KERNEL_VERSION",
-	StringEvaluatorsOS_KERNEL_NAME:              "OS_KERNEL_NAME",
-	StringEvaluatorsOS_USER:                     "OS_USER",
-	StringEvaluatorsOS_USER_GROUP:               "OS_USER_GROUP",
-	StringEvaluatorsCONTAINER_IMAGE:             "CONTAINER_IMAGE",
-	StringEvaluatorsCONTAINER_ID:                "CONTAINER_ID",
-	StringEvaluatorsALWAYS_TRUE:                 "ALWAYS_TRUE",
-	StringEvaluatorsALWAYS_FALSE:                "ALWAYS_FALSE",
-	StringEvaluatorsALWAYS_ABSTAIN:              "ALWAYS_ABSTAIN",
-	StringEvaluatorsIIS_APPLICATION_POOL:        "IIS_APPLICATION_POOL",
-	StringEvaluatorsPROCESS_ARGV_0:              "PROCESS_ARGV_0",
-	StringEvaluatorsPROCESS_ARGV_1:              "PROCESS_ARGV_1",
-	StringEvaluatorsPROCESS_ARGV_2:              "PROCESS_ARGV_2",
-	StringEvaluatorsPROCESS_ARGV_3:              "PROCESS_ARGV_3",
-	StringEvaluatorsPROCESS_ARGV_4:              "PROCESS_ARGV_4",
-	StringEvaluatorsPROCESS_ARGV_5:              "PROCESS_ARGV_5",
-	StringEvaluatorsPROCESS_ARGV_N:              "PROCESS_ARGV_N",
-	StringEvaluatorsPROCESS_ENVAR:               "PROCESS_ENVAR",
-	StringEvaluatorsSTR_EVAL_COUNT:              "STR_EVAL_COUNT",
+	StringEvaluatorsSTRING_EVAL_UNKNOWN:           "STRING_EVAL_UNKNOWN",
+	StringEvaluatorsCOMPONENT:                     "COMPONENT",
+	StringEvaluatorsPROCESS_EXE:                   "PROCESS_EXE",
+	StringEvaluatorsPROCESS_EXE_FULL_PATH:         "PROCESS_EXE_FULL_PATH",
+	StringEvaluatorsPROCESS_BASEDIR_PATH:          "PROCESS_BASEDIR_PATH",
+	StringEvaluatorsPROCESS_ARGV:                  "PROCESS_ARGV",
+	StringEvaluatorsPROCESS_CWD:                   "PROCESS_CWD",
+	StringEvaluatorsRUNTIME_LANGUAGE:              "RUNTIME_LANGUAGE",
+	StringEvaluatorsRUNTIME_ENTRY_POINT_FILE:      "RUNTIME_ENTRY_POINT_FILE",
+	StringEvaluatorsRUNTIME_ENTRY_POINT_JAR:       "RUNTIME_ENTRY_POINT_JAR",
+	StringEvaluatorsRUNTIME_ENTRY_POINT_CLASS:     "RUNTIME_ENTRY_POINT_CLASS",
+	StringEvaluatorsRUNTIME_ENTRY_POINT_PACKAGE:   "RUNTIME_ENTRY_POINT_PACKAGE",
+	StringEvaluatorsRUNTIME_ENTRY_POINT_MODULE:    "RUNTIME_ENTRY_POINT_MODULE",
+	StringEvaluatorsRUNTIME_ENTRY_POINT_SOURCE:    "RUNTIME_ENTRY_POINT_SOURCE",
+	StringEvaluatorsRUNTIME_DOPTION:               "RUNTIME_DOPTION",
+	StringEvaluatorsRUNTIME_VERSION:               "RUNTIME_VERSION",
+	StringEvaluatorsLIBC_FLAVOR:                   "LIBC_FLAVOR",
+	StringEvaluatorsLIBC_VERSION:                  "LIBC_VERSION",
+	StringEvaluatorsMACHINE_ARCHITECTURE:          "MACHINE_ARCHITECTURE",
+	StringEvaluatorsHOST_NAME:                     "HOST_NAME",
+	StringEvaluatorsHOST_IP:                       "HOST_IP",
+	StringEvaluatorsOS:                            "OS",
+	StringEvaluatorsOS_DISTRO:                     "OS_DISTRO",
+	StringEvaluatorsOS_DISTRO_VERSION:             "OS_DISTRO_VERSION",
+	StringEvaluatorsOS_DISTRO_CODENAME:            "OS_DISTRO_CODENAME",
+	StringEvaluatorsOS_KERNEL_VERSION:             "OS_KERNEL_VERSION",
+	StringEvaluatorsOS_KERNEL_NAME:                "OS_KERNEL_NAME",
+	StringEvaluatorsOS_USER:                       "OS_USER",
+	StringEvaluatorsOS_USER_GROUP:                 "OS_USER_GROUP",
+	StringEvaluatorsCONTAINER_IMAGE:               "CONTAINER_IMAGE",
+	StringEvaluatorsCONTAINER_ID:                  "CONTAINER_ID",
+	StringEvaluatorsALWAYS_TRUE:                   "ALWAYS_TRUE",
+	StringEvaluatorsALWAYS_FALSE:                  "ALWAYS_FALSE",
+	StringEvaluatorsALWAYS_ABSTAIN:                "ALWAYS_ABSTAIN",
+	StringEvaluatorsIIS_APPLICATION_POOL:          "IIS_APPLICATION_POOL",
+	StringEvaluatorsPROCESS_ARGV_0:                "PROCESS_ARGV_0",
+	StringEvaluatorsPROCESS_ARGV_1:                "PROCESS_ARGV_1",
+	StringEvaluatorsPROCESS_ARGV_2:                "PROCESS_ARGV_2",
+	StringEvaluatorsPROCESS_ARGV_3:                "PROCESS_ARGV_3",
+	StringEvaluatorsPROCESS_ARGV_4:                "PROCESS_ARGV_4",
+	StringEvaluatorsPROCESS_ARGV_5:                "PROCESS_ARGV_5",
+	StringEvaluatorsPROCESS_ARGV_N:                "PROCESS_ARGV_N",
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_2: "PROCESS_ARGV_NEGATIVE_INDEX_2",
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_3: "PROCESS_ARGV_NEGATIVE_INDEX_3",
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_4: "PROCESS_ARGV_NEGATIVE_INDEX_4",
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_5: "PROCESS_ARGV_NEGATIVE_INDEX_5",
+	StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_6: "PROCESS_ARGV_NEGATIVE_INDEX_6",
+	StringEvaluatorsPROCESS_ENVAR:                 "PROCESS_ENVAR",
+	StringEvaluatorsSTR_EVAL_COUNT:                "STR_EVAL_COUNT",
 }
 
 var EnumValuesStringEvaluators = map[string]StringEvaluators{
-	"STRING_EVAL_UNKNOWN":         StringEvaluatorsSTRING_EVAL_UNKNOWN,
-	"COMPONENT":                   StringEvaluatorsCOMPONENT,
-	"PROCESS_EXE":                 StringEvaluatorsPROCESS_EXE,
-	"PROCESS_EXE_FULL_PATH":       StringEvaluatorsPROCESS_EXE_FULL_PATH,
-	"PROCESS_BASEDIR_PATH":        StringEvaluatorsPROCESS_BASEDIR_PATH,
-	"PROCESS_ARGV":                StringEvaluatorsPROCESS_ARGV,
-	"PROCESS_CWD":                 StringEvaluatorsPROCESS_CWD,
-	"RUNTIME_LANGUAGE":            StringEvaluatorsRUNTIME_LANGUAGE,
-	"RUNTIME_ENTRY_POINT_FILE":    StringEvaluatorsRUNTIME_ENTRY_POINT_FILE,
-	"RUNTIME_ENTRY_POINT_JAR":     StringEvaluatorsRUNTIME_ENTRY_POINT_JAR,
-	"RUNTIME_ENTRY_POINT_CLASS":   StringEvaluatorsRUNTIME_ENTRY_POINT_CLASS,
-	"RUNTIME_ENTRY_POINT_PACKAGE": StringEvaluatorsRUNTIME_ENTRY_POINT_PACKAGE,
-	"RUNTIME_ENTRY_POINT_MODULE":  StringEvaluatorsRUNTIME_ENTRY_POINT_MODULE,
-	"RUNTIME_ENTRY_POINT_SOURCE":  StringEvaluatorsRUNTIME_ENTRY_POINT_SOURCE,
-	"RUNTIME_DOPTION":             StringEvaluatorsRUNTIME_DOPTION,
-	"RUNTIME_VERSION":             StringEvaluatorsRUNTIME_VERSION,
-	"LIBC_FLAVOR":                 StringEvaluatorsLIBC_FLAVOR,
-	"LIBC_VERSION":                StringEvaluatorsLIBC_VERSION,
-	"MACHINE_ARCHITECTURE":        StringEvaluatorsMACHINE_ARCHITECTURE,
-	"HOST_NAME":                   StringEvaluatorsHOST_NAME,
-	"HOST_IP":                     StringEvaluatorsHOST_IP,
-	"OS":                          StringEvaluatorsOS,
-	"OS_DISTRO":                   StringEvaluatorsOS_DISTRO,
-	"OS_DISTRO_VERSION":           StringEvaluatorsOS_DISTRO_VERSION,
-	"OS_DISTRO_CODENAME":          StringEvaluatorsOS_DISTRO_CODENAME,
-	"OS_KERNEL_VERSION":           StringEvaluatorsOS_KERNEL_VERSION,
-	"OS_KERNEL_NAME":              StringEvaluatorsOS_KERNEL_NAME,
-	"OS_USER":                     StringEvaluatorsOS_USER,
-	"OS_USER_GROUP":               StringEvaluatorsOS_USER_GROUP,
-	"CONTAINER_IMAGE":             StringEvaluatorsCONTAINER_IMAGE,
-	"CONTAINER_ID":                StringEvaluatorsCONTAINER_ID,
-	"ALWAYS_TRUE":                 StringEvaluatorsALWAYS_TRUE,
-	"ALWAYS_FALSE":                StringEvaluatorsALWAYS_FALSE,
-	"ALWAYS_ABSTAIN":              StringEvaluatorsALWAYS_ABSTAIN,
-	"IIS_APPLICATION_POOL":        StringEvaluatorsIIS_APPLICATION_POOL,
-	"PROCESS_ARGV_0":              StringEvaluatorsPROCESS_ARGV_0,
-	"PROCESS_ARGV_1":              StringEvaluatorsPROCESS_ARGV_1,
-	"PROCESS_ARGV_2":              StringEvaluatorsPROCESS_ARGV_2,
-	"PROCESS_ARGV_3":              StringEvaluatorsPROCESS_ARGV_3,
-	"PROCESS_ARGV_4":              StringEvaluatorsPROCESS_ARGV_4,
-	"PROCESS_ARGV_5":              StringEvaluatorsPROCESS_ARGV_5,
-	"PROCESS_ARGV_N":              StringEvaluatorsPROCESS_ARGV_N,
-	"PROCESS_ENVAR":               StringEvaluatorsPROCESS_ENVAR,
-	"STR_EVAL_COUNT":              StringEvaluatorsSTR_EVAL_COUNT,
+	"STRING_EVAL_UNKNOWN":           StringEvaluatorsSTRING_EVAL_UNKNOWN,
+	"COMPONENT":                     StringEvaluatorsCOMPONENT,
+	"PROCESS_EXE":                   StringEvaluatorsPROCESS_EXE,
+	"PROCESS_EXE_FULL_PATH":         StringEvaluatorsPROCESS_EXE_FULL_PATH,
+	"PROCESS_BASEDIR_PATH":          StringEvaluatorsPROCESS_BASEDIR_PATH,
+	"PROCESS_ARGV":                  StringEvaluatorsPROCESS_ARGV,
+	"PROCESS_CWD":                   StringEvaluatorsPROCESS_CWD,
+	"RUNTIME_LANGUAGE":              StringEvaluatorsRUNTIME_LANGUAGE,
+	"RUNTIME_ENTRY_POINT_FILE":      StringEvaluatorsRUNTIME_ENTRY_POINT_FILE,
+	"RUNTIME_ENTRY_POINT_JAR":       StringEvaluatorsRUNTIME_ENTRY_POINT_JAR,
+	"RUNTIME_ENTRY_POINT_CLASS":     StringEvaluatorsRUNTIME_ENTRY_POINT_CLASS,
+	"RUNTIME_ENTRY_POINT_PACKAGE":   StringEvaluatorsRUNTIME_ENTRY_POINT_PACKAGE,
+	"RUNTIME_ENTRY_POINT_MODULE":    StringEvaluatorsRUNTIME_ENTRY_POINT_MODULE,
+	"RUNTIME_ENTRY_POINT_SOURCE":    StringEvaluatorsRUNTIME_ENTRY_POINT_SOURCE,
+	"RUNTIME_DOPTION":               StringEvaluatorsRUNTIME_DOPTION,
+	"RUNTIME_VERSION":               StringEvaluatorsRUNTIME_VERSION,
+	"LIBC_FLAVOR":                   StringEvaluatorsLIBC_FLAVOR,
+	"LIBC_VERSION":                  StringEvaluatorsLIBC_VERSION,
+	"MACHINE_ARCHITECTURE":          StringEvaluatorsMACHINE_ARCHITECTURE,
+	"HOST_NAME":                     StringEvaluatorsHOST_NAME,
+	"HOST_IP":                       StringEvaluatorsHOST_IP,
+	"OS":                            StringEvaluatorsOS,
+	"OS_DISTRO":                     StringEvaluatorsOS_DISTRO,
+	"OS_DISTRO_VERSION":             StringEvaluatorsOS_DISTRO_VERSION,
+	"OS_DISTRO_CODENAME":            StringEvaluatorsOS_DISTRO_CODENAME,
+	"OS_KERNEL_VERSION":             StringEvaluatorsOS_KERNEL_VERSION,
+	"OS_KERNEL_NAME":                StringEvaluatorsOS_KERNEL_NAME,
+	"OS_USER":                       StringEvaluatorsOS_USER,
+	"OS_USER_GROUP":                 StringEvaluatorsOS_USER_GROUP,
+	"CONTAINER_IMAGE":               StringEvaluatorsCONTAINER_IMAGE,
+	"CONTAINER_ID":                  StringEvaluatorsCONTAINER_ID,
+	"ALWAYS_TRUE":                   StringEvaluatorsALWAYS_TRUE,
+	"ALWAYS_FALSE":                  StringEvaluatorsALWAYS_FALSE,
+	"ALWAYS_ABSTAIN":                StringEvaluatorsALWAYS_ABSTAIN,
+	"IIS_APPLICATION_POOL":          StringEvaluatorsIIS_APPLICATION_POOL,
+	"PROCESS_ARGV_0":                StringEvaluatorsPROCESS_ARGV_0,
+	"PROCESS_ARGV_1":                StringEvaluatorsPROCESS_ARGV_1,
+	"PROCESS_ARGV_2":                StringEvaluatorsPROCESS_ARGV_2,
+	"PROCESS_ARGV_3":                StringEvaluatorsPROCESS_ARGV_3,
+	"PROCESS_ARGV_4":                StringEvaluatorsPROCESS_ARGV_4,
+	"PROCESS_ARGV_5":                StringEvaluatorsPROCESS_ARGV_5,
+	"PROCESS_ARGV_N":                StringEvaluatorsPROCESS_ARGV_N,
+	"PROCESS_ARGV_NEGATIVE_INDEX_2": StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_2,
+	"PROCESS_ARGV_NEGATIVE_INDEX_3": StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_3,
+	"PROCESS_ARGV_NEGATIVE_INDEX_4": StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_4,
+	"PROCESS_ARGV_NEGATIVE_INDEX_5": StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_5,
+	"PROCESS_ARGV_NEGATIVE_INDEX_6": StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_6,
+	"PROCESS_ENVAR":                 StringEvaluatorsPROCESS_ENVAR,
+	"STR_EVAL_COUNT":                StringEvaluatorsSTR_EVAL_COUNT,
 }
 
 func (v StringEvaluators) String() string {

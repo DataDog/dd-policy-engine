@@ -394,6 +394,13 @@ func TestArgumentList_ConvertToWLS(t *testing.T) {
 			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV_1, "-flag"),
 		},
 		{
+			// Argument at negative position: {"args": ["-flag"], "position": -2}
+			// → StrEvaluator(PROCESS_ARGV_NEGATIVE_INDEX_2, EXACT, "-flag")
+			name:         "argument at negative position",
+			inputJSON:    `{"args": ["-flag"], "position": -2}`,
+			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_2, "-flag"),
+		},
+		{
 			// Multiple arguments: {"args": ["-a", "-b"], "position": 1}
 			// → AND(ARGV_1 == "-a", ARGV_2 == "-b")
 			name:      "multiple arguments at consecutive positions",
