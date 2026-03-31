@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -17,6 +18,22 @@ import (
 
 	flatbuffers "github.com/google/flatbuffers/go"
 )
+
+// parseRequirementsJSON decodes requirements document bytes the same way as the CLI: rejects
+// empty/whitespace-only input and invalid JSON before conversion.
+func parseRequirementsJSON(raw []byte) (converter.JSONRequirements, error) {
+	var req converter.JSONRequirements
+	if len(bytes.TrimSpace(raw)) == 0 {
+		return req, fmt.Errorf("requirements input is empty or whitespace-only")
+	}
+	if err := json.Unmarshal(raw, &req); err != nil {
+		return req, fmt.Errorf("invalid requirements JSON: %w", err)
+	}
+	if req.Version != 1 {
+		return req, fmt.Errorf("requirements.bin version must be 1, got %d", req.Version)
+	}
+	return req, nil
+}
 
 func main() {
 	inputFile := flag.String("input-file", "", "Input JSON file path (required)")
@@ -35,14 +52,14 @@ func main() {
 	}
 	defer file.Close()
 
-	bytes, err := io.ReadAll(file)
+	raw, err := io.ReadAll(file)
 	if err != nil {
-		log.Fatalf("Failed to read input file: %v", err)
+		log.Fatalf("failed to read input file %s: %v", *inputFile, err)
 	}
 
-	var requirements converter.JSONRequirements
-	if err := json.Unmarshal(bytes, &requirements); err != nil {
-		log.Fatalf("Failed to parse JSON: %v", err)
+	requirements, err := parseRequirementsJSON(raw)
+	if err != nil {
+		log.Fatalf("invalid requirements in %s: %v", *inputFile, err)
 	}
 
 	builder := flatbuffers.NewBuilder(1024)

@@ -534,6 +534,76 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 	}
 }
 
+func TestParseRequirementsJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{
+			name:    "empty string",
+			input:   "",
+			wantErr: true,
+		},
+		{
+			name:    "incomplete object",
+			input:   "{",
+			wantErr: true,
+		},
+		{
+			name:    "lone closing brace",
+			input:   "}",
+			wantErr: true,
+		},
+		{
+			name:    "empty object missing version",
+			input:   "{}",
+			wantErr: true,
+		},
+		{
+			name:    "version zero",
+			input:   `{"version":0}`,
+			wantErr: true,
+		},
+		{
+			name:    "version two",
+			input:   `{"version":2}`,
+			wantErr: true,
+		},
+		{
+			name:    "version must be number",
+			input:   `{ "version": "not a number" }`,
+			wantErr: true,
+		},
+		{
+			name:    "version one minimal",
+			input:   `{"version":1}`,
+			wantErr: false,
+		},
+		{
+			name:    "whitespace only",
+			input:   "   \n\t  ",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := parseRequirementsJSON([]byte(tt.input))
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected parse error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
 func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -542,12 +612,13 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 	}{
 		{
 			name:              "empty requirements",
-			inputJSON:         `{}`,
+			inputJSON:         `{"version":1}`,
 			expectedRuleCount: 0,
 		},
 		{
 			name: "glibc + musl + deny combined",
 			inputJSON: `{
+				"version": 1,
 				"deny": [{"os": "windows", "description": "no windows"}],
 				"native_deps": {
 					"glibc": [{"arch": "x64", "supported": true, "min": "2.17"}],
