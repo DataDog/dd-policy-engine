@@ -556,7 +556,7 @@ func TestParseRequirementsJSON(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "empty object version not one",
+			name:    "empty object",
 			input:   "{}",
 			wantErr: false,
 		},
