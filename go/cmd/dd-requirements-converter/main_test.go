@@ -624,7 +624,12 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 		},
 		{
 			name:              "empty requirements",
-			inputJSON:         `{"version":1,"deny":[],"native_deps":{"glibc":[],"musl":[]}}`,
+			inputJSON:         `{}`,
+			wantVersionErr: true,
+		},
+		{
+			name:              "no native_deps and no deny",
+			inputJSON:         `{"version":1,"native_deps":{},"deny":[]}`,
 			expectedRuleCount: 0,
 		},
 		{
