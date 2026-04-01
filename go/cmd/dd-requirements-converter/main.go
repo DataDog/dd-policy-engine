@@ -29,10 +29,14 @@ func parseRequirementsJSON(raw []byte) (converter.JSONRequirements, error) {
 	if err := json.Unmarshal(raw, &req); err != nil {
 		return req, fmt.Errorf("invalid requirements JSON: %w", err)
 	}
-	if req.Version != 1 {
-		return req, fmt.Errorf("requirements.bin version must be 1, got %d", req.Version)
-	}
 	return req, nil
+}
+
+func validateRequirementsVersion(req converter.JSONRequirements) error {
+	if req.Version != 1 {
+		return fmt.Errorf("requirements.bin version must be 1, got %d", req.Version)
+	}
+	return nil
 }
 
 func main() {
@@ -59,6 +63,9 @@ func main() {
 
 	requirements, err := parseRequirementsJSON(raw)
 	if err != nil {
+		log.Fatalf("invalid requirements in %s: %v", *inputFile, err)
+	}
+	if err := validateRequirementsVersion(requirements); err != nil {
 		log.Fatalf("invalid requirements in %s: %v", *inputFile, err)
 	}
 

@@ -556,29 +556,9 @@ func TestParseRequirementsJSON(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "empty object version zero",
+			name:    "empty object version not one",
 			input:   "{}",
-			wantErr: true,
-		},
-		{
-			name:    "version one only",
-			input:   `{"version":1}`,
 			wantErr: false,
-		},
-		{
-			name:    "version zero",
-			input:   `{"version":0}`,
-			wantErr: true,
-		},
-		{
-			name:    "version two",
-			input:   `{"version":2}`,
-			wantErr: true,
-		},
-		{
-			name:    "version must be number",
-			input:   `{ "version": "not a number" }`,
-			wantErr: true,
 		},
 		{
 			name:    "version one with empty deny and native_deps",
@@ -613,16 +593,44 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 	tests := []struct {
 		name              string
 		inputJSON         string
-		expectedRuleCount int // number of rules ORed together in the single policy
+		wantUnmarshalErr  bool
+		wantVersionErr    bool
+		expectedRuleCount int // when conversion runs: rules ORed together in the single policy
 	}{
 		{
+			name:              "version one only",
+			inputJSON:         `{"version":1}`,
+			expectedRuleCount: 0,
+		},
+		{
+			name:           "version zero",
+			inputJSON:      `{"version":0}`,
+			wantVersionErr: true,
+		},
+		{
+			name:           "version two",
+			inputJSON:      `{"version":2}`,
+			wantVersionErr: true,
+		},
+		{
+			name:             "version must be number",
+			inputJSON:        `{ "version": "not a number" }`,
+			wantUnmarshalErr: true,
+		},
+		{
+			name:           "empty object missing version",
+			inputJSON:      `{}`,
+			wantVersionErr: true,
+		},
+		{
 			name:              "empty requirements",
-			inputJSON:         `{}`,
+			inputJSON:         `{"version":1,"deny":[],"native_deps":{"glibc":[],"musl":[]}}`,
 			expectedRuleCount: 0,
 		},
 		{
 			name: "glibc + musl + deny combined",
 			inputJSON: `{
+				"version": 1,
 				"deny": [{"os": "windows", "description": "no windows"}],
 				"native_deps": {
 					"glibc": [{"arch": "x64", "supported": true, "min": "2.17"}],
@@ -636,8 +644,26 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var req converter.JSONRequirements
-			if err := json.Unmarshal([]byte(tt.inputJSON), &req); err != nil {
-				t.Fatalf("Failed to unmarshal JSON: %v", err)
+			err := json.Unmarshal([]byte(tt.inputJSON), &req)
+			if tt.wantUnmarshalErr {
+				if err == nil {
+					t.Fatal("expected JSON unmarshal error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unmarshal JSON: %v", err)
+			}
+
+			err = validateRequirementsVersion(req)
+			if tt.wantVersionErr {
+				if err == nil {
+					t.Fatal("expected validateRequirementsVersion error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("validateRequirementsVersion: %v", err)
 			}
 
 			builder := flatbuffers.NewBuilder(1024)
