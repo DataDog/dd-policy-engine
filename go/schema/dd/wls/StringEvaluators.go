@@ -73,11 +73,16 @@ const (
 	StringEvaluatorsPROCESS_ARGV_4              StringEvaluators = 39
 	StringEvaluatorsPROCESS_ARGV_5              StringEvaluators = 40
 	StringEvaluatorsPROCESS_ARGV_N              StringEvaluators = 41
-	StringEvaluatorsPROCESS_ENVAR               StringEvaluators = 42
+	StringEvaluatorsPROCESS_ARGV_N_2            StringEvaluators = 42
+	StringEvaluatorsPROCESS_ARGV_N_3            StringEvaluators = 43
+	StringEvaluatorsPROCESS_ARGV_N_4            StringEvaluators = 44
+	StringEvaluatorsPROCESS_ARGV_N_5            StringEvaluators = 45
+	StringEvaluatorsPROCESS_ARGV_N_6            StringEvaluators = 46
+	StringEvaluatorsPROCESS_ENVAR               StringEvaluators = 47
 	/// Represents the count of String evaluators.
 	/// This is used to ensure that the enum is always in sync with the number of evaluators.
 	/// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
-	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 43
+	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 48
 )
 
 var EnumNamesStringEvaluators = map[StringEvaluators]string{
@@ -123,6 +128,11 @@ var EnumNamesStringEvaluators = map[StringEvaluators]string{
 	StringEvaluatorsPROCESS_ARGV_4:              "PROCESS_ARGV_4",
 	StringEvaluatorsPROCESS_ARGV_5:              "PROCESS_ARGV_5",
 	StringEvaluatorsPROCESS_ARGV_N:              "PROCESS_ARGV_N",
+	StringEvaluatorsPROCESS_ARGV_N_2:            "PROCESS_ARGV_N_2",
+	StringEvaluatorsPROCESS_ARGV_N_3:            "PROCESS_ARGV_N_3",
+	StringEvaluatorsPROCESS_ARGV_N_4:            "PROCESS_ARGV_N_4",
+	StringEvaluatorsPROCESS_ARGV_N_5:            "PROCESS_ARGV_N_5",
+	StringEvaluatorsPROCESS_ARGV_N_6:            "PROCESS_ARGV_N_6",
 	StringEvaluatorsPROCESS_ENVAR:               "PROCESS_ENVAR",
 	StringEvaluatorsSTR_EVAL_COUNT:              "STR_EVAL_COUNT",
 }
@@ -170,6 +180,11 @@ var EnumValuesStringEvaluators = map[string]StringEvaluators{
 	"PROCESS_ARGV_4":              StringEvaluatorsPROCESS_ARGV_4,
 	"PROCESS_ARGV_5":              StringEvaluatorsPROCESS_ARGV_5,
 	"PROCESS_ARGV_N":              StringEvaluatorsPROCESS_ARGV_N,
+	"PROCESS_ARGV_N_2":            StringEvaluatorsPROCESS_ARGV_N_2,
+	"PROCESS_ARGV_N_3":            StringEvaluatorsPROCESS_ARGV_N_3,
+	"PROCESS_ARGV_N_4":            StringEvaluatorsPROCESS_ARGV_N_4,
+	"PROCESS_ARGV_N_5":            StringEvaluatorsPROCESS_ARGV_N_5,
+	"PROCESS_ARGV_N_6":            StringEvaluatorsPROCESS_ARGV_N_6,
 	"PROCESS_ENVAR":               StringEvaluatorsPROCESS_ENVAR,
 	"STR_EVAL_COUNT":              StringEvaluatorsSTR_EVAL_COUNT,
 }

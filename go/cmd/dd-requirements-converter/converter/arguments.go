@@ -35,9 +35,19 @@ func getArgvEvaluatorForPosition(position *int) wls.StringEvaluators {
 		return wls.StringEvaluatorsPROCESS_ARGV_5
 	case -1:
 		return wls.StringEvaluatorsPROCESS_ARGV_N
+	case -2:
+		return wls.StringEvaluatorsPROCESS_ARGV_N_2
+	case -3:
+		return wls.StringEvaluatorsPROCESS_ARGV_N_3
+	case -4:
+		return wls.StringEvaluatorsPROCESS_ARGV_N_4
+	case -5:
+		return wls.StringEvaluatorsPROCESS_ARGV_N_5
+	case -6:
+		return wls.StringEvaluatorsPROCESS_ARGV_N_6
+	default:
+		return wls.StringEvaluatorsPROCESS_ARGV
 	}
-
-	return wls.StringEvaluatorsPROCESS_ARGV
 }
 
 // wildcardMatchToEvaluators returns one StrEvaluator per argument pattern: EXACT if there are no
