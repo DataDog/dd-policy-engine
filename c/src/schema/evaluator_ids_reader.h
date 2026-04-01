@@ -68,11 +68,11 @@ __flatbuffers_define_integer_type(dd_wls_StringEvaluators, dd_wls_StringEvaluato
 #define dd_wls_StringEvaluators_PROCESS_ARGV_4 ((dd_wls_StringEvaluators_enum_t)INT8_C(39))
 #define dd_wls_StringEvaluators_PROCESS_ARGV_5 ((dd_wls_StringEvaluators_enum_t)INT8_C(40))
 #define dd_wls_StringEvaluators_PROCESS_ARGV_N ((dd_wls_StringEvaluators_enum_t)INT8_C(41))
-#define dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_2 ((dd_wls_StringEvaluators_enum_t)INT8_C(42))
-#define dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_3 ((dd_wls_StringEvaluators_enum_t)INT8_C(43))
-#define dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_4 ((dd_wls_StringEvaluators_enum_t)INT8_C(44))
-#define dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_5 ((dd_wls_StringEvaluators_enum_t)INT8_C(45))
-#define dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_6 ((dd_wls_StringEvaluators_enum_t)INT8_C(46))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_N_2 ((dd_wls_StringEvaluators_enum_t)INT8_C(42))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_N_3 ((dd_wls_StringEvaluators_enum_t)INT8_C(43))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_N_4 ((dd_wls_StringEvaluators_enum_t)INT8_C(44))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_N_5 ((dd_wls_StringEvaluators_enum_t)INT8_C(45))
+#define dd_wls_StringEvaluators_PROCESS_ARGV_N_6 ((dd_wls_StringEvaluators_enum_t)INT8_C(46))
 #define dd_wls_StringEvaluators_PROCESS_ENVAR ((dd_wls_StringEvaluators_enum_t)INT8_C(47))
 #define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(48))
 
@@ -121,11 +121,11 @@ static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_e
     case dd_wls_StringEvaluators_PROCESS_ARGV_4: return "PROCESS_ARGV_4";
     case dd_wls_StringEvaluators_PROCESS_ARGV_5: return "PROCESS_ARGV_5";
     case dd_wls_StringEvaluators_PROCESS_ARGV_N: return "PROCESS_ARGV_N";
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_2: return "PROCESS_ARGV_NEGATIVE_INDEX_2";
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_3: return "PROCESS_ARGV_NEGATIVE_INDEX_3";
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_4: return "PROCESS_ARGV_NEGATIVE_INDEX_4";
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_5: return "PROCESS_ARGV_NEGATIVE_INDEX_5";
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_6: return "PROCESS_ARGV_NEGATIVE_INDEX_6";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_2: return "PROCESS_ARGV_N_2";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_3: return "PROCESS_ARGV_N_3";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_4: return "PROCESS_ARGV_N_4";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_5: return "PROCESS_ARGV_N_5";
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_6: return "PROCESS_ARGV_N_6";
     case dd_wls_StringEvaluators_PROCESS_ENVAR: return "PROCESS_ENVAR";
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return "STR_EVAL_COUNT";
     default: return "";
@@ -177,11 +177,11 @@ static inline int dd_wls_StringEvaluators_is_known_value(dd_wls_StringEvaluators
     case dd_wls_StringEvaluators_PROCESS_ARGV_4: return 1;
     case dd_wls_StringEvaluators_PROCESS_ARGV_5: return 1;
     case dd_wls_StringEvaluators_PROCESS_ARGV_N: return 1;
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_2: return 1;
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_3: return 1;
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_4: return 1;
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_5: return 1;
-    case dd_wls_StringEvaluators_PROCESS_ARGV_NEGATIVE_INDEX_6: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_2: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_3: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_4: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_5: return 1;
+    case dd_wls_StringEvaluators_PROCESS_ARGV_N_6: return 1;
     case dd_wls_StringEvaluators_PROCESS_ENVAR: return 1;
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return 1;
     default: return 0;

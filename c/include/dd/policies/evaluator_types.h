@@ -94,11 +94,11 @@ typedef enum plcs_numeric_comparator {
   X(PROCESS_ARGV_4, 39)                                                                                                \
   X(PROCESS_ARGV_5, 40)                                                                                                \
   X(PROCESS_ARGV_N, 41)                                                                                                \
-  X(PROCESS_ARGV_NEGATIVE_INDEX_2, 42)                                                                                 \
-  X(PROCESS_ARGV_NEGATIVE_INDEX_3, 43)                                                                                 \
-  X(PROCESS_ARGV_NEGATIVE_INDEX_4, 44)                                                                                 \
-  X(PROCESS_ARGV_NEGATIVE_INDEX_5, 45)                                                                                 \
-  X(PROCESS_ARGV_NEGATIVE_INDEX_6, 46)                                                                                 \
+  X(PROCESS_ARGV_N_2, 42)                                                                                 \
+  X(PROCESS_ARGV_N_3, 43)                                                                                 \
+  X(PROCESS_ARGV_N_4, 44)                                                                                 \
+  X(PROCESS_ARGV_N_5, 45)                                                                                 \
+  X(PROCESS_ARGV_N_6, 46)                                                                                 \
   X(PROCESS_ENVAR, 47)
 
 #define ENUM_STR_CMP_EVAL(ID, IX) PLCS_STR_EVAL_##ID = IX,

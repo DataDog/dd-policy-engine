@@ -36,15 +36,15 @@ func getArgvEvaluatorForPosition(position *int) wls.StringEvaluators {
 	case -1:
 		return wls.StringEvaluatorsPROCESS_ARGV_N
 	case -2:
-		return wls.StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_2
+		return wls.StringEvaluatorsPROCESS_ARGV_N_2
 	case -3:
-		return wls.StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_3
+		return wls.StringEvaluatorsPROCESS_ARGV_N_3
 	case -4:
-		return wls.StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_4
+		return wls.StringEvaluatorsPROCESS_ARGV_N_4
 	case -5:
-		return wls.StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_5
+		return wls.StringEvaluatorsPROCESS_ARGV_N_5
 	case -6:
-		return wls.StringEvaluatorsPROCESS_ARGV_NEGATIVE_INDEX_6
+		return wls.StringEvaluatorsPROCESS_ARGV_N_6
 	default:
 		return wls.StringEvaluatorsPROCESS_ARGV
 	}
