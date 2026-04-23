@@ -2,6 +2,8 @@ module github.com/DataDog/dd-policy-engine/go
 
 go 1.25.7
 
+toolchain go1.26.2
+
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/antlr4-go/antlr/v4 v4.13.1
