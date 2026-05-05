@@ -12,6 +12,25 @@
 #include "eval_ctx.h"
 
 #include <stdbool.h>
+#ifdef HAVE_STRDUP
+#include <string.h>
+#define plcs_strdup strdup
+#else
+char *plcs_strdup(const char *str) {
+  if (!str) {
+    return NULL;
+  }
+
+  const size_t size = strlen(str) + 1;  ///< +1 for null character
+  char *dupped_str = (char *)malloc(size);
+  if (!dupped_str) {
+    return NULL;
+  }
+
+  memcpy(dupped_str, str, size);
+  return dupped_str;
+}
+#endif
 
 static plcs_eval_ctx ctx;
 static bool plcs_eval_ctx_initialized = false;
@@ -63,7 +82,15 @@ plcs_errors plcs_eval_ctx_set_str_eval_param(plcs_string_evaluators ix, const ch
     return PLCS_EIX_OVERFLOW;
   }
 
-  ctx.string_evaluators[ix].value = value;
+  char *maybe_dup = plcs_strdup(value);
+  if (maybe_dup == NULL) {
+    return PLCS_EALLOCATION;
+  }
+
+  if (ctx.string_evaluators[ix].value != NULL) {
+    free((void *)ctx.string_evaluators[ix].value);
+  }
+  ctx.string_evaluators[ix].value = maybe_dup;
   return PLCS_ESUCCESS;
 }
 
@@ -225,6 +252,9 @@ void plcs_eval_ctx_reset(void) {
   for (int i = 0; i < PLCS_STR_EVAL__COUNT; ++i) {
     ctx.string_evaluators[i].error = PLCS_ESUCCESS;
     ctx.string_evaluators[i].function_ptr = NULL;
+    if (ctx.string_evaluators[i].value != NULL) {
+      free((void *)ctx.string_evaluators[i].value);
+    }
     ctx.string_evaluators[i].value = PLCS_STR_NOT_SET;
   }
 

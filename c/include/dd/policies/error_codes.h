@@ -20,7 +20,8 @@
   X(NO_DATA, 5)                                                                                                        \
   X(UNKNOWN_EVAL_IX, 6)                                                                                                \
   X(ACTIONS_EVAL, 7)                                                                                                   \
-  X(UNKNOWN_CMP, 8)
+  X(UNKNOWN_CMP, 8)                                                                                                    \
+  X(ALLOCATION, 9)
 
 #define ENUM_VAL(VAL, IX) PLCS_E##VAL = IX,
 
