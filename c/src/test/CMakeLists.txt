@@ -47,6 +47,7 @@ target_sources(dd-policy-engine.unit-tests
     ${CMAKE_CURRENT_SOURCE_DIR}/test_main.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_policy_reader.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_value_sets.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_dangling_str_repro.c
 )
 
 target_include_directories(dd-policy-engine.unit-tests
