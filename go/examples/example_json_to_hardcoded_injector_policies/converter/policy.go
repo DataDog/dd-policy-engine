@@ -36,11 +36,11 @@ func appendRuntimeRule(builder *flatbuffers.Builder, node flatbuffers.UOffsetT, 
 
 	str_evaluator := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsRUNTIME_LANGUAGE, runtime, wls.CmpTypeSTRCMP_EXACT)
 
-	str_evaluator_node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Runtime matching", str_evaluator)
+	str_evaluator_node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Runtime matching", str_evaluator, "")
 
 	language_node := schema.NodeTypeWrapperCreate(builder, str_evaluator_node, wls.NodeTypeEvaluatorNode)
 
-	return schema.NodeTypeWrapperCreate(builder, schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, description, []flatbuffers.UOffsetT{language_node, node}), wls.NodeTypeCompositeNode), nil // Example for runtime condition, adjust as needed
+	return schema.NodeTypeWrapperCreate(builder, schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, description, []flatbuffers.UOffsetT{language_node, node}, ""), wls.NodeTypeCompositeNode), nil // Example for runtime condition, adjust as needed
 }
 
 func (p JSONPolicy) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
@@ -64,7 +64,7 @@ func (p JSONPolicy) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOff
 			}
 			nodes = append(nodes, node)
 		}
-		conditionsNode = schema.NodeTypeWrapperCreate(builder, schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, p.Description, nodes), wls.NodeTypeCompositeNode)
+		conditionsNode = schema.NodeTypeWrapperCreate(builder, schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, p.Description, nodes, ""), wls.NodeTypeCompositeNode)
 	}
 
 	if AddRuntimeCondition(p.Runtime) {

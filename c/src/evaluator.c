@@ -168,6 +168,35 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
+// Reads the rule_id field from a NodeTypeWrapper's inner node (composite or
+// evaluator) and records it as the policy's matched rule id. Used at depth 0
+// in OR composites to identify which top-level rule fired. The field is empty
+// on nodes that aren't rule roots; the engine treats empty as "no rule id."
+static inline void capture_matched_rule_id(dd_ns(NodeTypeWrapper_table_t) wrapper) {
+  if (!wrapper) {
+    return;
+  }
+  switch (dd_ns(NodeTypeWrapper_node_type)(wrapper)) {
+    case dd_ns(NodeType_CompositeNode): {
+      dd_ns(CompositeNode_table_t) c = dd_ns(NodeTypeWrapper_node)(wrapper);
+      if (c) {
+        plcs_eval_ctx_set_matched_rule_id(dd_ns(CompositeNode_rule_id)(c));
+      }
+      break;
+    }
+    case dd_ns(NodeType_EvaluatorNode): {
+      dd_ns(EvaluatorNode_table_t) e = dd_ns(NodeTypeWrapper_node)(wrapper);
+      if (e) {
+        plcs_eval_ctx_set_matched_rule_id(dd_ns(EvaluatorNode_rule_id)(e));
+      }
+      break;
+    }
+    default:
+      // unknown node type — leave matched_rule_id unchanged
+      break;
+  }
+}
+
 plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
@@ -205,10 +234,20 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
 
   // keep iterating recursively over the tree
   for (size_t ix = 0; ix < children_len; ++ix) {
-    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1));
+    dd_ns(NodeTypeWrapper_table_t) child = dd_ns(NodeTypeWrapper_vec_at)(children, ix);
+    res = DoOper(oper, res, evaluate_rules(child, depth + 1));
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
+      // When the top-level rules tree is an OR (depth == 0), the matching
+      // child's description is the rule's stable identifier (see
+      // dd-requirements-converter, which wraps each rule in such a composite).
+      // Capture it here so action callbacks can surface "which rule fired" in
+      // telemetry. Nested ORs (depth > 0) are part of a single rule's
+      // sub-tree (e.g. "match any cmd pattern") and must not overwrite.
+      if (depth == 0) {
+        capture_matched_rule_id(child);
+      }
       return res;
     }
 
@@ -285,6 +324,11 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
 
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
+
+  // Clear any matched-rule-id residue from the previous policy. composite_evaluator
+  // sets this if/when a top-level OR child returns TRUE; if none does, it stays NULL
+  // and action callbacks fall back to Action.description.
+  plcs_eval_ctx_set_matched_rule_id(NULL);
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;

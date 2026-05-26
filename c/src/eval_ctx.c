@@ -208,6 +208,14 @@ plcs_errors plcs_eval_ctx_get_unum_eval_error(plcs_numeric_evaluators ix) {
   return PLCS_EIX_OVERFLOW;
 }
 
+const char *plcs_eval_ctx_get_matched_rule_id(void) {
+  return ctx.matched_rule_id;
+}
+
+void plcs_eval_ctx_set_matched_rule_id(const char *id) {
+  ctx.matched_rule_id = id;
+}
+
 plcs_errors plcs_eval_ctx_peek_last_error(void) {
   return ctx.error;
 }
@@ -244,6 +252,7 @@ void plcs_eval_ctx_reset(void) {
   }
 
   ctx.error = PLCS_ESUCCESS;
+  ctx.matched_rule_id = NULL;
 }
 
 plcs_errors plcs_eval_ctx_init(void) {

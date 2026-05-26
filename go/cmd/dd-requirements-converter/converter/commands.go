@@ -24,6 +24,6 @@ func (c CmdPattern) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOff
 		matcher = wls.CmpTypeSTRCMP_EXACT
 	}
 	strEvaluator := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, pattern, matcher)
-	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Path matching: "+pattern, strEvaluator)
+	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Path matching: "+pattern, strEvaluator, "")
 	return schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode), nil
 }

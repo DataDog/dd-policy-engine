@@ -111,6 +111,17 @@ typedef struct plcs_eval_ctx {
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
 
+  /**
+   * @brief Description of the top-level OR child whose evaluation returned
+   * TRUE within the policy currently being evaluated, or NULL if no such
+   * match occurred (e.g. single-rule policies whose top of the rules tree is
+   * not an OR). Set by composite_evaluator at depth 0, read by action
+   * callbacks via plcs_eval_ctx_get_matched_rule_id(). Points into the
+   * caller-owned FlatBuffer; lifetime is tied to plcs_evaluate_buffer's
+   * buffer argument.
+   */
+  const char *matched_rule_id;
+
 } plcs_eval_ctx;
 
 /**
@@ -146,3 +157,16 @@ void plcs_eval_ctx_set_num_eval_error(plcs_numeric_evaluators id, plcs_errors er
  * @param error plcs_errors enum
  */
 void plcs_eval_ctx_set_unum_eval_error(plcs_numeric_evaluators ix, plcs_errors error);
+
+/**
+ * @brief Set the matched rule id captured during policy evaluation.
+ *
+ * Internal — called by composite_evaluator when a top-level OR child returns
+ * TRUE. The pointer is stored verbatim (no copy), so it must reference memory
+ * with a lifetime at least as long as the next plcs_eval_ctx_reset() or
+ * plcs_evaluate_buffer() call — in practice, a string inside the FlatBuffer
+ * being evaluated.
+ *
+ * @param id Rule id string, or NULL to clear.
+ */
+void plcs_eval_ctx_set_matched_rule_id(const char *id);

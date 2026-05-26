@@ -66,7 +66,7 @@ func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string, pos
 	}
 
 	strEvaluator := schema.StrEvaluatorCreate(builder, ev, pattern, cmp)
-	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Argument matching: "+pattern, strEvaluator)
+	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Argument matching: "+pattern, strEvaluator, "")
 	return schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode), nil
 }
 
@@ -117,6 +117,6 @@ func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UO
 	// EvaluatorNode: arg matches "-version" at position 1
 	// EvaluatorNode: arg matches "1.*" at position 2
 	// )
-	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match argument pattern: "+strings.Join(a.Arguments, " "), nodes)
+	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match argument pattern: "+strings.Join(a.Arguments, " "), nodes, "")
 	return schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode), nil
 }

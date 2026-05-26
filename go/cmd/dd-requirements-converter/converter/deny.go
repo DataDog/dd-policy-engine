@@ -23,7 +23,12 @@ func isValidOS(os string) bool {
 	return os == "windows" || os == "linux" || os == "darwin"
 }
 
-func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
+// ConvertToWLS builds the rule's node tree. ruleID is the stable identifier
+// for this deny rule; it's stamped on the rule's root composite so the engine
+// can surface it via plcs_eval_ctx_get_matched_rule_id(). The root is always
+// a BOOL_AND composite (even for single-condition rules) so the rule_id has
+// a uniform place to live without depending on the rule's internal shape.
+func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder, ruleID string) (flatbuffers.UOffsetT, error) {
 	var nodes []flatbuffers.UOffsetT
 
 	if d.Os == "" && len(d.Cmds) == 0 && len(d.Args) == 0 && len(d.Envs) == 0 {
@@ -32,7 +37,7 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 
 	if d.Os != "" && isValidOS(d.Os) {
 		osEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsOS, d.Os, wls.CmpTypeSTRCMP_EXACT)
-		osNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "OS matching", osEval)
+		osNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "OS matching", osEval, "")
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, osNode, wls.NodeTypeEvaluatorNode))
 	}
 
@@ -49,7 +54,7 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 	if len(cmdNodes) == 1 {
 		nodes = append(nodes, cmdNodes[0])
 	} else if len(cmdNodes) > 1 {
-		orNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "Match any cmd pattern", cmdNodes)
+		orNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "Match any cmd pattern", cmdNodes, "")
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, orNode, wls.NodeTypeCompositeNode))
 	}
 
@@ -67,7 +72,7 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 	if len(argNodes) == 1 {
 		nodes = append(nodes, argNodes[0])
 	} else if len(argNodes) > 1 {
-		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match all argument patterns", argNodes)
+		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match all argument patterns", argNodes, "")
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
 	}
 
@@ -89,25 +94,20 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		}
 
 		strEvaluator := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsPROCESS_ENVAR, kv, comparator)
-		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Environment variable matching: "+kv, strEvaluator)
+		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Environment variable matching: "+kv, strEvaluator, "")
 		envNodes = append(envNodes, schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode))
 	}
 
 	if len(envNodes) == 1 {
 		nodes = append(nodes, envNodes[0])
 	} else if len(envNodes) > 1 {
-		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, envNodes)
+		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, envNodes, "")
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
 	}
 
-	var root flatbuffers.UOffsetT
-	// if there is only one node, use it directly (it's already a NodeTypeWrapper)
-	if len(nodes) == 1 {
-		root = nodes[0]
-	} else if len(nodes) > 1 {
-		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes)
-		root = schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode)
-	}
-
-	return root, nil
+	// Always emit an outer AND composite as the rule root. For multi-condition
+	// rules this is the natural shape; for single-condition rules it's a
+	// one-child AND (semantic no-op) that gives the rule_id a uniform home.
+	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes, ruleID)
+	return schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode), nil
 }

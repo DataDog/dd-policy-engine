@@ -35,25 +35,25 @@ __flatbuffers_build_table(flatbuffers_, dd_wls_NodeTypeWrapper, 2)
 static const flatbuffers_voffset_t __dd_wls_CompositeNode_required[] = { 0 };
 typedef flatbuffers_ref_t dd_wls_CompositeNode_ref_t;
 static dd_wls_CompositeNode_ref_t dd_wls_CompositeNode_clone(flatbuffers_builder_t *B, dd_wls_CompositeNode_table_t t);
-__flatbuffers_build_table(flatbuffers_, dd_wls_CompositeNode, 3)
+__flatbuffers_build_table(flatbuffers_, dd_wls_CompositeNode, 4)
 
 static const flatbuffers_voffset_t __dd_wls_EvaluatorNode_required[] = { 0 };
 typedef flatbuffers_ref_t dd_wls_EvaluatorNode_ref_t;
 static dd_wls_EvaluatorNode_ref_t dd_wls_EvaluatorNode_clone(flatbuffers_builder_t *B, dd_wls_EvaluatorNode_table_t t);
-__flatbuffers_build_table(flatbuffers_, dd_wls_EvaluatorNode, 3)
+__flatbuffers_build_table(flatbuffers_, dd_wls_EvaluatorNode, 4)
 
 #define __dd_wls_NodeTypeWrapper_formal_args , dd_wls_NodeType_union_ref_t v1
 #define __dd_wls_NodeTypeWrapper_call_args , v1
 static inline dd_wls_NodeTypeWrapper_ref_t dd_wls_NodeTypeWrapper_create(flatbuffers_builder_t *B __dd_wls_NodeTypeWrapper_formal_args);
 __flatbuffers_build_table_prolog(flatbuffers_, dd_wls_NodeTypeWrapper, dd_wls_NodeTypeWrapper_file_identifier, dd_wls_NodeTypeWrapper_type_identifier)
 
-#define __dd_wls_CompositeNode_formal_args , flatbuffers_string_ref_t v0, dd_wls_BoolOperation_enum_t v1, dd_wls_NodeTypeWrapper_vec_ref_t v2
-#define __dd_wls_CompositeNode_call_args , v0, v1, v2
+#define __dd_wls_CompositeNode_formal_args , flatbuffers_string_ref_t v0, dd_wls_BoolOperation_enum_t v1, dd_wls_NodeTypeWrapper_vec_ref_t v2, flatbuffers_string_ref_t v3
+#define __dd_wls_CompositeNode_call_args , v0, v1, v2, v3
 static inline dd_wls_CompositeNode_ref_t dd_wls_CompositeNode_create(flatbuffers_builder_t *B __dd_wls_CompositeNode_formal_args);
 __flatbuffers_build_table_prolog(flatbuffers_, dd_wls_CompositeNode, dd_wls_CompositeNode_file_identifier, dd_wls_CompositeNode_type_identifier)
 
-#define __dd_wls_EvaluatorNode_formal_args , flatbuffers_string_ref_t v0, dd_wls_EvaluatorType_union_ref_t v2
-#define __dd_wls_EvaluatorNode_call_args , v0, v2
+#define __dd_wls_EvaluatorNode_formal_args , flatbuffers_string_ref_t v0, dd_wls_EvaluatorType_union_ref_t v2, flatbuffers_string_ref_t v3
+#define __dd_wls_EvaluatorNode_call_args , v0, v2, v3
 static inline dd_wls_EvaluatorNode_ref_t dd_wls_EvaluatorNode_create(flatbuffers_builder_t *B __dd_wls_EvaluatorNode_formal_args);
 __flatbuffers_build_table_prolog(flatbuffers_, dd_wls_EvaluatorNode, dd_wls_EvaluatorNode_file_identifier, dd_wls_EvaluatorNode_type_identifier)
 
@@ -101,12 +101,14 @@ static dd_wls_NodeTypeWrapper_ref_t dd_wls_NodeTypeWrapper_clone(flatbuffers_bui
 __flatbuffers_build_string_field(0, flatbuffers_, dd_wls_CompositeNode_description, dd_wls_CompositeNode)
 __flatbuffers_build_scalar_field(1, flatbuffers_, dd_wls_CompositeNode_op, dd_wls_BoolOperation, dd_wls_BoolOperation_enum_t, 1, 1, INT8_C(0), dd_wls_CompositeNode)
 __flatbuffers_build_table_vector_field(2, flatbuffers_, dd_wls_CompositeNode_children, dd_wls_NodeTypeWrapper, dd_wls_CompositeNode)
+__flatbuffers_build_string_field(3, flatbuffers_, dd_wls_CompositeNode_rule_id, dd_wls_CompositeNode)
 
 static inline dd_wls_CompositeNode_ref_t dd_wls_CompositeNode_create(flatbuffers_builder_t *B __dd_wls_CompositeNode_formal_args)
 {
     if (dd_wls_CompositeNode_start(B)
         || dd_wls_CompositeNode_description_add(B, v0)
         || dd_wls_CompositeNode_children_add(B, v2)
+        || dd_wls_CompositeNode_rule_id_add(B, v3)
         || dd_wls_CompositeNode_op_add(B, v1)) {
         return 0;
     }
@@ -119,6 +121,7 @@ static dd_wls_CompositeNode_ref_t dd_wls_CompositeNode_clone(flatbuffers_builder
     if (dd_wls_CompositeNode_start(B)
         || dd_wls_CompositeNode_description_pick(B, t)
         || dd_wls_CompositeNode_children_pick(B, t)
+        || dd_wls_CompositeNode_rule_id_pick(B, t)
         || dd_wls_CompositeNode_op_pick(B, t)) {
         return 0;
     }
@@ -130,12 +133,14 @@ __flatbuffers_build_union_field(2, flatbuffers_, dd_wls_EvaluatorNode_eval, dd_w
 __flatbuffers_build_union_table_value_field(flatbuffers_, dd_wls_EvaluatorNode_eval, dd_wls_EvaluatorType, StrEvaluator, dd_wls_StrEvaluator)
 __flatbuffers_build_union_table_value_field(flatbuffers_, dd_wls_EvaluatorNode_eval, dd_wls_EvaluatorType, NumEvaluator, dd_wls_NumEvaluator)
 __flatbuffers_build_union_table_value_field(flatbuffers_, dd_wls_EvaluatorNode_eval, dd_wls_EvaluatorType, UNumEvaluator, dd_wls_UNumEvaluator)
+__flatbuffers_build_string_field(3, flatbuffers_, dd_wls_EvaluatorNode_rule_id, dd_wls_EvaluatorNode)
 
 static inline dd_wls_EvaluatorNode_ref_t dd_wls_EvaluatorNode_create(flatbuffers_builder_t *B __dd_wls_EvaluatorNode_formal_args)
 {
     if (dd_wls_EvaluatorNode_start(B)
         || dd_wls_EvaluatorNode_description_add(B, v0)
         || dd_wls_EvaluatorNode_eval_add_value(B, v2)
+        || dd_wls_EvaluatorNode_rule_id_add(B, v3)
         || dd_wls_EvaluatorNode_eval_add_type(B, v2.type)) {
         return 0;
     }
@@ -147,7 +152,8 @@ static dd_wls_EvaluatorNode_ref_t dd_wls_EvaluatorNode_clone(flatbuffers_builder
     __flatbuffers_memoize_begin(B, t);
     if (dd_wls_EvaluatorNode_start(B)
         || dd_wls_EvaluatorNode_description_pick(B, t)
-        || dd_wls_EvaluatorNode_eval_pick(B, t)) {
+        || dd_wls_EvaluatorNode_eval_pick(B, t)
+        || dd_wls_EvaluatorNode_rule_id_pick(B, t)) {
         return 0;
     }
     __flatbuffers_memoize_end(B, t, dd_wls_EvaluatorNode_end(B));

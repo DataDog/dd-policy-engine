@@ -37,7 +37,7 @@ func writeBufferToFile(buffer []byte, fileName string) {
 
 func createStrEvaluatorNode(builder *flatbuffers.Builder, evaluatorId wls.StringEvaluators, value string, cmpp wls.CmpTypeSTR, description string) flatbuffers.UOffsetT {
 	evaluator := schema.StrEvaluatorCreate(builder, evaluatorId, value, cmpp)
-	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, description, evaluator)
+	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, description, evaluator, "")
 	return schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode)
 }
 
@@ -49,7 +49,7 @@ func createDenyByRuntimePolicy(builder *flatbuffers.Builder, runtime string) fla
 }
 
 func createRoot(builder *flatbuffers.Builder, oper wls.BoolOperation, description string, nodes []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
-	nodeRoot := schema.CompositeNodeCreate(builder, oper, description, nodes)
+	nodeRoot := schema.CompositeNodeCreate(builder, oper, description, nodes, "")
 	return schema.NodeTypeWrapperCreate(builder, nodeRoot, wls.NodeTypeCompositeNode)
 }
 

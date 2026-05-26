@@ -131,9 +131,14 @@ __flatbuffers_table_as_root(dd_wls_CompositeNode)
 
 __flatbuffers_define_string_field(0, dd_wls_CompositeNode, description, 0)
 __flatbuffers_define_scalar_field(1, dd_wls_CompositeNode, op, dd_wls_BoolOperation, dd_wls_BoolOperation_enum_t, INT8_C(0))
-/**  At some point we will switch back to; children: [NodeType]; 
+/**  At some point we will switch back to; children: [NodeType];
  *  (union vectors are not supported in GO so we are wrapping the table in a table) */
 __flatbuffers_define_vector_field(2, dd_wls_CompositeNode, children, dd_wls_NodeTypeWrapper_vec_t, 0)
+/**  Stable identifier for the rule this node is the root of. Set only on
+ *  nodes that sit directly under a policy's top-level OR (one per rule);
+ *  empty/unset on all other nodes. Read by the engine to surface "which
+ *  rule fired" to action callbacks via plcs_eval_ctx_get_matched_rule_id(). */
+__flatbuffers_define_string_field(3, dd_wls_CompositeNode, rule_id, 0)
 
 /**  Represents a leaf node in the policy tree.
  *  It contains a description and an evaluator. */
@@ -149,6 +154,10 @@ __flatbuffers_table_as_root(dd_wls_EvaluatorNode)
 __flatbuffers_define_string_field(0, dd_wls_EvaluatorNode, description, 0)
 /**  The evaluator is a union of different evaluator types (String, Numeric, etc.). */
 __flatbuffers_define_union_field(flatbuffers_, 2, dd_wls_EvaluatorNode, eval, dd_wls_EvaluatorType, 0)
+/**  Stable identifier for the rule this node is the root of. Same semantics
+ *  as CompositeNode.rule_id: set only when this evaluator is itself the
+ *  root of a rule (single-condition rule), empty otherwise. */
+__flatbuffers_define_string_field(3, dd_wls_EvaluatorNode, rule_id, 0)
 
 
 #include "flatcc/flatcc_epilogue.h"

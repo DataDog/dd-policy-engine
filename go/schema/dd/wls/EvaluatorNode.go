@@ -76,8 +76,22 @@ func (rcv *EvaluatorNode) Eval(obj *flatbuffers.Table) bool {
 }
 
 /// The evaluator is a union of different evaluator types (String, Numeric, etc.).
+/// Stable identifier for the rule this node is the root of. Same semantics
+/// as CompositeNode.rule_id: set only when this evaluator is itself the
+/// root of a rule (single-condition rule), empty otherwise.
+func (rcv *EvaluatorNode) RuleId() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
+/// Stable identifier for the rule this node is the root of. Same semantics
+/// as CompositeNode.rule_id: set only when this evaluator is itself the
+/// root of a rule (single-condition rule), empty otherwise.
 func EvaluatorNodeStart(builder *flatbuffers.Builder) {
-	builder.StartObject(3)
+	builder.StartObject(4)
 }
 func EvaluatorNodeAddDescription(builder *flatbuffers.Builder, description flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(description), 0)
@@ -87,6 +101,9 @@ func EvaluatorNodeAddEvalType(builder *flatbuffers.Builder, evalType EvaluatorTy
 }
 func EvaluatorNodeAddEval(builder *flatbuffers.Builder, eval flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(eval), 0)
+}
+func EvaluatorNodeAddRuleId(builder *flatbuffers.Builder, ruleId flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(ruleId), 0)
 }
 func EvaluatorNodeEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

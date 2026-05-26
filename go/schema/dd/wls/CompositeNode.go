@@ -64,7 +64,7 @@ func (rcv *CompositeNode) MutateOp(n BoolOperation) bool {
 	return rcv._tab.MutateInt8Slot(6, int8(n))
 }
 
-/// At some point we will switch back to; children: [NodeType]; 
+/// At some point we will switch back to; children: [NodeType];
 /// (union vectors are not supported in GO so we are wrapping the table in a table)
 func (rcv *CompositeNode) Children(obj *NodeTypeWrapper, j int) bool {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
@@ -86,10 +86,26 @@ func (rcv *CompositeNode) ChildrenLength() int {
 	return 0
 }
 
-/// At some point we will switch back to; children: [NodeType]; 
+/// At some point we will switch back to; children: [NodeType];
 /// (union vectors are not supported in GO so we are wrapping the table in a table)
+/// Stable identifier for the rule this node is the root of. Set only on
+/// nodes that sit directly under a policy's top-level OR (one per rule);
+/// empty/unset on all other nodes. Read by the engine to surface "which
+/// rule fired" to action callbacks via plcs_eval_ctx_get_matched_rule_id().
+func (rcv *CompositeNode) RuleId() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
+/// Stable identifier for the rule this node is the root of. Set only on
+/// nodes that sit directly under a policy's top-level OR (one per rule);
+/// empty/unset on all other nodes. Read by the engine to surface "which
+/// rule fired" to action callbacks via plcs_eval_ctx_get_matched_rule_id().
 func CompositeNodeStart(builder *flatbuffers.Builder) {
-	builder.StartObject(3)
+	builder.StartObject(4)
 }
 func CompositeNodeAddDescription(builder *flatbuffers.Builder, description flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(description), 0)
@@ -102,6 +118,9 @@ func CompositeNodeAddChildren(builder *flatbuffers.Builder, children flatbuffers
 }
 func CompositeNodeStartChildrenVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(4, numElems, 4)
+}
+func CompositeNodeAddRuleId(builder *flatbuffers.Builder, ruleId flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(ruleId), 0)
 }
 func CompositeNodeEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

@@ -614,7 +614,9 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
       &b, dd_wls_StringEvaluators_RUNTIME_ENTRY_POINT_JAR, dd_wls_CmpTypeSTR_CMP_EXACT,
       flatbuffers_string_create_str(&b, "test.jar")
   );
-  dd_wls_EvaluatorNode_create_as_root(&b, str, dd_wls_EvaluatorType_as_StrEvaluator(str));
+  dd_wls_EvaluatorNode_create_as_root(
+      &b, str, dd_wls_EvaluatorType_as_StrEvaluator(str), flatbuffers_string_create_str(&b, "")
+  );
   void *buf = flatcc_builder_finalize_buffer(&b, &sz);
   dd_wls_EvaluatorNode_table_t eval = dd_wls_EvaluatorNode_as_root(buf);
 
@@ -634,7 +636,9 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   dd_wls_NumEvaluator_ref_t num =
       dd_wls_NumEvaluator_create(&b, dd_wls_NumericEvaluators_JAVA_HEAP, dd_wls_CmpTypeNUM_CMP_EQ, 100);
 
-  dd_wls_EvaluatorNode_create_as_root(&b, num, dd_wls_EvaluatorType_as_NumEvaluator(num));
+  dd_wls_EvaluatorNode_create_as_root(
+      &b, num, dd_wls_EvaluatorType_as_NumEvaluator(num), flatbuffers_string_create_str(&b, "")
+  );
 
   buf = flatcc_builder_finalize_buffer(&b, &sz);
   eval = dd_wls_EvaluatorNode_as_root(buf);
@@ -653,7 +657,9 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   dd_wls_UNumEvaluator_ref_t unum =
       dd_wls_UNumEvaluator_create(&b, dd_wls_NumericEvaluators_RUNTIME_VERSION_MINOR, dd_wls_CmpTypeNUM_CMP_EQ, 4);
 
-  dd_wls_EvaluatorNode_create_as_root(&b, unum, dd_wls_EvaluatorType_as_UNumEvaluator(unum));
+  dd_wls_EvaluatorNode_create_as_root(
+      &b, unum, dd_wls_EvaluatorType_as_UNumEvaluator(unum), flatbuffers_string_create_str(&b, "")
+  );
 
   buf = flatcc_builder_finalize_buffer(&b, &sz);
   eval = dd_wls_EvaluatorNode_as_root(buf);
@@ -938,6 +944,29 @@ UTEST(evaluator, test_boolean_operations_distributivity) {
   left = DoNot(DoOr(PLCS_EVAL_RESULT_TRUE, PLCS_EVAL_RESULT_FALSE));
   right = DoAnd(DoNot(PLCS_EVAL_RESULT_TRUE), DoNot(PLCS_EVAL_RESULT_FALSE));
   ASSERT_EQ(left, right);
+}
+
+UTEST(evaluator, matched_rule_id_starts_null_and_round_trips) {
+  /* Newly-initialized contexts must have no matched rule. */
+  int rc = plcs_eval_ctx_init();
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+  plcs_eval_ctx_reset();
+  ASSERT_TRUE(plcs_eval_ctx_get_matched_rule_id() == NULL);
+
+  /* Setter stores by pointer (no copy). */
+  static const char rule[] = "java8_version";
+  plcs_eval_ctx_set_matched_rule_id(rule);
+  ASSERT_STREQ(rule, plcs_eval_ctx_get_matched_rule_id());
+
+  /* Setting NULL clears it (so callers can detect "no rule matched"). */
+  plcs_eval_ctx_set_matched_rule_id(NULL);
+  ASSERT_TRUE(plcs_eval_ctx_get_matched_rule_id() == NULL);
+
+  /* plcs_eval_ctx_reset must also clear it so a fresh evaluation cycle
+     never inherits a stale id from a previous run. */
+  plcs_eval_ctx_set_matched_rule_id(rule);
+  plcs_eval_ctx_reset();
+  ASSERT_TRUE(plcs_eval_ctx_get_matched_rule_id() == NULL);
 }
 
 UTEST(evaluator, test_extern_declarations_working) {

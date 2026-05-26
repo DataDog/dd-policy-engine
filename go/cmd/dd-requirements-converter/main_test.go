@@ -274,7 +274,7 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 			}
 
 			builder := flatbuffers.NewBuilder(1024)
-			offset, err := libc.ConvertToWLS(builder, tt.flavor)
+			offset, err := libc.ConvertToWLS(builder, tt.flavor, "test_rule_id")
 			if err != nil {
 				t.Fatalf("ConvertToWLS failed: %v", err)
 			}
@@ -454,28 +454,34 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 		inputJSON    string
 		expectedRoot expectedNode
 	}{
+		// JSONDeny.ConvertToWLS now always emits a BOOL_AND composite as the
+		// rule root (so the rule_id has a uniform home regardless of how many
+		// conditions are present). Even single-condition rules get wrapped in
+		// a one-child AND. Tests below reflect that shape.
 		{
 			// OS only: {"os": "linux"}
-			// → StrEvaluator(OS, EXACT, "linux")
+			// → AND(StrEvaluator(OS, EXACT, "linux"))
 			name:         "os only",
 			inputJSON:    `{"os": "linux", "description": "deny linux"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsOS, "linux"),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsOS, "linux")),
 		},
 		{
 			// Single cmd: {"cmds": ["/usr/bin/curl"]}
-			// → StrEvaluator(PROCESS_EXE_FULL_PATH, EXACT, "/usr/bin/curl")
+			// → AND(StrEvaluator(PROCESS_EXE_FULL_PATH, EXACT, "/usr/bin/curl"))
 			name:         "single exact command",
 			inputJSON:    `{"cmds": ["/usr/bin/curl"], "description": "deny curl"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/curl"),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/curl")),
 		},
 		{
 			// Multiple cmds: {"cmds": ["/usr/bin/curl", "/usr/bin/wget"]}
-			// → OR(cmd1, cmd2)
+			// → AND(OR(cmd1, cmd2))
 			name:      "multiple commands - OR",
 			inputJSON: `{"cmds": ["/usr/bin/curl", "/usr/bin/wget"], "description": "deny download tools"}`,
-			expectedRoot: orNode(
-				strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/curl"),
-				strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/wget"),
+			expectedRoot: andNode(
+				orNode(
+					strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/curl"),
+					strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/wget"),
+				),
 			),
 		},
 		{
@@ -490,33 +496,33 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 		},
 		{
 			// Single env var: {"envars": {"DEBUG": "1"}}
-			// → StrEvaluator(PROCESS_ENVAR, EXACT, "DEBUG=1")
+			// → AND(StrEvaluator(PROCESS_ENVAR, EXACT, "DEBUG=1"))
 			name:         "single environment variable",
 			inputJSON:    `{"envars": {"DEBUG": "1"}, "description": "deny debug mode"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "DEBUG=1"),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ENVAR, "DEBUG=1")),
 		},
 		{
 			name:         "environment variable wildcard asterisk in value",
 			inputJSON:    `{"envars": {"PATH": "/usr/*/bin"}, "description": "deny path pattern"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "PATH=/usr/*/bin", wls.CmpTypeSTRCMP_WILDCARD),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ENVAR, "PATH=/usr/*/bin", wls.CmpTypeSTRCMP_WILDCARD)),
 		},
 		{
 			name:         "environment variable wildcard question in value",
 			inputJSON:    `{"envars": {"TERM": "xterm-?56color"}, "description": "deny term pattern"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "TERM=xterm-?56color", wls.CmpTypeSTRCMP_WILDCARD),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ENVAR, "TERM=xterm-?56color", wls.CmpTypeSTRCMP_WILDCARD)),
 		},
 		{
 			// JSON null value → KEY=*? + CMP_WILDCARD ("any non-empty value" for KEY=)
 			name:         "environment variable null value matches non-empty only",
 			inputJSON:    `{"envars": {"FOO": null}, "description": "deny when FOO set to any non-empty value"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "FOO=*?", wls.CmpTypeSTRCMP_WILDCARD),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ENVAR, "FOO=*?", wls.CmpTypeSTRCMP_WILDCARD)),
 		},
 		{
 			// Single arg: {"args": [{"args": ["-rf"]}]}
-			// → StrEvaluator(PROCESS_ARGV, EXACT, "-rf")
+			// → AND(StrEvaluator(PROCESS_ARGV, EXACT, "-rf"))
 			name:         "single argument",
 			inputJSON:    `{"args": [{"args": ["-rf"]}], "description": "deny -rf flag"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV, "-rf"),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ARGV, "-rf")),
 		},
 	}
 
@@ -528,7 +534,7 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 			}
 
 			builder := flatbuffers.NewBuilder(1024)
-			offset, err := deny.ConvertToWLS(builder)
+			offset, err := deny.ConvertToWLS(builder, "test_rule_id")
 			if err != nil {
 				t.Fatalf("ConvertToWLS failed: %v", err)
 			}
@@ -598,16 +604,19 @@ func TestParseRequirementsJSON(t *testing.T) {
 
 func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 	tests := []struct {
-		name              string
-		inputJSON         string
-		wantUnmarshalErr  bool
-		wantVersionErr    bool
-		expectedRuleCount int // when conversion runs: rules ORed together in the single policy
+		name             string
+		inputJSON        string
+		wantUnmarshalErr bool
+		wantVersionErr   bool
+		wantConvertErr   bool
+		// Expected rule-id wrappers (description of each top-level OR child),
+		// in conversion order: deny rules first, then glibc, then musl.
+		expectedRuleIDs []string
 	}{
 		{
-			name:              "version one only",
-			inputJSON:         `{"version":1}`,
-			expectedRuleCount: 0,
+			name:            "version one only",
+			inputJSON:       `{"version":1}`,
+			expectedRuleIDs: nil,
 		},
 		{
 			name:           "version zero",
@@ -630,26 +639,40 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 			wantVersionErr: true,
 		},
 		{
-			name:              "empty requirements",
-			inputJSON:         `{}`,
+			name:           "empty requirements",
+			inputJSON:      `{}`,
 			wantVersionErr: true,
 		},
 		{
-			name:              "no native_deps and no deny",
-			inputJSON:         `{"version":1,"native_deps":{},"deny":[]}`,
-			expectedRuleCount: 0,
+			name:            "no native_deps and no deny",
+			inputJSON:       `{"version":1,"native_deps":{},"deny":[]}`,
+			expectedRuleIDs: nil,
 		},
 		{
 			name: "glibc + musl + deny combined",
 			inputJSON: `{
 				"version": 1,
-				"deny": [{"os": "windows", "description": "no windows"}],
+				"deny": [{"id": "no_windows", "os": "windows", "description": "no windows"}],
 				"native_deps": {
 					"glibc": [{"arch": "x64", "supported": true, "min": "2.17"}],
 					"musl": [{"arch": "arm64", "supported": false}]
 				}
 			}`,
-			expectedRuleCount: 3, // 1 deny + 1 glibc + 1 musl ORed together
+			expectedRuleIDs: []string{
+				"no_windows",
+				// hashicorp/go-version normalizes "2.17" → "2.17.0"; this is fine for
+				// telemetry as long as the string is deterministic.
+				"libc_glibc_x64_below_min_2.17.0",
+				"libc_musl_arm64_unsupported",
+			},
+		},
+		{
+			name: "deny rule without id is rejected",
+			inputJSON: `{
+				"version": 1,
+				"deny": [{"os": "windows", "description": "no windows"}]
+			}`,
+			wantConvertErr: true,
 		},
 	}
 
@@ -680,6 +703,12 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 
 			builder := flatbuffers.NewBuilder(1024)
 			offset, err := req.ConvertToWLS(builder)
+			if tt.wantConvertErr {
+				if err == nil {
+					t.Fatal("expected ConvertToWLS error, got nil")
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("ConvertToWLS failed: %v", err)
 			}
@@ -687,10 +716,10 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 			builder.Finish(offset)
 			policies := wls.GetRootAsPolicies(builder.FinishedBytes(), 0)
 
-			// Always 1 policy now (all rules ORed together)
+			// Still exactly one policy (the engine's OR short-circuit fires only
+			// inside a single Policy's rules tree, so we must keep this shape).
 			if policies.PoliciesLength() != 1 {
-				t.Errorf("Expected 1 policy, got %d", policies.PoliciesLength())
-				return
+				t.Fatalf("Expected 1 policy, got %d", policies.PoliciesLength())
 			}
 
 			var policy wls.Policy
@@ -700,10 +729,13 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 
 			rules := policy.Rules(nil)
 			if rules == nil {
-				t.Fatal("Expected rules node, got nil")
+				if len(tt.expectedRuleIDs) > 0 {
+					t.Fatal("Expected rules node, got nil")
+				}
+				return
 			}
 
-			// The root should be an OR node with the expected number of children
+			// Top-level rules tree is an OR composite of rule-id-bearing wrappers.
 			if rules.NodeType() != wls.NodeTypeCompositeNode {
 				t.Fatalf("Expected composite node, got %s", rules.NodeType().String())
 			}
@@ -713,15 +745,48 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 				t.Fatal("Failed to get node table")
 			}
 
-			var composite wls.CompositeNode
-			composite.Init(table.Bytes, table.Pos)
+			var topLevelOR wls.CompositeNode
+			topLevelOR.Init(table.Bytes, table.Pos)
 
-			if composite.Op() != wls.BoolOperationBOOL_OR {
-				t.Errorf("Expected OR operation, got %s", composite.Op().String())
+			if topLevelOR.Op() != wls.BoolOperationBOOL_OR {
+				t.Errorf("Expected top-level OR, got %s", topLevelOR.Op().String())
 			}
 
-			if composite.ChildrenLength() != tt.expectedRuleCount {
-				t.Errorf("Expected %d rules, got %d", tt.expectedRuleCount, composite.ChildrenLength())
+			if topLevelOR.ChildrenLength() != len(tt.expectedRuleIDs) {
+				t.Errorf("Expected %d rule wrappers, got %d", len(tt.expectedRuleIDs), topLevelOR.ChildrenLength())
+				return
+			}
+
+			// Each OR child is the rule's root node, carrying its stable
+			// rule_id on the schema's rule_id field (not on description).
+			for i, wantID := range tt.expectedRuleIDs {
+				var childWrapper wls.NodeTypeWrapper
+				if !topLevelOR.Children(&childWrapper, i) {
+					t.Errorf("OR child[%d]: failed to read", i)
+					continue
+				}
+				var childTable flatbuffers.Table
+				if !childWrapper.Node(&childTable) {
+					t.Errorf("OR child[%d]: failed to get table", i)
+					continue
+				}
+				var gotID string
+				switch childWrapper.NodeType() {
+				case wls.NodeTypeCompositeNode:
+					var c wls.CompositeNode
+					c.Init(childTable.Bytes, childTable.Pos)
+					gotID = string(c.RuleId())
+				case wls.NodeTypeEvaluatorNode:
+					var e wls.EvaluatorNode
+					e.Init(childTable.Bytes, childTable.Pos)
+					gotID = string(e.RuleId())
+				default:
+					t.Errorf("OR child[%d]: unexpected node type %s", i, childWrapper.NodeType().String())
+					continue
+				}
+				if gotID != wantID {
+					t.Errorf("OR child[%d]: expected rule_id %q, got %q", i, wantID, gotID)
+				}
 			}
 		})
 	}

@@ -33,6 +33,6 @@ func (c JSONCondition) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.U
 		nodes[i] = node
 	}
 	fmt.Printf("adding %d nodes\n", len(nodes))
-	composite := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, c.Description, nodes)
+	composite := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, c.Description, nodes, "")
 	return schema.NodeTypeWrapperCreate(builder, composite, wls.NodeTypeCompositeNode), nil
 }

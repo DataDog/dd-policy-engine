@@ -81,6 +81,7 @@ static int dd_wls_CompositeNode_verify_table(flatcc_table_verifier_descriptor_t 
     if ((ret = flatcc_verify_string_field(td, 0, 0) /* description */)) return ret;
     if ((ret = flatcc_verify_field(td, 1, 1, 1) /* op */)) return ret;
     if ((ret = flatcc_verify_table_vector_field(td, 2, 0, &dd_wls_NodeTypeWrapper_verify_table) /* children */)) return ret;
+    if ((ret = flatcc_verify_string_field(td, 3, 0) /* rule_id */)) return ret;
     return flatcc_verify_ok;
 }
 
@@ -129,6 +130,7 @@ static int dd_wls_EvaluatorNode_verify_table(flatcc_table_verifier_descriptor_t 
     int ret;
     if ((ret = flatcc_verify_string_field(td, 0, 0) /* description */)) return ret;
     if ((ret = flatcc_verify_union_field(td, 2, 0, &dd_wls_EvaluatorType_union_verifier) /* eval */)) return ret;
+    if ((ret = flatcc_verify_string_field(td, 3, 0) /* rule_id */)) return ret;
     return flatcc_verify_ok;
 }
 

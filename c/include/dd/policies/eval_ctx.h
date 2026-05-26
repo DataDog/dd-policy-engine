@@ -161,6 +161,27 @@ unsigned long plcs_eval_ctx_get_unumeric_param(plcs_numeric_evaluators id);
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix);
 
 /**
+ * @brief Returns the rule id that produced the current policy's TRUE verdict,
+ * or NULL if no rule-id-bearing top-level OR child matched.
+ *
+ * Set by the evaluator when composite_evaluator at depth 0 sees an OR child
+ * return TRUE; the description of that child is captured as the rule id. This
+ * lets action callbacks identify *which* rule fired in policies that bundle
+ * many rules under one Action (e.g. the requirements.bin produced by
+ * dd-requirements-converter, where each top-level OR child is wrapped in a
+ * composite whose description is the rule's stable identifier).
+ *
+ * For single-rule policies (rules tree root is not an OR), this returns NULL
+ * and callers should fall back to Action.description, which by convention
+ * carries the rule id in that shape (see dd-rules-converter).
+ *
+ * @note Reset to NULL at the start of each evaluate_policy. The returned
+ * pointer is owned by the FlatBuffer passed to plcs_evaluate_buffer and is
+ * only valid until that buffer is freed.
+ */
+const char *plcs_eval_ctx_get_matched_rule_id(void);
+
+/**
  * @brief An accessor for the last error
  * @return the last error as a plcs_errors enum, NOTE: This will RESET the error!
  */

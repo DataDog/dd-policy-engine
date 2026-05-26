@@ -57,7 +57,7 @@ func (v JSONPathValue) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.U
 
 	str_evaluator := schema.StrEvaluatorCreate(builder, JsonStrValueTypeToWls(v.Value_type), v.Value, JsonStrCompareStrategyToWls(v.Cmp_strategy))
 
-	str_evaluator_node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, strOrEmpty(&v.Description), str_evaluator)
+	str_evaluator_node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, strOrEmpty(&v.Description), str_evaluator, "")
 
 	return schema.NodeTypeWrapperCreate(builder, str_evaluator_node, wls.NodeTypeEvaluatorNode), nil
 

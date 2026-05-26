@@ -55,24 +55,44 @@ func UNumEvaluatorCreate(builder *flatbuffers.Builder, evaluator wls.NumericEval
 	return wls.UNumEvaluatorEnd(builder)
 }
 
-func EvaluatorNodeCreate(builder *flatbuffers.Builder, evaluatorType wls.EvaluatorType, description string, evalOffset flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+// EvaluatorNodeCreate builds an EvaluatorNode. Pass ruleID="" for nodes that
+// are not the root of a rule (the common case); pass the rule's stable id
+// only when this evaluator is itself a rule root (single-condition rule).
+func EvaluatorNodeCreate(builder *flatbuffers.Builder, evaluatorType wls.EvaluatorType, description string, evalOffset flatbuffers.UOffsetT, ruleID string) flatbuffers.UOffsetT {
 	fbDescription := builder.CreateString(description)
+	var fbRuleID flatbuffers.UOffsetT
+	if ruleID != "" {
+		fbRuleID = builder.CreateString(ruleID)
+	}
 
 	wls.EvaluatorNodeStart(builder)
 	wls.EvaluatorNodeAddEvalType(builder, evaluatorType)
 	wls.EvaluatorNodeAddDescription(builder, fbDescription)
 	wls.EvaluatorNodeAddEval(builder, evalOffset)
+	if ruleID != "" {
+		wls.EvaluatorNodeAddRuleId(builder, fbRuleID)
+	}
 
 	return wls.EvaluatorNodeEnd(builder)
 }
 
-func CompositeNodeCreate(builder *flatbuffers.Builder, oper wls.BoolOperation, description string, nodes []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+// CompositeNodeCreate builds a CompositeNode. Pass ruleID="" for nodes that
+// are not the root of a rule (sub-rule structure, the top-level OR itself);
+// pass the rule's stable id only when this composite is itself a rule root.
+func CompositeNodeCreate(builder *flatbuffers.Builder, oper wls.BoolOperation, description string, nodes []flatbuffers.UOffsetT, ruleID string) flatbuffers.UOffsetT {
 	fbDescription := builder.CreateString(description)
+	var fbRuleID flatbuffers.UOffsetT
+	if ruleID != "" {
+		fbRuleID = builder.CreateString(ruleID)
+	}
 	childrenVector := builder.CreateVectorOfTables(nodes)
 	wls.CompositeNodeStart(builder)
 	wls.CompositeNodeAddDescription(builder, fbDescription)
 	wls.CompositeNodeAddOp(builder, oper)
 	wls.CompositeNodeAddChildren(builder, childrenVector)
+	if ruleID != "" {
+		wls.CompositeNodeAddRuleId(builder, fbRuleID)
+	}
 	return wls.CompositeNodeEnd(builder)
 }
 

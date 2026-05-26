@@ -30,7 +30,7 @@ func writeBufferToFile(buffer []byte, fileName string) {
 
 func createStrEvaluatorNode(builder *flatbuffers.Builder, evaluatorId wls.StringEvaluators, value string, cmp wls.CmpTypeSTR, description string) flatbuffers.UOffsetT {
 	evaluator := schema.StrEvaluatorCreate(builder, evaluatorId, value, cmp)
-	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, description, evaluator)
+	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, description, evaluator, "")
 	return schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode)
 }
 
