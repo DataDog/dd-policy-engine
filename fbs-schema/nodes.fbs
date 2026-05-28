@@ -32,10 +32,6 @@ table CompositeNode {
   /// At some point we will switch back to; children: [NodeType];
   /// (union vectors are not supported in GO so we are wrapping the table in a table)
   children: [NodeTypeWrapper];
-  /// Stable identifier for the rule this node is the root of. Set only on
-  /// nodes that sit directly under a policy's top-level OR (one per rule);
-  /// empty/unset on all other nodes. Read by the engine to surface "which
-  /// rule fired" to action callbacks via plcs_eval_ctx_get_matched_rule_id().
   rule_id: string;
 }
 
@@ -46,8 +42,5 @@ table EvaluatorNode {
  description: string;
   /// The evaluator is a union of different evaluator types (String, Numeric, etc.).
  eval: EvaluatorType;
-  /// Stable identifier for the rule this node is the root of. Same semantics
-  /// as CompositeNode.rule_id: set only when this evaluator is itself the
-  /// root of a rule (single-condition rule), empty otherwise.
   rule_id: string;
 }
