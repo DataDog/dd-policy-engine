@@ -456,27 +456,27 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 	}{
 		{
 			// OS only: {"os": "linux"}
-			// → StrEvaluator(OS, EXACT, "linux")
+			// → AND(description, [StrEvaluator(OS, EXACT, "linux")])
 			name:         "os only",
 			inputJSON:    `{"os": "linux", "description": "deny linux"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsOS, "linux"),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsOS, "linux")),
 		},
 		{
 			// Single cmd: {"cmds": ["/usr/bin/curl"]}
-			// → StrEvaluator(PROCESS_EXE_FULL_PATH, EXACT, "/usr/bin/curl")
+			// → AND(description, [StrEvaluator(PROCESS_EXE_FULL_PATH, EXACT, "/usr/bin/curl")])
 			name:         "single exact command",
 			inputJSON:    `{"cmds": ["/usr/bin/curl"], "description": "deny curl"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/curl"),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/curl")),
 		},
 		{
 			// Multiple cmds: {"cmds": ["/usr/bin/curl", "/usr/bin/wget"]}
-			// → OR(cmd1, cmd2)
+			// → AND(description, [OR(cmd1, cmd2)])
 			name:      "multiple commands - OR",
 			inputJSON: `{"cmds": ["/usr/bin/curl", "/usr/bin/wget"], "description": "deny download tools"}`,
-			expectedRoot: orNode(
+			expectedRoot: andNode(orNode(
 				strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/curl"),
 				strEval(wls.StringEvaluatorsPROCESS_EXE_FULL_PATH, "/usr/bin/wget"),
-			),
+			)),
 		},
 		{
 			// OS + cmd: {"os": "linux", "cmds": ["/bin/rm"]}
@@ -490,33 +490,33 @@ func TestJSONDeny_ConvertToWLS(t *testing.T) {
 		},
 		{
 			// Single env var: {"envars": {"DEBUG": "1"}}
-			// → StrEvaluator(PROCESS_ENVAR, EXACT, "DEBUG=1")
+			// → AND(description, [StrEvaluator(PROCESS_ENVAR, EXACT, "DEBUG=1")])
 			name:         "single environment variable",
 			inputJSON:    `{"envars": {"DEBUG": "1"}, "description": "deny debug mode"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "DEBUG=1"),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ENVAR, "DEBUG=1")),
 		},
 		{
 			name:         "environment variable wildcard asterisk in value",
 			inputJSON:    `{"envars": {"PATH": "/usr/*/bin"}, "description": "deny path pattern"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "PATH=/usr/*/bin", wls.CmpTypeSTRCMP_WILDCARD),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ENVAR, "PATH=/usr/*/bin", wls.CmpTypeSTRCMP_WILDCARD)),
 		},
 		{
 			name:         "environment variable wildcard question in value",
 			inputJSON:    `{"envars": {"TERM": "xterm-?56color"}, "description": "deny term pattern"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "TERM=xterm-?56color", wls.CmpTypeSTRCMP_WILDCARD),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ENVAR, "TERM=xterm-?56color", wls.CmpTypeSTRCMP_WILDCARD)),
 		},
 		{
 			// JSON null value → KEY=*? + CMP_WILDCARD ("any non-empty value" for KEY=)
 			name:         "environment variable null value matches non-empty only",
 			inputJSON:    `{"envars": {"FOO": null}, "description": "deny when FOO set to any non-empty value"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ENVAR, "FOO=*?", wls.CmpTypeSTRCMP_WILDCARD),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ENVAR, "FOO=*?", wls.CmpTypeSTRCMP_WILDCARD)),
 		},
 		{
 			// Single arg: {"args": [{"args": ["-rf"]}]}
-			// → StrEvaluator(PROCESS_ARGV, EXACT, "-rf")
+			// → AND(description, [StrEvaluator(PROCESS_ARGV, EXACT, "-rf")])
 			name:         "single argument",
 			inputJSON:    `{"args": [{"args": ["-rf"]}], "description": "deny -rf flag"}`,
-			expectedRoot: strEval(wls.StringEvaluatorsPROCESS_ARGV, "-rf"),
+			expectedRoot: andNode(strEval(wls.StringEvaluatorsPROCESS_ARGV, "-rf")),
 		},
 	}
 

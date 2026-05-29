@@ -111,6 +111,27 @@ typedef struct plcs_eval_ctx {
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
 
+  /**
+   * @brief Description of the top-level OR child that returned TRUE during the
+   * most recent policy evaluation. NULL if no OR-level match occurred. Set by
+   * composite_evaluator at depth 0; read via plcs_eval_ctx_get_matched_description().
+   *
+   * For dd-requirements-converter policies, the tree looks something like:
+   *
+   *   Policy("All requirements")
+   *   └── (||)                          <- depth 0, root; composite_evaluator checks depth == 0
+   *       ├── (&&) "Ignore npm CLI"     <- top-level OR child; description captured on match
+   *       │   └── [PROCESS_ARGV_1 ~= *\/npm]
+   *       ├── (&&) "Ignore yarn"
+   *       │   └── [PROCESS_ARGV_1 ~= *\/yarn]
+   *       └── (&&) "glibc arm >= 2.24"
+   *           ├── [MACHINE_ARCHITECTURE == arm]
+   *           ├── [LIBC_FLAVOR == glibc]
+   *           └── (||)                  <- depth 2; never triggers capture
+   *               └── ...
+   */
+  const char *matched_description;
+
 } plcs_eval_ctx;
 
 /**
@@ -146,3 +167,15 @@ void plcs_eval_ctx_set_num_eval_error(plcs_numeric_evaluators id, plcs_errors er
  * @param error plcs_errors enum
  */
 void plcs_eval_ctx_set_unum_eval_error(plcs_numeric_evaluators ix, plcs_errors error);
+
+/**
+ * @brief Records the description of the matched OR child for the current policy evaluation.
+ *
+ * Internal — called by composite_evaluator when a top-level OR child returns TRUE.
+ * The pointer is stored verbatim (no copy) and must remain valid until the next
+ * plcs_eval_ctx_reset() or plcs_evaluate_buffer() call — in practice, a string
+ * inside the FlatBuffer being evaluated.
+ *
+ * @param desc Description string, or NULL to clear.
+ */
+void plcs_eval_ctx_set_matched_description(const char *desc);

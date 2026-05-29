@@ -100,14 +100,6 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
 	}
 
-	var root flatbuffers.UOffsetT
-	// if there is only one node, use it directly (it's already a NodeTypeWrapper)
-	if len(nodes) == 1 {
-		root = nodes[0]
-	} else if len(nodes) > 1 {
-		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes)
-		root = schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode)
-	}
-
-	return root, nil
+	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, nodes)
+	return schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode), nil
 }

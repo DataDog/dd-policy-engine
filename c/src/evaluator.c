@@ -168,6 +168,16 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
+static inline void capture_matched_description(dd_ns(NodeTypeWrapper_table_t) wrapper) {
+  if (!wrapper)
+    return;
+  if (dd_ns(NodeTypeWrapper_node_type)(wrapper) != dd_ns(NodeType_CompositeNode))
+    return;
+  dd_ns(CompositeNode_table_t) c = dd_ns(NodeTypeWrapper_node)(wrapper);
+  if (c)
+    plcs_eval_ctx_set_matched_description(dd_ns(CompositeNode_description)(c));
+}
+
 plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
@@ -209,6 +219,9 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
+      if (depth == 0) {
+        capture_matched_description(dd_ns(NodeTypeWrapper_vec_at)(children, ix));
+      }
       return res;
     }
 
@@ -286,8 +299,16 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
+  plcs_eval_ctx_set_matched_description(NULL);
+
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
+
+  // For policies whose root is not a top-level OR (json_to_hardcoded_fb_policies, which use an AND root), the depth-0
+  // capture in composite_evaluator never fires. Fall back to the policy's own description field.
+  if (eval_res == PLCS_EVAL_RESULT_TRUE && plcs_eval_ctx_get_matched_description() == NULL) {
+    plcs_eval_ctx_set_matched_description(dd_ns(Policy_description)(policy));
+  }
 
   // perform actions given evaluation result
   return perform_actions(eval_res, actions);

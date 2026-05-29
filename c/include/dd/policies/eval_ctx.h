@@ -161,6 +161,21 @@ unsigned long plcs_eval_ctx_get_unumeric_param(plcs_numeric_evaluators id);
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix);
 
 /**
+ * @brief Returns the human-readable description of the rule that matched during
+ * the most recent policy evaluation, or NULL if the policy did not match.
+ *
+ * For policies that bundle many rules under a top-level OR (e.g.
+ * dd-requirements-converter output) this is the description of the specific
+ * rule that fired (e.g. "Ignore the npm CLI (symlink)"). For single-rule
+ * policies (e.g. json_to_hardcoded_fb_policies) this is the policy's own description field.
+ *
+ * @note Reset to NULL at the start of each evaluate_policy call. The returned
+ * pointer is owned by the FlatBuffer passed to plcs_evaluate_buffer and is
+ * only valid until that buffer is freed.
+ */
+const char *plcs_eval_ctx_get_matched_description(void);
+
+/**
  * @brief An accessor for the last error
  * @return the last error as a plcs_errors enum, NOTE: This will RESET the error!
  */
