@@ -132,6 +132,16 @@ typedef struct plcs_eval_ctx {
    */
   const char *matched_description;
 
+  /**
+   * @brief Description of the most recent EvaluatorNode that returned TRUE.
+   * Overwritten on each TRUE leaf result during evaluation. Used by
+   * capture_matched_description to append specifics to a composite rule
+   * description (e.g. "Ignore the yarn CLI" + "Argument matching: *\/yarn.js"
+   * → "Ignore the yarn CLI (Argument matching: *\/yarn.js)").
+   * Reset to NULL at the start of each evaluate_policy call.
+   */
+  const char *matched_evaluator_description;
+
 } plcs_eval_ctx;
 
 /**
@@ -179,3 +189,26 @@ void plcs_eval_ctx_set_unum_eval_error(plcs_numeric_evaluators ix, plcs_errors e
  * @param desc Description string, or NULL to clear.
  */
 void plcs_eval_ctx_set_matched_description(const char *desc);
+
+/**
+ * @brief Combines a composite node description with the most-recently-matched
+ * evaluator description and stores the result as the matched description.
+ *
+ * Formats as "<rule_desc> (<eval_desc>)", e.g.
+ * "Ignore the yarn CLI (Argument matching: *\/yarn.js)".
+ * The result is written into a static internal buffer valid until the next
+ * evaluate_policy call.
+ */
+void plcs_eval_ctx_set_matched_description_combined(const char *rule_desc, const char *eval_desc);
+
+/**
+ * @brief Records the description of the most recent EvaluatorNode that returned TRUE.
+ * Called by node_evaluator on a TRUE result.
+ */
+void plcs_eval_ctx_set_matched_evaluator_description(const char *desc);
+
+/**
+ * @brief Returns the description of the most recent EvaluatorNode that returned TRUE,
+ * or NULL if none has fired yet in this evaluation cycle.
+ */
+const char *plcs_eval_ctx_get_matched_evaluator_description(void);

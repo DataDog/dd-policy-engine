@@ -12,8 +12,12 @@
 #include "eval_ctx.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 
 static plcs_eval_ctx ctx;
+// Buffer for combined "rule (condition)" matched descriptions. Sized to hold
+// typical human-readable rule + evaluator descriptions with room to spare.
+static char matched_description_buf[512];
 static bool plcs_eval_ctx_initialized = false;
 
 plcs_errors
@@ -216,6 +220,19 @@ void plcs_eval_ctx_set_matched_description(const char *desc) {
   ctx.matched_description = desc;
 }
 
+void plcs_eval_ctx_set_matched_description_combined(const char *rule_desc, const char *eval_desc) {
+  snprintf(matched_description_buf, sizeof(matched_description_buf), "%s (%s)", rule_desc, eval_desc);
+  ctx.matched_description = matched_description_buf;
+}
+
+void plcs_eval_ctx_set_matched_evaluator_description(const char *desc) {
+  ctx.matched_evaluator_description = desc;
+}
+
+const char *plcs_eval_ctx_get_matched_evaluator_description(void) {
+  return ctx.matched_evaluator_description;
+}
+
 plcs_errors plcs_eval_ctx_peek_last_error(void) {
   return ctx.error;
 }
@@ -253,6 +270,7 @@ void plcs_eval_ctx_reset(void) {
 
   ctx.error = PLCS_ESUCCESS;
   ctx.matched_description = NULL;
+  ctx.matched_evaluator_description = NULL;
 }
 
 plcs_errors plcs_eval_ctx_init(void) {
