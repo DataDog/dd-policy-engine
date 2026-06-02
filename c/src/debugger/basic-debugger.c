@@ -73,7 +73,12 @@ size_t print_node_composite(dd_ns(CompositeNode_table_t) node) {
   dd_ns(NodeTypeWrapper_vec_t) children = dd_ns(CompositeNode_children)(node);
   size_t children_len = children ? dd_ns(NodeTypeWrapper_vec_len)(children) : 0;
   dd_wls_BoolOperation_enum_t oper = dd_ns(CompositeNode_op)(node);
-  printf("(%c%c)\n", get_oper_char(oper), get_oper_char(oper));
+  const char *desc = dd_ns(CompositeNode_description)(node);
+  if (desc && desc[0] != '\0') {
+    printf("(%c%c)[%s]\n", get_oper_char(oper), get_oper_char(oper), desc);
+  } else {
+    printf("(%c%c)\n", get_oper_char(oper), get_oper_char(oper));
+  }
 
   return children_len;  // indicate success
 }
