@@ -219,3 +219,11 @@ plcs_errors plcs_eval_ctx_get_unum_eval_error(plcs_numeric_evaluators ix);
     plcs_eval_ctx_register_str_evaluator(function_ptr, id);                                                            \
     plcs_eval_ctx_set_str_eval_param(id, param);                                                                       \
   } while (0)
+
+/**
+ * @brief Returns the description of the rule that triggered the match during the most recent
+ * policy evaluation. Must be read inside an action callback when using plcs_evaluate_buffer,
+ * as it is reset at the start of each policy evaluation.
+ * @return const char* NULL if no match occurred or the matching node has no description.
+ */
+const char *plcs_eval_ctx_get_matched_description(void);
