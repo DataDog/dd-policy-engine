@@ -217,11 +217,17 @@ void plcs_eval_ctx_set_matched_description(const char *description) {
   ctx.matched_description = description;
 }
 
-void plcs_eval_ctx_set_matched_description_with_evaluation_details(const char *rule_description, const char* evaluator_description) {
+void plcs_eval_ctx_set_matched_description_with_evaluation_details(
+    const char *rule_description,
+    const char *evaluator_description
+) {
   if (!rule_description || !evaluator_description) {
     return;
   }
-  snprintf(description_with_evaluation_details, sizeof(description_with_evaluation_details), "%s: %s", rule_description, evaluator_description);
+  snprintf(
+      description_with_evaluation_details, sizeof(description_with_evaluation_details), "%s: %s", rule_description,
+      evaluator_description
+  );
   ctx.matched_description = description_with_evaluation_details;
 }
 

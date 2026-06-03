@@ -1067,7 +1067,9 @@ static void matched_description_test_setup(void) {
 UTEST(evaluator_matched_description, nested_or_inner_value_exact) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "jvm");
-  plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, "org.apache.cassandra.service.CassandraDaemon");
+  plcs_eval_ctx_set_str_eval_param(
+      PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, "org.apache.cassandra.service.CassandraDaemon"
+  );
 
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
 
@@ -1091,8 +1093,9 @@ UTEST(evaluator_matched_description, nested_or_leaf_no_combination) {
 /*
  * Policy [1]: "Flat OR no runtime" (runtime=all)
  * Tree: OR[Skip processes launched from OS system binary directories]
- *         EvaluatorNode[Skip process launched from a system binary directory: matched on entry point file path starting with '/bin/']
- *         EvaluatorNode[Skip process launched from a system binary directory: matched on entry point file path starting with '/sbin/']
+ *         EvaluatorNode[Skip process launched from a system binary directory: matched on entry point file path starting
+ * with '/bin/'] EvaluatorNode[Skip process launched from a system binary directory: matched on entry point file path
+ * starting with '/sbin/']
  *
  * No AND wrapper, no outer OR — EvaluatorNode description captured directly.
  */
@@ -1103,7 +1106,13 @@ UTEST(evaluator_matched_description, flat_or_leaf_captured_directly) {
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
 
   ASSERT_TRUE(g_captured_description != NULL);
-  ASSERT_EQ(strcmp(g_captured_description, "Skip process launched from a system binary directory: matched on entry point file path starting with '/bin/'"), 0);
+  ASSERT_EQ(
+      strcmp(
+          g_captured_description,
+          "Skip process launched from a system binary directory: matched on entry point file path starting with '/bin/'"
+      ),
+      0
+  );
 }
 
 UTEST(evaluator_matched_description, flat_or_second_leaf) {
@@ -1113,7 +1122,14 @@ UTEST(evaluator_matched_description, flat_or_second_leaf) {
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
 
   ASSERT_TRUE(g_captured_description != NULL);
-  ASSERT_EQ(strcmp(g_captured_description, "Skip process launched from a system binary directory: matched on entry point file path starting with '/usr/bin/'"), 0);
+  ASSERT_EQ(
+      strcmp(
+          g_captured_description,
+          "Skip process launched from a system binary directory: matched on entry point file path starting with "
+          "'/usr/bin/'"
+      ),
+      0
+  );
 }
 
 /*

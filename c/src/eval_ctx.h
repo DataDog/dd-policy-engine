@@ -176,4 +176,7 @@ void plcs_eval_ctx_set_matched_description(const char *description);
  * @param rule_description description of the matched composite rule.
  * @param evaluator_description description of the specific evaluator condition that triggered the match.
  */
-void plcs_eval_ctx_set_matched_description_with_evaluation_details(const char *rule_description, const char *evaluator_description);
+void plcs_eval_ctx_set_matched_description_with_evaluation_details(
+    const char *rule_description,
+    const char *evaluator_description
+);
