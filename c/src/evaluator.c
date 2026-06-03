@@ -182,7 +182,12 @@ static inline void capture_matched_description(dd_ns(NodeTypeWrapper_table_t) no
       break;
   }
   if (description && description[0] != '\0') {
-    plcs_eval_ctx_set_matched_description(description);
+    const char *existing = plcs_eval_ctx_get_matched_description();
+    if (dd_ns(NodeTypeWrapper_node_type)(node) == dd_ns(NodeType_CompositeNode) && existing && existing[0] != '\0') {
+      plcs_eval_ctx_set_matched_description_with_evaluation_details(description, existing);
+    } else {
+      plcs_eval_ctx_set_matched_description(description);
+    }
   }
 }
 

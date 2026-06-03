@@ -15,6 +15,7 @@
 
 static plcs_eval_ctx ctx;
 static bool plcs_eval_ctx_initialized = false;
+static char description_with_evaluation_details[1024];
 
 plcs_errors
 plcs_eval_ctx_register_str_evaluator(plcs_string_evaluator_function_ptr func_ptr, plcs_string_evaluators ix) {
@@ -214,6 +215,14 @@ const char *plcs_eval_ctx_get_matched_description(void) {
 
 void plcs_eval_ctx_set_matched_description(const char *description) {
   ctx.matched_description = description;
+}
+
+void plcs_eval_ctx_set_matched_description_with_evaluation_details(const char *rule_description, const char* evaluator_description) {
+  if (!rule_description || !evaluator_description) {
+    return;
+  }
+  snprintf(description_with_evaluation_details, sizeof(description_with_evaluation_details), "%s: %s", rule_description, evaluator_description);
+  ctx.matched_description = description_with_evaluation_details;
 }
 
 plcs_errors plcs_eval_ctx_peek_last_error(void) {

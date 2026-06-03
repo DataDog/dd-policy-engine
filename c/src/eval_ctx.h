@@ -117,6 +117,12 @@ typedef struct plcs_eval_ctx {
    */
   const char *matched_description;
 
+  /**< Description of the rule that triggered the action during the most recent
+   * policy evaluation for hardcoded rules. NULL if no match occurred. Read via
+   * plcs_eval_ctx_get_matched_description_hardcoded_rules().
+   */
+  const char *matched_description_hardcoded_rules;
+
 } plcs_eval_ctx;
 
 /**
@@ -164,3 +170,10 @@ const char *plcs_eval_ctx_get_matched_description(void);
  * @param description const char* description of the rule that triggered the action.
  */
 void plcs_eval_ctx_set_matched_description(const char *description);
+
+/**
+ * @brief Sets matched_description to "{rule_description}: {evaluator_description}".
+ * @param rule_description description of the matched composite rule.
+ * @param evaluator_description description of the specific evaluator condition that triggered the match.
+ */
+void plcs_eval_ctx_set_matched_description_with_evaluation_details(const char *rule_description, const char *evaluator_description);
