@@ -1,0 +1,81 @@
+{
+  "policies": [
+    {
+      "description": "Nested OR combination",
+      "skip": true,
+      "runtime": "jvm",
+      "conditions": [
+        {
+          "description": "Cassandra group",
+          "values": [
+            {
+              "cmp_strategy": "equals",
+              "value": "org.apache.cassandra.service.CassandraDaemon",
+              "value_type": "class",
+              "description": "matched CassandraDaemon"
+            },
+            {
+              "cmp_strategy": "prefix",
+              "value": "org.apache.cassandra.tools",
+              "value_type": "class",
+              "description": "matched Cassandra tools"
+            }
+          ]
+        },
+        {
+          "description": "Kafka group",
+          "values": [
+            {
+              "cmp_strategy": "equals",
+              "value": "kafka",
+              "value_type": "process_exe",
+              "description": "matched kafka"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Flat OR no runtime",
+      "skip": true,
+      "runtime": "all",
+      "conditions": [
+        {
+          "description": "Skip processes launched from OS system binary directories",
+          "values": [
+            {
+              "cmp_strategy": "prefix",
+              "value": "/bin/",
+              "value_type": "entry_file",
+              "description": "Skip process launched from a system binary directory: matched on entry point file path starting with '/bin/'"
+            },
+            {
+              "cmp_strategy": "prefix",
+              "value": "/usr/bin/",
+              "value_type": "entry_file",
+              "description": "Skip process launched from a system binary directory: matched on entry point file path starting with '/usr/bin/'"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "AND fallback",
+      "skip": true,
+      "runtime": "jvm",
+      "conditions": [
+        {
+          "description": "Single condition",
+          "values": [
+            {
+              "cmp_strategy": "equals",
+              "value": "org.example.App",
+              "value_type": "class",
+              "description": "matched org.example.App"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
