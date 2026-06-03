@@ -111,6 +111,12 @@ typedef struct plcs_eval_ctx {
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
 
+  /**< Description of the rule that triggered the action during the most recent
+   * policy evaluation. NULL if no match occurred. Read via
+   * plcs_eval_ctx_get_matched_description().
+   */
+  const char *matched_description;
+
 } plcs_eval_ctx;
 
 /**
@@ -146,3 +152,15 @@ void plcs_eval_ctx_set_num_eval_error(plcs_numeric_evaluators id, plcs_errors er
  * @param error plcs_errors enum
  */
 void plcs_eval_ctx_set_unum_eval_error(plcs_numeric_evaluators ix, plcs_errors error);
+
+/**
+ * @brief Returns the description of the rule that triggered the action during the most recent policy evaluation.
+ * @return const char* NULL if no match occurred.
+ */
+const char *plcs_eval_ctx_get_matched_description(void);
+
+/**
+ * @brief Sets the description of the rule that triggered the action during the most recent policy evaluation.
+ * @param description const char* description of the rule that triggered the action.
+ */
+void plcs_eval_ctx_set_matched_description(const char *description);

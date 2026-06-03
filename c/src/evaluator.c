@@ -168,6 +168,24 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
+static inline void capture_matched_description(dd_ns(NodeTypeWrapper_table_t) node) {
+  if (!node) {
+    return;
+  }
+  const char *description = NULL;
+  switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
+    case dd_ns(NodeType_CompositeNode):
+      description = dd_ns(CompositeNode_description)(dd_ns(NodeTypeWrapper_node)(node));
+      break;
+    case dd_ns(NodeType_EvaluatorNode):
+      description = dd_ns(EvaluatorNode_description)(dd_ns(NodeTypeWrapper_node)(node));
+      break;
+  }
+  if (description && description[0] != '\0') {
+    plcs_eval_ctx_set_matched_description(description);
+  }
+}
+
 plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
@@ -209,6 +227,7 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
+      capture_matched_description(dd_ns(NodeTypeWrapper_vec_at)(children, ix));
       return res;
     }
 
@@ -286,9 +305,16 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
-  // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
+  // reset matched description
+  plcs_eval_ctx_set_matched_description(NULL);
+
+  // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
+  if (eval_res == PLCS_EVAL_RESULT_TRUE && (plcs_eval_ctx_get_matched_description() == NULL || plcs_eval_ctx_get_matched_description()[0] == '\0')) {
+    capture_matched_description(rules);
+  }
+  
   // perform actions given evaluation result
   return perform_actions(eval_res, actions);
 }
