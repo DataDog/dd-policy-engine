@@ -1,0 +1,102 @@
+# Publishes dd-policy-engine build artifacts to MASS from gitlab.ddbuild.io.
+# GitHub Actions (dev.yml / release.yml) remain the source of truth for tests
+# and the GitHub draft release; this pipeline only ADDS MASS publishing for
+# per-branch and tagged builds.
+#
+# Conventions sourced from DataDog/dd-source .gitlab-ci.yml and
+# DataDog/dd-trace-cpp:
+#   - images pulled via registry.ddbuild.io/images/mirror/<dockerhub-image>
+#   - runner tags arch:amd64 / arch:arm64
+
+include:
+  # Shared MASS upload template (adms install + path routing).
+  # Pin: update the SHA when dd-repo-tools publishes a new template version.
+  - remote: 'https://gitlab-templates.ddbuild.io/dd-repo-tools/mass-publish/ca/8f46374d498fe969607bac4e2eca52718b0878a6/mass-publish.yml'
+
+stages:
+  - build
+  - publish
+
+variables:
+  # The repo's existing build image, referenced through the ddbuild mirror.
+  BUILD_IMAGE: "registry.ddbuild.io/images/mirror/datadog/docker-library:dd-policy-engine-88ce93f"
+  # MASS authorized base path == project leaf == runner project slug.
+  MASS_BASE: "dd-policy-engine"
+  # Branch artifact retention (days). Releases use ttl 0 (infinite).
+  MASS_BRANCH_TTL: "30"
+
+# Run for branch pushes, tag pushes and manual web runs (not MR-only events).
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# ---------------------------------------------------------------------------
+# BUILD STAGE  (build image; identical commands to release.yml)
+# Already inside a container -> Makefile.docker sets IN_DOCKER=true, so inner
+# commands run directly (no nested docker).
+# ---------------------------------------------------------------------------
+.build_linux:
+  stage: build
+  image: $BUILD_IMAGE
+  timeout: 20m
+  script:
+    # libpolicies (static lib)
+    - cmake -B build --preset gcc-release .
+    - cmake --build build --target dd-policy-engine.static-lib -j
+    - cmake --install build --prefix=libpolicies
+    - tar -czf libpolicies-linux-${ARCH}.tar.gz libpolicies
+    # dd-rules-converter + dd-requirements-converter (same `make -C go build`)
+    - make -C go build
+    - tar -czf dd-rules-converter-linux-${ARCH}.tar.gz go/dd-rules-converter
+    - tar -czf dd-requirements-converter-linux-${ARCH}.tar.gz go/dd-requirements-converter
+    # dd-compile-policy (C++ tool)
+    - make -C dd-compile-policy build
+    - tar -czf dd-compile-policy-linux-${ARCH}.tar.gz -C dd-compile-policy/bin dd-compile-policy
+  artifacts:
+    name: "dd-policy-engine-linux-${ARCH}"
+    expire_in: 1 day
+    paths:
+      - libpolicies-linux-${ARCH}.tar.gz
+      - dd-rules-converter-linux-${ARCH}.tar.gz
+      - dd-requirements-converter-linux-${ARCH}.tar.gz
+      - dd-compile-policy-linux-${ARCH}.tar.gz
+
+build:amd64:
+  extends: .build_linux
+  tags: ["arch:amd64"]
+  variables: { ARCH: "amd64" }
+
+build:arm64:
+  extends: .build_linux
+  tags: ["arch:arm64"]
+  variables: { ARCH: "arm64" }
+
+# ---------------------------------------------------------------------------
+# PUBLISH STAGE  (.publish_mass base from the included template)
+# MASS auth is automatic from the GitLab runner identity. No secrets.
+# ---------------------------------------------------------------------------
+publish:amd64:
+  extends: .publish_mass
+  stage: publish
+  tags: ["arch:amd64"]
+  needs: ["build:amd64"]
+  variables:
+    MASS_FILES: >-
+      libpolicies-linux-amd64.tar.gz
+      dd-rules-converter-linux-amd64.tar.gz
+      dd-requirements-converter-linux-amd64.tar.gz
+      dd-compile-policy-linux-amd64.tar.gz
+
+publish:arm64:
+  extends: .publish_mass
+  stage: publish
+  tags: ["arch:arm64"]
+  needs: ["build:arm64"]
+  variables:
+    MASS_FILES: >-
+      libpolicies-linux-arm64.tar.gz
+      dd-rules-converter-linux-arm64.tar.gz
+      dd-requirements-converter-linux-arm64.tar.gz
+      dd-compile-policy-linux-arm64.tar.gz
