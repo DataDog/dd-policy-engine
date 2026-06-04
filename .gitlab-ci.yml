@@ -11,7 +11,7 @@
 include:
   # Shared MASS upload template (adms install + path routing).
   # Pin: update the SHA when dd-repo-tools publishes a new template version.
-  - remote: 'https://gitlab-templates.ddbuild.io/dd-repo-tools/mass-publish/ca/8f46374d498fe969607bac4e2eca52718b0878a6/mass-publish.yml'
+  - remote: 'https://gitlab-templates.ddbuild.io/dd-repo-tools/mass-publish/ca/447c54fb1cee3ceb44a4020193de6209085ec1e9/mass-publish.yml'
 
 stages:
   - build
