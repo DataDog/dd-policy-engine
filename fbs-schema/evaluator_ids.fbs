@@ -92,6 +92,15 @@ enum StringEvaluators : byte {
 
     PROCESS_ENVAR,  // Check "KEY=VALUE" pattern, with CMP_WILDCARD can check wildcards too
 
+    /// The tag portion of the container image reference (e.g. "latest", "v2.1")
+    CONTAINER_IMAGE_TAG,
+    /// The OCI image digest, including the algorithm prefix (e.g. "sha256:abc123...")
+    CONTAINER_IMAGE_DIGEST,
+    /// The human-readable container name assigned by the container runtime
+    CONTAINER_NAME,
+    /// A container label as "KEY=VALUE", with CMP_WILDCARD can check wildcards too
+    CONTAINER_LABEL,
+    
     /// Represents the count of String evaluators.
     /// This is used to ensure that the enum is always in sync with the number of evaluators.
     /// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.

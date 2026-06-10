@@ -74,7 +74,11 @@ __flatbuffers_define_integer_type(dd_wls_StringEvaluators, dd_wls_StringEvaluato
 #define dd_wls_StringEvaluators_PROCESS_ARGV_N_5 ((dd_wls_StringEvaluators_enum_t)INT8_C(45))
 #define dd_wls_StringEvaluators_PROCESS_ARGV_N_6 ((dd_wls_StringEvaluators_enum_t)INT8_C(46))
 #define dd_wls_StringEvaluators_PROCESS_ENVAR ((dd_wls_StringEvaluators_enum_t)INT8_C(47))
-#define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(48))
+#define dd_wls_StringEvaluators_CONTAINER_IMAGE_TAG ((dd_wls_StringEvaluators_enum_t)INT8_C(48))
+#define dd_wls_StringEvaluators_CONTAINER_IMAGE_DIGEST ((dd_wls_StringEvaluators_enum_t)INT8_C(49))
+#define dd_wls_StringEvaluators_CONTAINER_NAME ((dd_wls_StringEvaluators_enum_t)INT8_C(50))
+#define dd_wls_StringEvaluators_CONTAINER_LABEL ((dd_wls_StringEvaluators_enum_t)INT8_C(51))
+#define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(52))
 
 static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_enum_t value)
 {
@@ -127,6 +131,10 @@ static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_e
     case dd_wls_StringEvaluators_PROCESS_ARGV_N_5: return "PROCESS_ARGV_N_5";
     case dd_wls_StringEvaluators_PROCESS_ARGV_N_6: return "PROCESS_ARGV_N_6";
     case dd_wls_StringEvaluators_PROCESS_ENVAR: return "PROCESS_ENVAR";
+    case dd_wls_StringEvaluators_CONTAINER_IMAGE_TAG: return "CONTAINER_IMAGE_TAG";
+    case dd_wls_StringEvaluators_CONTAINER_IMAGE_DIGEST: return "CONTAINER_IMAGE_DIGEST";
+    case dd_wls_StringEvaluators_CONTAINER_NAME: return "CONTAINER_NAME";
+    case dd_wls_StringEvaluators_CONTAINER_LABEL: return "CONTAINER_LABEL";
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return "STR_EVAL_COUNT";
     default: return "";
     }
@@ -183,6 +191,10 @@ static inline int dd_wls_StringEvaluators_is_known_value(dd_wls_StringEvaluators
     case dd_wls_StringEvaluators_PROCESS_ARGV_N_5: return 1;
     case dd_wls_StringEvaluators_PROCESS_ARGV_N_6: return 1;
     case dd_wls_StringEvaluators_PROCESS_ENVAR: return 1;
+    case dd_wls_StringEvaluators_CONTAINER_IMAGE_TAG: return 1;
+    case dd_wls_StringEvaluators_CONTAINER_IMAGE_DIGEST: return 1;
+    case dd_wls_StringEvaluators_CONTAINER_NAME: return 1;
+    case dd_wls_StringEvaluators_CONTAINER_LABEL: return 1;
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return 1;
     default: return 0;
     }

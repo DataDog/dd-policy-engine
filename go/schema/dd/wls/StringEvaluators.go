@@ -79,10 +79,18 @@ const (
 	StringEvaluatorsPROCESS_ARGV_N_5            StringEvaluators = 45
 	StringEvaluatorsPROCESS_ARGV_N_6            StringEvaluators = 46
 	StringEvaluatorsPROCESS_ENVAR               StringEvaluators = 47
+	/// The tag portion of the container image reference (e.g. "latest", "v2.1")
+	StringEvaluatorsCONTAINER_IMAGE_TAG         StringEvaluators = 48
+	/// The OCI image digest, including the algorithm prefix (e.g. "sha256:abc123...")
+	StringEvaluatorsCONTAINER_IMAGE_DIGEST      StringEvaluators = 49
+	/// The human-readable container name assigned by the container runtime
+	StringEvaluatorsCONTAINER_NAME              StringEvaluators = 50
+	/// A container label as "KEY=VALUE", with CMP_WILDCARD can check wildcards too
+	StringEvaluatorsCONTAINER_LABEL             StringEvaluators = 51
 	/// Represents the count of String evaluators.
 	/// This is used to ensure that the enum is always in sync with the number of evaluators.
 	/// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
-	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 48
+	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 52
 )
 
 var EnumNamesStringEvaluators = map[StringEvaluators]string{
@@ -134,6 +142,10 @@ var EnumNamesStringEvaluators = map[StringEvaluators]string{
 	StringEvaluatorsPROCESS_ARGV_N_5:            "PROCESS_ARGV_N_5",
 	StringEvaluatorsPROCESS_ARGV_N_6:            "PROCESS_ARGV_N_6",
 	StringEvaluatorsPROCESS_ENVAR:               "PROCESS_ENVAR",
+	StringEvaluatorsCONTAINER_IMAGE_TAG:         "CONTAINER_IMAGE_TAG",
+	StringEvaluatorsCONTAINER_IMAGE_DIGEST:      "CONTAINER_IMAGE_DIGEST",
+	StringEvaluatorsCONTAINER_NAME:              "CONTAINER_NAME",
+	StringEvaluatorsCONTAINER_LABEL:             "CONTAINER_LABEL",
 	StringEvaluatorsSTR_EVAL_COUNT:              "STR_EVAL_COUNT",
 }
 
@@ -186,6 +198,10 @@ var EnumValuesStringEvaluators = map[string]StringEvaluators{
 	"PROCESS_ARGV_N_5":            StringEvaluatorsPROCESS_ARGV_N_5,
 	"PROCESS_ARGV_N_6":            StringEvaluatorsPROCESS_ARGV_N_6,
 	"PROCESS_ENVAR":               StringEvaluatorsPROCESS_ENVAR,
+	"CONTAINER_IMAGE_TAG":         StringEvaluatorsCONTAINER_IMAGE_TAG,
+	"CONTAINER_IMAGE_DIGEST":      StringEvaluatorsCONTAINER_IMAGE_DIGEST,
+	"CONTAINER_NAME":              StringEvaluatorsCONTAINER_NAME,
+	"CONTAINER_LABEL":             StringEvaluatorsCONTAINER_LABEL,
 	"STR_EVAL_COUNT":              StringEvaluatorsSTR_EVAL_COUNT,
 }
 
