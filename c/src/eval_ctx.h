@@ -171,12 +171,3 @@ const char *plcs_eval_ctx_get_matched_description(void);
  */
 void plcs_eval_ctx_set_matched_description(const char *description);
 
-/**
- * @brief Sets matched_description to "{rule_description}: {evaluator_description}".
- * @param rule_description description of the matched composite rule.
- * @param evaluator_description description of the specific evaluator condition that triggered the match.
- */
-void plcs_eval_ctx_set_matched_description_with_evaluation_details(
-    const char *rule_description,
-    const char *evaluator_description
-);

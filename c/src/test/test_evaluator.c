@@ -1061,8 +1061,8 @@ static void matched_description_test_setup(void) {
  *             EvaluatorNode[matched Cassandra tools]
  *           EvaluatorNode[matched kafka]  <- condition with 1 value
  *
- * When CassandraDaemon matches: OR[Cassandra group] captures "matched CassandraDaemon",
- * then outer OR combines it: "Cassandra group: matched CassandraDaemon".
+ * When CassandraDaemon matches: OR[Cassandra group] short-circuits and captures
+ * "matched CassandraDaemon" from the leaf. Outer OR does not overwrite it.
  */
 UTEST(evaluator_matched_description, nested_or_inner_value_exact) {
   matched_description_test_setup();
@@ -1074,11 +1074,10 @@ UTEST(evaluator_matched_description, nested_or_inner_value_exact) {
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
 
   ASSERT_TRUE(g_captured_description != NULL);
-  ASSERT_EQ(strcmp(g_captured_description, "Cassandra group: matched CassandraDaemon"), 0);
+  ASSERT_EQ(strcmp(g_captured_description, "matched CassandraDaemon"), 0);
 }
 
-/* Same policy, single-value condition: outer OR short-circuits on EvaluatorNode directly,
- * no combination — just the leaf description. */
+/* Same policy, single-value condition: outer OR short-circuits on EvaluatorNode directly. */
 UTEST(evaluator_matched_description, nested_or_leaf_no_combination) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "jvm");
