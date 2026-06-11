@@ -12,6 +12,7 @@
 #include "eval_ctx.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 
 static plcs_eval_ctx ctx;
 static bool plcs_eval_ctx_initialized = false;
