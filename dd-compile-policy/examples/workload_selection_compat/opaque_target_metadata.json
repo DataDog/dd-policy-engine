@@ -1,0 +1,29 @@
+{
+  "policies": [
+    {
+      "description": "{\"target\":{\"name\":\"checkout\",\"podSelector\":{\"matchLabels\":{\"app\":\"checkout\"}},\"namespaceSelector\":{\"matchNames\":[\"prod\"]},\"ddTraceVersions\":{\"java\":\"1.42.0\"},\"ddTraceConfigs\":[{\"name\":\"DD_SERVICE\",\"value\":\"checkout\"}]}}",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "description": "runtime is java",
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "RUNTIME_LANGUAGE",
+            "cmp": "CMP_EXACT",
+            "value": "java"
+          }
+        }
+      },
+      "actions": [
+        {
+          "action": "INJECT_TRACERS",
+          "description": "target metadata carried as action values",
+          "values": [
+            "JAVA:1.42.0",
+            "{\"name\":\"checkout\",\"podSelector\":{\"matchLabels\":{\"app\":\"checkout\"}},\"namespaceSelector\":{\"matchNames\":[\"prod\"]},\"ddTraceVersions\":{\"java\":\"1.42.0\"},\"ddTraceConfigs\":[{\"name\":\"DD_SERVICE\",\"value\":\"checkout\"}]}"
+          ]
+        }
+      ]
+    }
+  ]
+}

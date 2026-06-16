@@ -1,0 +1,59 @@
+{
+  "policies": [
+    {
+      "description": "future k8s selector evaluators",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "description": "target pod and namespace selectors",
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "description": "pod label app In checkout",
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "K8S_POD_LABEL",
+                  "cmp": "CMP_K8S_IN",
+                  "value": "app=checkout"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "description": "namespace label team NotIn legacy",
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "K8S_NAMESPACE_LABEL",
+                  "cmp": "CMP_K8S_NOT_IN",
+                  "value": "team=legacy"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "description": "pod label env Exists",
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "K8S_POD_LABEL",
+                  "cmp": "CMP_K8S_EXISTS",
+                  "value": "env"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "actions": [
+        {
+          "action": "INJECT_TRACERS",
+          "description": "inject tracer versions",
+          "values": ["JAVA:1.42.0"]
+        }
+      ]
+    }
+  ]
+}
