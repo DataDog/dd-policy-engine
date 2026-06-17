@@ -99,7 +99,11 @@ typedef enum plcs_numeric_comparator {
   X(PROCESS_ARGV_N_4, 44)                                                                                              \
   X(PROCESS_ARGV_N_5, 45)                                                                                              \
   X(PROCESS_ARGV_N_6, 46)                                                                                              \
-  X(PROCESS_ENVAR, 47)
+  X(PROCESS_ENVAR, 47)                                                                                                 \
+  X(CONTAINER_IMAGE_TAG, 48)                                                                                           \
+  X(CONTAINER_IMAGE_DIGEST, 49)                                                                                        \
+  X(CONTAINER_NAME, 50)                                                                                                \
+  X(CONTAINER_LABEL, 51)
 
 #define ENUM_STR_CMP_EVAL(ID, IX) PLCS_STR_EVAL_##ID = IX,
 typedef enum plcs_string_evaluators {
