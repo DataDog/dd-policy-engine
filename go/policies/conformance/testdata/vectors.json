@@ -1,0 +1,291 @@
+{
+  "_comment": "Shared conformance corpus for the dd-policy-engine evaluators. Each vector is a dd-wls rule tree (the JSON projection of the FlatBuffers schema), a set of facts, and the expected tri-state result (TRUE/FALSE/ABSTAIN). This file is the cross-engine contract: the Go harness (conformance_test.go) runs it directly through the public API, and the C harness is expected to run the same logical vectors so both engines stay semantically identical.",
+  "vectors": [
+    {
+      "name": "always_true",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}},
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "always_false",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}},
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "always_abstain",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_ABSTAIN"}}},
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "and_true_true",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_AND", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}},
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}}
+      ]}},
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "and_true_false",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_AND", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}},
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}}
+      ]}},
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "and_true_abstain",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_AND", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}},
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_ABSTAIN"}}}
+      ]}},
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "and_false_abstain_false_dominates",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_AND", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}},
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_ABSTAIN"}}}
+      ]}},
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "or_false_false",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_OR", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}},
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}}
+      ]}},
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "or_false_true",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_OR", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}},
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}}
+      ]}},
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "or_false_abstain",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_OR", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}},
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_ABSTAIN"}}}
+      ]}},
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "or_true_abstain_true_dominates",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_OR", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}},
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_ABSTAIN"}}}
+      ]}},
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "not_true",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_NOT", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}}
+      ]}},
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "not_false",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_NOT", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}}
+      ]}},
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "not_abstain",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_NOT", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_ABSTAIN"}}}
+      ]}},
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "nested_tree",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_AND", "children": [
+        {"node_type": "CompositeNode", "node": {"op": "BOOL_OR", "children": [
+          {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}},
+          {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}}
+        ]}},
+        {"node_type": "CompositeNode", "node": {"op": "BOOL_NOT", "children": [
+          {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}}
+        ]}}
+      ]}},
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "nested_abstain_propagation",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_AND", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_TRUE"}}},
+        {"node_type": "CompositeNode", "node": {"op": "BOOL_OR", "children": [
+          {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_ABSTAIN"}}},
+          {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "ALWAYS_FALSE"}}}
+        ]}}
+      ]}},
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "namespace_name_exact_match",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_NAME", "cmp": "CMP_EXACT", "value": "payments"}}},
+      "facts": {"strings": {"NAMESPACE_NAME": "payments"}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_name_exact_mismatch",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_NAME", "cmp": "CMP_EXACT", "value": "billing"}}},
+      "facts": {"strings": {"NAMESPACE_NAME": "payments"}},
+      "expect": "FALSE"
+    },
+    {
+      "name": "string_source_unavailable_abstains",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_NAME", "cmp": "CMP_EXACT", "value": "payments"}}},
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "namespace_name_prefix",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_NAME", "cmp": "CMP_PREFIX", "value": "pay"}}},
+      "facts": {"strings": {"NAMESPACE_NAME": "payments"}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_name_suffix",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_NAME", "cmp": "CMP_SUFFIX", "value": "ments"}}},
+      "facts": {"strings": {"NAMESPACE_NAME": "payments"}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_name_contains",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_NAME", "cmp": "CMP_CONTAINS", "value": "yme"}}},
+      "facts": {"strings": {"NAMESPACE_NAME": "payments"}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_name_wildcard",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_NAME", "cmp": "CMP_WILDCARD", "value": "pay*"}}},
+      "facts": {"strings": {"NAMESPACE_NAME": "payments"}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "generic_string_id_runtime_language",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "RUNTIME_LANGUAGE", "cmp": "CMP_EXACT", "value": "java"}}},
+      "facts": {"strings": {"RUNTIME_LANGUAGE": "java"}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "pod_label_exact_match",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "POD_LABEL", "cmp": "CMP_EXACT", "value": "app=web"}}},
+      "facts": {"labels": {"POD_LABEL": {"app": "web", "tier": "frontend"}}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "pod_label_exact_mismatch",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "POD_LABEL", "cmp": "CMP_EXACT", "value": "app=db"}}},
+      "facts": {"labels": {"POD_LABEL": {"app": "web", "tier": "frontend"}}},
+      "expect": "FALSE"
+    },
+    {
+      "name": "pod_label_key_absent_is_false",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "POD_LABEL", "cmp": "CMP_EXACT", "value": "missing=x"}}},
+      "facts": {"labels": {"POD_LABEL": {"app": "web"}}},
+      "expect": "FALSE"
+    },
+    {
+      "name": "label_source_unavailable_abstains",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "POD_LABEL", "cmp": "CMP_EXACT", "value": "app=web"}}},
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "pod_label_exists",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "POD_LABEL", "cmp": "CMP_PREFIX", "value": "tier="}}},
+      "facts": {"labels": {"POD_LABEL": {"app": "web", "tier": "frontend"}}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "pod_label_exists_absent",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "POD_LABEL", "cmp": "CMP_PREFIX", "value": "missing="}}},
+      "facts": {"labels": {"POD_LABEL": {"app": "web"}}},
+      "expect": "FALSE"
+    },
+    {
+      "name": "pod_label_wildcard",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "POD_LABEL", "cmp": "CMP_WILDCARD", "value": "app=w*"}}},
+      "facts": {"labels": {"POD_LABEL": {"app": "web"}}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_label_match",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_LABEL", "cmp": "CMP_EXACT", "value": "team=core"}}},
+      "facts": {"labels": {"NAMESPACE_LABEL": {"team": "core"}}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_label_key_absent_is_false",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "NAMESPACE_LABEL", "cmp": "CMP_EXACT", "value": "team=core"}}},
+      "facts": {"labels": {"NAMESPACE_LABEL": {}}},
+      "expect": "FALSE"
+    },
+    {
+      "name": "not_exists_matches_absent_label",
+      "rules": {"node_type": "CompositeNode", "node": {"op": "BOOL_NOT", "children": [
+        {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator", "eval": {"id": "POD_LABEL", "cmp": "CMP_PREFIX", "value": "deprecated="}}}
+      ]}},
+      "facts": {"labels": {"POD_LABEL": {"app": "web"}}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "numeric_eq_true",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "NumEvaluator", "eval": {"id": "RUNTIME_VERSION_MAJOR", "cmp": "CMP_EQ", "value": 17}}},
+      "facts": {"numbers": {"RUNTIME_VERSION_MAJOR": 17}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "numeric_gt_true_policy_greater_than_workload",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "NumEvaluator", "eval": {"id": "RUNTIME_VERSION_MAJOR", "cmp": "CMP_GT", "value": 21}}},
+      "facts": {"numbers": {"RUNTIME_VERSION_MAJOR": 17}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "numeric_lte_false_policy_greater_than_workload",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "NumEvaluator", "eval": {"id": "RUNTIME_VERSION_MAJOR", "cmp": "CMP_LTE", "value": 21}}},
+      "facts": {"numbers": {"RUNTIME_VERSION_MAJOR": 17}},
+      "expect": "FALSE"
+    },
+    {
+      "name": "numeric_source_unavailable_abstains",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "NumEvaluator", "eval": {"id": "RUNTIME_VERSION_MAJOR", "cmp": "CMP_EQ", "value": 17}}},
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "unumeric_gte_true",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "UNumEvaluator", "eval": {"id": "JAVA_HEAP", "cmp": "CMP_GTE", "value": 2048}}},
+      "facts": {"unumbers": {"JAVA_HEAP": 1024}},
+      "expect": "TRUE"
+    },
+    {
+      "name": "unumeric_lt_false",
+      "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "UNumEvaluator", "eval": {"id": "JAVA_HEAP", "cmp": "CMP_LT", "value": 4096}}},
+      "facts": {"unumbers": {"JAVA_HEAP": 1024}},
+      "expect": "FALSE"
+    }
+  ]
+}
