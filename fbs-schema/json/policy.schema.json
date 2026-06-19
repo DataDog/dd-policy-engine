@@ -3,7 +3,7 @@
   "definitions": {
     "dd_wls_ActionId" : {
       "type" : "string",
-      "enum": ["INJECT_DENY", "INJECT_ALLOW", "ENABLE_SDK", "ENABLE_PROFILER", "SET_ENVAR", "REEXEC", "ACTIONS_COUNT"]
+      "enum": ["ACTION_UNKNOWN", "INJECT_DENY", "INJECT_ALLOW", "ENABLE_SDK", "ENABLE_PROFILER", "SET_ENVAR", "REEXEC", "ACTIONS_COUNT"]
     },
     "dd_wls_ActionMax" : {
       "type" : "string",
@@ -11,23 +11,23 @@
     },
     "dd_wls_BoolOperation" : {
       "type" : "string",
-      "enum": ["BOOL_AND", "BOOL_NOT", "BOOL_OR", "BOOL_COUNT"]
+      "enum": ["BOOL_UNKNOWN", "BOOL_AND", "BOOL_NOT", "BOOL_OR", "BOOL_COUNT"]
     },
     "dd_wls_StringEvaluators" : {
       "type" : "string",
-      "enum": ["COMPONENT", "PROCESS_EXE", "PROCESS_EXE_FULL_PATH", "PROCESS_BASEDIR_PATH", "PROCESS_ARGV", "PROCESS_CWD", "RUNTIME_LANGUAGE", "RUNTIME_ENTRY_POINT_FILE", "RUNTIME_ENTRY_POINT_JAR", "RUNTIME_ENTRY_POINT_CLASS", "RUNTIME_ENTRY_POINT_PACKAGE", "RUNTIME_ENTRY_POINT_MODULE", "RUNTIME_ENTRY_POINT_SOURCE", "RUNTIME_DOPTION", "RUNTIME_VERSION", "LIBC_FLAVOR", "LIBC_VERSION", "MACHINE_ARCHITECTURE", "HOST_NAME", "HOST_IP", "OS", "OS_DISTRO", "OS_DISTRO_VERSION", "OS_DISTRO_CODENAME", "OS_KERNEL_VERSION", "OS_KERNEL_NAME", "OS_USER", "OS_USER_GROUP", "CONTAINER_IMAGE", "CONTAINER_ID", "ALWAYS_TRUE", "ALWAYS_FALSE", "ALWAYS_ABSTAIN", "STR_EVAL_COUNT"]
+      "enum": ["STRING_EVAL_UNKNOWN", "COMPONENT", "PROCESS_EXE", "PROCESS_EXE_FULL_PATH", "PROCESS_BASEDIR_PATH", "PROCESS_ARGV", "PROCESS_CWD", "RUNTIME_LANGUAGE", "RUNTIME_ENTRY_POINT_FILE", "RUNTIME_ENTRY_POINT_JAR", "RUNTIME_ENTRY_POINT_CLASS", "RUNTIME_ENTRY_POINT_PACKAGE", "RUNTIME_ENTRY_POINT_MODULE", "RUNTIME_ENTRY_POINT_SOURCE", "RUNTIME_DOPTION", "RUNTIME_VERSION", "LIBC_FLAVOR", "LIBC_VERSION", "MACHINE_ARCHITECTURE", "HOST_NAME", "HOST_IP", "OS", "OS_DISTRO", "OS_DISTRO_VERSION", "OS_DISTRO_CODENAME", "OS_KERNEL_VERSION", "OS_KERNEL_NAME", "OS_USER", "OS_USER_GROUP", "CONTAINER_IMAGE", "CONTAINER_ID", "ALWAYS_TRUE", "ALWAYS_FALSE", "ALWAYS_ABSTAIN", "IIS_APPLICATION_POOL", "PROCESS_ARGV_0", "PROCESS_ARGV_1", "PROCESS_ARGV_2", "PROCESS_ARGV_3", "PROCESS_ARGV_4", "PROCESS_ARGV_5", "PROCESS_ARGV_N", "PROCESS_ARGV_N_2", "PROCESS_ARGV_N_3", "PROCESS_ARGV_N_4", "PROCESS_ARGV_N_5", "PROCESS_ARGV_N_6", "PROCESS_ENVAR", "CONTAINER_IMAGE_TAG", "CONTAINER_IMAGE_DIGEST", "CONTAINER_NAME", "CONTAINER_LABEL", "NAMESPACE_NAME", "NAMESPACE_LABEL", "POD_LABEL", "POD_ANNOTATION", "STR_EVAL_COUNT"]
     },
     "dd_wls_NumericEvaluators" : {
       "type" : "string",
-      "enum": ["JAVA_HEAP", "RUNTIME_VERSION_MAJOR", "RUNTIME_VERSION_MINOR", "RUNTIME_VERSION_PATCH", "OS_DISTRO_VERSION_MAJOR", "OS_DISTRO_VERSION_MINOR", "OS_DISTRO_VERSION_PATCH", "OS_KERNEL_VERSION_MAJOR", "OS_KERNEL_VERSION_MINOR", "OS_KERNEL_VERSION_PATCH", "LIBC_VERSION_MAJOR", "LIBC_VERSION_MINOR", "LIBC_VERSION_PATCH", "NUM_EVAL_COUNT"]
+      "enum": ["NUMERIC_EVAL_UNKNOWN", "JAVA_HEAP", "RUNTIME_VERSION_MAJOR", "RUNTIME_VERSION_MINOR", "RUNTIME_VERSION_PATCH", "OS_DISTRO_VERSION_MAJOR", "OS_DISTRO_VERSION_MINOR", "OS_DISTRO_VERSION_PATCH", "OS_KERNEL_VERSION_MAJOR", "OS_KERNEL_VERSION_MINOR", "OS_KERNEL_VERSION_PATCH", "LIBC_VERSION_MAJOR", "LIBC_VERSION_MINOR", "LIBC_VERSION_PATCH", "NUM_EVAL_COUNT"]
     },
     "dd_wls_CmpTypeNUM" : {
       "type" : "string",
-      "enum": ["CMP_EQ", "CMP_GT", "CMP_GTE", "CMP_LT", "CMP_LTE", "CMP_COUNT"]
+      "enum": ["CMP_NUM_UNKNOWN", "CMP_EQ", "CMP_GT", "CMP_GTE", "CMP_LT", "CMP_LTE", "CMP_COUNT"]
     },
     "dd_wls_CmpTypeSTR" : {
       "type" : "string",
-      "enum": ["CMP_PREFIX", "CMP_SUFFIX", "CMP_CONTAINS", "CMP_EXACT", "CMP_WILDCARD", "CMP_COUNT"]
+      "enum": ["CMP_STR_UNKNOWN", "CMP_PREFIX", "CMP_SUFFIX", "CMP_CONTAINS", "CMP_EXACT", "CMP_WILDCARD", "CMP_COUNT"]
     },
     "dd_wls_EvaluatorType" : {
       "type" : "string",
@@ -161,6 +161,19 @@
       },
       "additionalProperties" : false
     },
+    "dd_wls_UUID" : {
+      "type" : "object",
+      "description" : "unfortunetly flatbuffers doesnt support fixed size arrays in go so we can't use it\nthe solution is to split it into two unsigned longs :(\nthis should be populate after caculation, and removed prior to verification.",
+      "properties" : {
+        "hi" : {
+                "type" : "integer", "minimum" : 0, "maximum" : 18446744073709551615
+              },
+        "lo" : {
+                "type" : "integer", "minimum" : 0, "maximum" : 18446744073709551615
+              }
+      },
+      "additionalProperties" : false
+    },
     "dd_wls_Policy" : {
       "type" : "object",
       "description" : "Represents a policy that contains rules and actions.\nThe rules are represented as a tree structure where each node can be a leaf (with an evaluator) or a root (with child nodes).",
@@ -176,6 +189,14 @@
         "actions" : {
                 "type" : "array", "items" : {"$ref" : "#/definitions/dd_wls_Action"},
                 "description" : "The actions are taken post evaluation of the policy."
+              },
+        "id" : {
+                "$ref" : "#/definitions/dd_wls_UUID",
+                "description" : "128 bit UUID represented as 16 raw bytes\nthis can be used to verify integrity (but NOT origin - this is not a signature!)"
+              },
+        "version" : {
+                "type" : "integer", "minimum" : -9223372036854775808, "maximum" : 9223372036854775807,
+                "description" : "used to track the version number of this policy"
               }
       },
       "additionalProperties" : false

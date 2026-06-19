@@ -87,10 +87,20 @@ const (
 	StringEvaluatorsCONTAINER_NAME              StringEvaluators = 50
 	/// A container label as "KEY=VALUE", with CMP_WILDCARD can check wildcards too
 	StringEvaluatorsCONTAINER_LABEL             StringEvaluators = 51
+	/// Kubernetes Single Step Instrumentation targeting evaluators.
+	/// The name of the Kubernetes namespace the workload belongs to.
+	StringEvaluatorsNAMESPACE_NAME              StringEvaluators = 52
+	/// A Kubernetes namespace label as "KEY=VALUE"; with CMP_WILDCARD can check
+	/// wildcards too, and "KEY=" with CMP_PREFIX expresses an existence check.
+	StringEvaluatorsNAMESPACE_LABEL             StringEvaluators = 53
+	/// A Kubernetes pod label as "KEY=VALUE"; same "KEY=VALUE" convention as NAMESPACE_LABEL.
+	StringEvaluatorsPOD_LABEL                   StringEvaluators = 54
+	/// A Kubernetes pod annotation as "KEY=VALUE"; same convention as POD_LABEL.
+	StringEvaluatorsPOD_ANNOTATION              StringEvaluators = 55
 	/// Represents the count of String evaluators.
 	/// This is used to ensure that the enum is always in sync with the number of evaluators.
 	/// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
-	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 52
+	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 56
 )
 
 var EnumNamesStringEvaluators = map[StringEvaluators]string{
@@ -146,6 +156,10 @@ var EnumNamesStringEvaluators = map[StringEvaluators]string{
 	StringEvaluatorsCONTAINER_IMAGE_DIGEST:      "CONTAINER_IMAGE_DIGEST",
 	StringEvaluatorsCONTAINER_NAME:              "CONTAINER_NAME",
 	StringEvaluatorsCONTAINER_LABEL:             "CONTAINER_LABEL",
+	StringEvaluatorsNAMESPACE_NAME:              "NAMESPACE_NAME",
+	StringEvaluatorsNAMESPACE_LABEL:             "NAMESPACE_LABEL",
+	StringEvaluatorsPOD_LABEL:                   "POD_LABEL",
+	StringEvaluatorsPOD_ANNOTATION:              "POD_ANNOTATION",
 	StringEvaluatorsSTR_EVAL_COUNT:              "STR_EVAL_COUNT",
 }
 
@@ -202,6 +216,10 @@ var EnumValuesStringEvaluators = map[string]StringEvaluators{
 	"CONTAINER_IMAGE_DIGEST":      StringEvaluatorsCONTAINER_IMAGE_DIGEST,
 	"CONTAINER_NAME":              StringEvaluatorsCONTAINER_NAME,
 	"CONTAINER_LABEL":             StringEvaluatorsCONTAINER_LABEL,
+	"NAMESPACE_NAME":              StringEvaluatorsNAMESPACE_NAME,
+	"NAMESPACE_LABEL":             StringEvaluatorsNAMESPACE_LABEL,
+	"POD_LABEL":                   StringEvaluatorsPOD_LABEL,
+	"POD_ANNOTATION":              StringEvaluatorsPOD_ANNOTATION,
 	"STR_EVAL_COUNT":              StringEvaluatorsSTR_EVAL_COUNT,
 }
 
