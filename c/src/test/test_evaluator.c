@@ -1005,36 +1005,15 @@ UTEST(evaluator_integration, evaluate_generated_header_if_available) {
 #endif
 }
 
-/*
- * End-to-end matched_description tests using a generated FlatBuffers header.
- *
- * Policies are defined in test_matched_description.json and compiled to
- * test_matched_description_policies.h. Three policies exercise the three
- * distinct capture paths:
- *   [0] Nested OR combination  (runtime=jvm, 2 conditions)
- *   [1] Flat OR, no runtime    (runtime=all, 1 condition, 2 values)
- *   [2] AND fallback           (runtime=jvm, 1 condition, 1 value)
- *
- * matched_description is reset at the start of each evaluate_policy() call,
- * so it must be read inside the action callback, which only saves it when
- * the evaluation result is PLCS_EVAL_RESULT_TRUE.
- */
+/* End-to-end matched_description tests. Policies defined in test_matched_description.json. */
 static const char *g_captured_description = NULL;
 
 static plcs_errors test_action_capture(
-    plcs_evaluation_result res,
-    char *values[],
-    size_t value_len,
-    const char *description,
-    int action_id
-) {
-  (void)values;
-  (void)value_len;
-  (void)description;
-  (void)action_id;
-  if (res == PLCS_EVAL_RESULT_TRUE) {
+    plcs_evaluation_result res, char *values[], size_t value_len,
+    const char *description, int action_id) {
+  (void)values; (void)value_len; (void)description; (void)action_id;
+  if (res == PLCS_EVAL_RESULT_TRUE)
     g_captured_description = plcs_eval_ctx_get_matched_description();
-  }
   return PLCS_ESUCCESS;
 }
 
@@ -1051,113 +1030,66 @@ static void matched_description_test_setup(void) {
   plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH);
 }
 
-/*
- * Policy [0]: "Nested OR combination" (runtime=jvm)
- * Tree: AND[Nested OR combination]
- *         EvaluatorNode[Runtime matching]
- *         OR[Nested OR combination]
- *           OR[Cassandra group]        <- condition with 2 values
- *             EvaluatorNode[matched CassandraDaemon]
- *             EvaluatorNode[matched Cassandra tools]
- *           EvaluatorNode[matched kafka]  <- condition with 1 value
- *
- * When CassandraDaemon matches: OR[Cassandra group] short-circuits and captures
- * "matched CassandraDaemon" from the leaf. Outer OR does not overwrite it.
- */
+#define ASSERT_DESCRIPTION(expected) \
+  ASSERT_TRUE(g_captured_description != NULL); \
+  ASSERT_EQ(strcmp(g_captured_description, (expected)), 0)
+
+/* Policy[0]: inner OR short-circuits, outer OR does not overwrite */
 UTEST(evaluator_matched_description, nested_or_inner_value_exact) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "jvm");
-  plcs_eval_ctx_set_str_eval_param(
-      PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, "org.apache.cassandra.service.CassandraDaemon"
-  );
-
+  plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, "org.apache.cassandra.service.CassandraDaemon");
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
-
-  ASSERT_TRUE(g_captured_description != NULL);
-  ASSERT_EQ(strcmp(g_captured_description, "matched CassandraDaemon"), 0);
+  ASSERT_DESCRIPTION("[skip] Apache Cassandra — JVM main class matches 'org.apache.cassandra.service.CassandraDaemon'");
 }
 
-/* Same policy, single-value condition: outer OR short-circuits on EvaluatorNode directly. */
+/* Policy[0]: single-value condition captured directly by OR */
 UTEST(evaluator_matched_description, nested_or_leaf_no_combination) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "jvm");
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_PROCESS_EXE, "kafka");
-
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
-
-  ASSERT_TRUE(g_captured_description != NULL);
-  ASSERT_EQ(strcmp(g_captured_description, "matched kafka"), 0);
+  ASSERT_DESCRIPTION("[skip] Apache Kafka — executable name matches 'kafka'");
 }
 
-/*
- * Policy [1]: "Flat OR no runtime" (runtime=all)
- * Tree: OR[Skip processes launched from OS system binary directories]
- *         EvaluatorNode[Skip process launched from a system binary directory: matched on entry point file path starting
- * with '/bin/'] EvaluatorNode[Skip process launched from a system binary directory: matched on entry point file path
- * starting with '/sbin/']
- *
- * No AND wrapper, no outer OR — EvaluatorNode description captured directly.
- */
-UTEST(evaluator_matched_description, flat_or_leaf_captured_directly) {
+/* Policy[1]: flat OR, first leaf matches */
+UTEST(evaluator_matched_description, flat_or_first_leaf) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_FILE, "/bin/bash");
-
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
-
-  ASSERT_TRUE(g_captured_description != NULL);
-  ASSERT_EQ(
-      strcmp(
-          g_captured_description,
-          "Skip process launched from a system binary directory: matched on entry point file path starting with '/bin/'"
-      ),
-      0
-  );
+  ASSERT_DESCRIPTION("[skip] OS system binary — entrypoint file starts with '/bin/'");
 }
 
+/* Policy[1]: flat OR, second leaf matches */
 UTEST(evaluator_matched_description, flat_or_second_leaf) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_FILE, "/usr/bin/python");
-
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
-
-  ASSERT_TRUE(g_captured_description != NULL);
-  ASSERT_EQ(
-      strcmp(
-          g_captured_description,
-          "Skip process launched from a system binary directory: matched on entry point file path starting with "
-          "'/usr/bin/'"
-      ),
-      0
-  );
+  ASSERT_DESCRIPTION("[skip] OS system binary — entrypoint file starts with '/usr/bin/'");
 }
 
-/*
- * Policy [2]: "AND fallback" (runtime=jvm, single condition with 1 value)
- * Tree: AND[AND fallback]
- *         EvaluatorNode[Runtime matching]
- *         EvaluatorNode[matched org.example.App]
- *
- * AND never calls capture_matched_description in its loop. The post-evaluation
- * fallback in evaluate_policy fires and captures the root AND node's description.
- */
-UTEST(evaluator_matched_description, and_fallback_captures_root_description) {
+/* Policy[2]: AND captures description of its last TRUE child */
+UTEST(evaluator_matched_description, and_captures_last_true_child_description) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "jvm");
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, "org.example.App");
-
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
-
-  ASSERT_TRUE(g_captured_description != NULL);
-  ASSERT_EQ(strcmp(g_captured_description, "AND fallback"), 0);
+  ASSERT_DESCRIPTION("[skip] Example App — JVM main class matches 'org.example.App'");
 }
 
-/* No policy matches: g_captured_description is never set to a non-NULL value. */
+/* No policy matches: description stays NULL */
 UTEST(evaluator_matched_description, no_match_description_is_null) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "jvm");
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, "com.mycompany.MyApp");
-
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
-
   ASSERT_TRUE(g_captured_description == NULL);
+}
+
+/* Policy[3]: no descriptions on any node — engine synthesizes from field + op + value */
+UTEST(evaluator_matched_description, synthesized_description) {
+  matched_description_test_setup();
+  plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH, "/opt/myapp/bin");
+  plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
+  ASSERT_DESCRIPTION("[skip] executable full path starts with '/opt/'");
 }

@@ -1,77 +1,89 @@
 {
   "policies": [
     {
-      "description": "Nested OR combination",
+      "description": "[skip] Apache Cassandra or Apache Kafka",
       "skip": true,
       "runtime": "jvm",
       "conditions": [
         {
-          "description": "Cassandra group",
           "values": [
             {
               "cmp_strategy": "equals",
               "value": "org.apache.cassandra.service.CassandraDaemon",
               "value_type": "class",
-              "description": "matched CassandraDaemon"
+              "description": "[skip] Apache Cassandra — JVM main class matches 'org.apache.cassandra.service.CassandraDaemon'"
             },
             {
               "cmp_strategy": "prefix",
               "value": "org.apache.cassandra.tools",
               "value_type": "class",
-              "description": "matched Cassandra tools"
+              "description": "[skip] Apache Cassandra — JVM main class starts with 'org.apache.cassandra.tools'"
             }
           ]
         },
         {
-          "description": "Kafka group",
+          "description": "[skip] Apache Kafka",
           "values": [
             {
               "cmp_strategy": "equals",
               "value": "kafka",
               "value_type": "process_exe",
-              "description": "matched kafka"
+              "description": "[skip] Apache Kafka — executable name matches 'kafka'"
             }
           ]
         }
       ]
     },
     {
-      "description": "Flat OR no runtime",
+      "description": "[skip] OS system binary directories",
       "skip": true,
       "runtime": "all",
       "conditions": [
         {
-          "description": "Skip processes launched from OS system binary directories",
           "values": [
             {
               "cmp_strategy": "prefix",
               "value": "/bin/",
               "value_type": "entry_file",
-              "description": "Skip process launched from a system binary directory: matched on entry point file path starting with '/bin/'"
+              "description": "[skip] OS system binary — entrypoint file starts with '/bin/'"
             },
             {
               "cmp_strategy": "prefix",
               "value": "/usr/bin/",
               "value_type": "entry_file",
-              "description": "Skip process launched from a system binary directory: matched on entry point file path starting with '/usr/bin/'"
+              "description": "[skip] OS system binary — entrypoint file starts with '/usr/bin/'"
             }
           ]
         }
       ]
     },
     {
-      "description": "AND fallback",
+      "description": "[skip] Example App",
       "skip": true,
       "runtime": "jvm",
       "conditions": [
         {
-          "description": "Single condition",
           "values": [
             {
               "cmp_strategy": "equals",
               "value": "org.example.App",
               "value_type": "class",
-              "description": "matched org.example.App"
+              "description": "[skip] Example App — JVM main class matches 'org.example.App'"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skip": true,
+      "runtime": "all",
+      "conditions": [
+        {
+          "values": [
+            {
+              "cmp_strategy": "prefix",
+              "value": "/opt/",
+              "value_type": "exe_full_path"
             }
           ]
         }
