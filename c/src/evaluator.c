@@ -20,6 +20,8 @@
 #include "wire/evaluation_result.h"
 #define PLCS_MAX_EVAL_DEPTH 64
 
+static char synth_buf[512];
+
 plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
 
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
@@ -168,6 +170,67 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
+static const char *cmp_op_label(dd_ns(CmpTypeSTR_enum_t) cmp) {
+  switch (cmp) {
+    case dd_ns(CmpTypeSTR_CMP_EXACT):    return "matches";
+    case dd_ns(CmpTypeSTR_CMP_PREFIX):   return "starts with";
+    case dd_ns(CmpTypeSTR_CMP_SUFFIX):   return "ends with";
+    case dd_ns(CmpTypeSTR_CMP_CONTAINS): return "contains";
+    case dd_ns(CmpTypeSTR_CMP_WILDCARD): return "matches (wildcard)";
+    default:                             return "?";
+  }
+}
+
+static const char *str_eval_field_label(dd_ns(StringEvaluators_enum_t) id) {
+  switch (id) {
+    case dd_ns(StringEvaluators_COMPONENT):                 return "component";
+    case dd_ns(StringEvaluators_PROCESS_EXE):               return "executable";
+    case dd_ns(StringEvaluators_PROCESS_EXE_FULL_PATH):     return "executable full path";
+    case dd_ns(StringEvaluators_PROCESS_BASEDIR_PATH):      return "process base directory";
+    case dd_ns(StringEvaluators_PROCESS_ARGV):              return "command-line argument";
+    case dd_ns(StringEvaluators_PROCESS_CWD):               return "process working directory";
+    case dd_ns(StringEvaluators_RUNTIME_LANGUAGE):          return "language";
+    case dd_ns(StringEvaluators_RUNTIME_ENTRY_POINT_FILE):  return "entry point file";
+    case dd_ns(StringEvaluators_RUNTIME_ENTRY_POINT_JAR):   return "entry point JAR";
+    case dd_ns(StringEvaluators_RUNTIME_ENTRY_POINT_CLASS): return "entry point class";
+    case dd_ns(StringEvaluators_RUNTIME_ENTRY_POINT_PACKAGE): return "entry point package";
+    case dd_ns(StringEvaluators_RUNTIME_ENTRY_POINT_MODULE): return "entry point module";
+    case dd_ns(StringEvaluators_RUNTIME_ENTRY_POINT_SOURCE): return "entry point source file";
+    case dd_ns(StringEvaluators_RUNTIME_DOPTION):           return "runtime -D option";
+    case dd_ns(StringEvaluators_RUNTIME_VERSION):           return "runtime version";
+    case dd_ns(StringEvaluators_LIBC_FLAVOR):               return "libc flavor";
+    case dd_ns(StringEvaluators_LIBC_VERSION):              return "libc version";
+    case dd_ns(StringEvaluators_MACHINE_ARCHITECTURE):      return "machine architecture";
+    case dd_ns(StringEvaluators_HOST_NAME):                 return "host name";
+    case dd_ns(StringEvaluators_HOST_IP):                   return "host IP";
+    case dd_ns(StringEvaluators_OS):                        return "operating system";
+    case dd_ns(StringEvaluators_OS_DISTRO):                 return "OS distribution";
+    case dd_ns(StringEvaluators_OS_DISTRO_VERSION):         return "OS distribution version";
+    case dd_ns(StringEvaluators_OS_DISTRO_CODENAME):        return "OS distribution codename";
+    case dd_ns(StringEvaluators_OS_KERNEL_VERSION):         return "OS kernel version";
+    case dd_ns(StringEvaluators_OS_KERNEL_NAME):            return "OS kernel name";
+    case dd_ns(StringEvaluators_OS_USER):                   return "OS user";
+    case dd_ns(StringEvaluators_OS_USER_GROUP):             return "OS user group";
+    case dd_ns(StringEvaluators_CONTAINER_IMAGE):           return "container image";
+    case dd_ns(StringEvaluators_CONTAINER_ID):              return "container ID";
+    case dd_ns(StringEvaluators_IIS_APPLICATION_POOL):      return "IIS application pool";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_0):            return "command-line argument 0";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_1):            return "command-line argument 1";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_2):            return "command-line argument 2";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_3):            return "command-line argument 3";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_4):            return "command-line argument 4";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_5):            return "command-line argument 5";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_N):            return "last command-line argument";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_N_2):          return "second to last command-line argument";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_N_3):          return "third to last command-line argument";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_N_4):          return "fourth to last command-line argument";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_N_5):          return "fifth to last command-line argument";
+    case dd_ns(StringEvaluators_PROCESS_ARGV_N_6):          return "sixth to last command-line argument";
+    case dd_ns(StringEvaluators_PROCESS_ENVAR):             return "process environment variable";
+    default:                                                return dd_ns(StringEvaluators_name)(id);
+  }
+}
+
 static inline void capture_matched_description(dd_ns(NodeTypeWrapper_table_t) node) {
   if (!node) {
     return;
@@ -179,12 +242,39 @@ static inline void capture_matched_description(dd_ns(NodeTypeWrapper_table_t) no
   }
   const char *description = NULL;
   switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
-    case dd_ns(NodeType_CompositeNode):
-      description = dd_ns(CompositeNode_description)(dd_ns(NodeTypeWrapper_node)(node));
+    case dd_ns(NodeType_CompositeNode): {
+      dd_ns(CompositeNode_table_t) comp = dd_ns(NodeTypeWrapper_node)(node);
+      description = dd_ns(CompositeNode_description)(comp);
+      if ((!description || description[0] == '\0') &&
+          dd_ns(CompositeNode_op)(comp) == dd_ns(BoolOperation_BOOL_NOT)) {
+        dd_ns(NodeTypeWrapper_vec_t) children = dd_ns(CompositeNode_children)(comp);
+        if (children && dd_ns(NodeTypeWrapper_vec_len)(children) == 1) {
+          capture_matched_description(dd_ns(NodeTypeWrapper_vec_at)(children, 0));
+        }
+        return;
+      }
       break;
-    case dd_ns(NodeType_EvaluatorNode):
-      description = dd_ns(EvaluatorNode_description)(dd_ns(NodeTypeWrapper_node)(node));
+    }
+    case dd_ns(NodeType_EvaluatorNode): {
+      dd_ns(EvaluatorNode_table_t) eval_node = dd_ns(NodeTypeWrapper_node)(node);
+      description = dd_ns(EvaluatorNode_description)(eval_node);
+      if (!description || description[0] == '\0') {
+        dd_ns(EvaluatorType_union_t) eval = dd_ns(EvaluatorNode_eval_union)(eval_node);
+        if (eval.type == dd_ns(EvaluatorType_StrEvaluator)) {
+          dd_ns(StrEvaluator_table_t) str_eval = eval.value;
+          const char *field = str_eval_field_label(dd_ns(StrEvaluator_id)(str_eval));
+          const char *op    = cmp_op_label(dd_ns(StrEvaluator_cmp)(str_eval));
+          const char *value = dd_ns(StrEvaluator_value)(str_eval);
+          snprintf(
+              synth_buf, sizeof(synth_buf),
+              "%s %s '%s'", field ? field : "?", op, value ? value : ""
+          );
+          plcs_eval_ctx_set_matched_description(synth_buf);
+          return;
+        }
+      }
       break;
+    }
   }
   if (description && description[0] != '\0') {
     plcs_eval_ctx_set_matched_description(description);
@@ -227,19 +317,32 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
   }
 
   // keep iterating recursively over the tree
+  dd_ns(NodeTypeWrapper_table_t) last_true_child = NULL;
   for (size_t ix = 0; ix < children_len; ++ix) {
-    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1));
+    dd_ns(NodeTypeWrapper_table_t) child = dd_ns(NodeTypeWrapper_vec_at)(children, ix);
+    plcs_evaluation_result child_res = evaluate_rules(child, depth + 1);
+    res = DoOper(oper, res, child_res);
 
-    // short circuit
+    // short circuit OR: capture the child that caused TRUE
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
-      capture_matched_description(dd_ns(NodeTypeWrapper_vec_at)(children, ix));
+      capture_matched_description(child);
       return res;
     }
 
-    // short circuit
+    // track last TRUE child for AND description capture
+    if (oper == dd_ns(BoolOperation_BOOL_AND) && child_res == PLCS_EVAL_RESULT_TRUE) {
+      last_true_child = child;
+    }
+
+    // short circuit AND
     if (oper == dd_ns(BoolOperation_BOOL_AND) && res == PLCS_EVAL_RESULT_FALSE) {
       return res;
     }
+  }
+
+  // AND succeeded: capture description of last TRUE child (no-op if OR already set one)
+  if (oper == dd_ns(BoolOperation_BOOL_AND) && last_true_child) {
+    capture_matched_description(last_true_child);
   }
 
   return res;
@@ -319,6 +422,21 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   if (eval_res == PLCS_EVAL_RESULT_TRUE &&
       (plcs_eval_ctx_get_matched_description() == NULL || plcs_eval_ctx_get_matched_description()[0] == '\0')) {
     capture_matched_description(rules);
+  }
+
+  // Prepend [skip]/[allow] prefix from the first action when no prefix is present yet.
+  const char *desc = plcs_eval_ctx_get_matched_description();
+  if (desc && desc[0] != '\0' && desc[0] != '[' &&
+      actions && dd_ns(Action_vec_len)(actions) > 0) {
+    dd_ns(Action_table_t) first_action = dd_ns(Action_vec_at)(actions, 0);
+    if (first_action) {
+      const char *prefix =
+          dd_ns(Action_action)(first_action) == dd_ns(ActionId_INJECT_DENY) ? "[skip] " : "[allow] ";
+      char temp[512];
+      snprintf(temp, sizeof(temp), "%s%s", prefix, desc);
+      snprintf(synth_buf, sizeof(synth_buf), "%s", temp);
+      plcs_eval_ctx_set_matched_description(synth_buf);
+    }
   }
 
   // perform actions given evaluation result
