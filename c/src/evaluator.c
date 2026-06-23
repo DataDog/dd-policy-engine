@@ -397,7 +397,6 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
     plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
     if (action_function) {
       res = action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
-      plcs_eval_ctx_set_action_error(action_id, res);
     } else {
       res = PLCS_EACTIONS_EVAL;
     }

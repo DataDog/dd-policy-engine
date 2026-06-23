@@ -163,13 +163,6 @@ void plcs_eval_ctx_set_error(plcs_errors error) {
   ctx.error = error;
 }
 
-// TODO: consider implementing it as a stack to preserve error history
-void plcs_eval_ctx_set_action_error(plcs_actions ix, plcs_errors error) {
-  if (ix >= 0 && ix < PLCS_ACTIONS__COUNT) {
-    ctx.actions[ix].error = error;
-  }
-}
-
 void plcs_eval_ctx_set_str_eval_error(plcs_string_evaluators ix, plcs_errors error) {
   if (ix >= 0 && ix < PLCS_STR_EVAL__COUNT) {
     ctx.string_evaluators[ix].error = error;
@@ -250,7 +243,6 @@ void plcs_eval_ctx_reset(void) {
 
   for (int i = 0; i < PLCS_ACTIONS__COUNT; ++i) {
     ctx.actions[i].function_ptr = NULL;
-    ctx.actions[i].error = PLCS_ESUCCESS;
   }
 
   ctx.error = PLCS_ESUCCESS;

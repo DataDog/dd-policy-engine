@@ -48,8 +48,6 @@ typedef struct unumeric_evaluator_entry {
 typedef struct action_entry {
   /**< Function pointer to the action function */
   plcs_action_function_ptr function_ptr;
-  /**< Error code if the action is not registered or fails !NEEDS */
-  plcs_errors error;
 } action_entry;
 
 /**
@@ -117,12 +115,6 @@ typedef struct plcs_eval_ctx {
    */
   const char *matched_description;
 
-  /**< Description of the rule that triggered the action during the most recent
-   * policy evaluation for hardcoded rules. NULL if no match occurred. Read via
-   * plcs_eval_ctx_get_matched_description_hardcoded_rules().
-   */
-  const char *matched_description_hardcoded_rules;
-
 } plcs_eval_ctx;
 
 /**
@@ -131,12 +123,6 @@ typedef struct plcs_eval_ctx {
  */
 void plcs_eval_ctx_set_error(plcs_errors error);
 
-/**
- * @brief Sets an error code for an action
- * @param ix An action ID from plcs_actions enum
- * @param error plcs_errors enum
- */
-void plcs_eval_ctx_set_action_error(plcs_actions ix, plcs_errors error);
 
 /**
  * @brief Sets an error code for a string evaluator
