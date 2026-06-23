@@ -88,6 +88,31 @@ jobs:
           name: dd-rules-convert-linux-${{ matrix.arch }}
           path: go/dd-rules-converter
 
+  # Cross-engine conformance: runs the shared corpus through both the Go engine
+  # and the real C engine (libpolicies, via cgo) in one process and asserts they
+  # agree. Requires the C toolchain + flatcc, so it runs inside the build container.
+  conformance-cross-engine:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    needs: checks
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run cross-engine conformance
+        run: make docker-run "make -C go conformance-cross"
+
   # Dedicated job for building dd-compile-policy
   build-dd-compile-policy:
     needs: checks

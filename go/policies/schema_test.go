@@ -79,13 +79,23 @@ func assertSubset(t *testing.T, kind string, members map[string]bool, recognized
 // .fbs source (not the generated JSON schema, which lags the source) so the Go
 // decoder and the C engine cannot drift apart silently.
 func TestDecoderIdentifiersMatchSchema(t *testing.T) {
+	// The decoder accepts any evaluator id generically, but the ids it gives
+	// dedicated handling (constant evaluators and label-type ids) must exist in
+	// the schema shared with the C engine.
 	assertSubset(t, "string evaluator id",
 		enumMembers(t, "evaluator_ids.fbs", "StringEvaluators"),
-		[]string{evalAlwaysTrue, evalAlwaysFalse, evalAlwaysAbstain, evalPodLabel, evalNamespaceLbl, evalNamespaceName})
+		[]string{
+			IDAlwaysTrue, IDAlwaysFalse, IDAlwaysAbstain,
+			IDNamespaceName, IDNamespaceLabel, IDPodLabel, IDPodAnnotation, IDContainerLabel,
+		})
 
 	assertSubset(t, "string comparison",
 		enumMembers(t, "evaluators.fbs", "CmpTypeSTR"),
 		[]string{cmpExact, cmpPrefix, cmpSuffix, cmpContains, cmpWildcard})
+
+	assertSubset(t, "numeric comparison",
+		enumMembers(t, "evaluators.fbs", "CmpTypeNUM"),
+		[]string{cmpEq, cmpGt, cmpGte, cmpLt, cmpLte})
 
 	assertSubset(t, "boolean operation",
 		enumMembers(t, "boolean_operation.fbs", "BoolOperation"),

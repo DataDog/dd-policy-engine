@@ -19,7 +19,9 @@ const (
 	nodeEvaluator = "EvaluatorNode"
 	nodeComposite = "CompositeNode"
 
-	evalString = "StrEvaluator"
+	evalString   = "StrEvaluator"
+	evalNumeric  = "NumEvaluator"
+	evalUNumeric = "UNumEvaluator"
 
 	opAnd = "BOOL_AND"
 	opOr  = "BOOL_OR"
@@ -31,12 +33,11 @@ const (
 	cmpContains = "CMP_CONTAINS"
 	cmpWildcard = "CMP_WILDCARD"
 
-	evalAlwaysTrue    = "ALWAYS_TRUE"
-	evalAlwaysFalse   = "ALWAYS_FALSE"
-	evalAlwaysAbstain = "ALWAYS_ABSTAIN"
-	evalPodLabel      = "POD_LABEL"
-	evalNamespaceLbl  = "NAMESPACE_LABEL"
-	evalNamespaceName = "NAMESPACE_NAME"
+	cmpEq  = "CMP_EQ"
+	cmpGt  = "CMP_GT"
+	cmpGte = "CMP_GTE"
+	cmpLt  = "CMP_LT"
+	cmpLte = "CMP_LTE"
 
 	actionInjectAllow    = "INJECT_ALLOW"
 	actionInjectDeny     = "INJECT_DENY"
@@ -84,6 +85,18 @@ type wlsStrEval struct {
 	ID    string `json:"id"`
 	Cmp   string `json:"cmp"`
 	Value string `json:"value"`
+}
+
+type wlsNumEval struct {
+	ID    string `json:"id"`
+	Cmp   string `json:"cmp"`
+	Value int64  `json:"value"`
+}
+
+type wlsUNumEval struct {
+	ID    string `json:"id"`
+	Cmp   string `json:"cmp"`
+	Value uint64 `json:"value"`
 }
 
 type wlsAction struct {
@@ -161,57 +174,76 @@ func decodeComposite(c wlsComposite) (*Node, error) {
 	}
 }
 
+// decodeEvaluatorNode dispatches on the wire union member. The Go engine is a
+// faithful, generic reimplementation of the C engine: it accepts any evaluator
+// id and resolves it against the Context at evaluation time (an id with no
+// matching fact abstains, like the C engine's NULL context), so it is not
+// restricted to a Kubernetes subset.
 func decodeEvaluatorNode(e wlsEvaluatorNode) (*Node, error) {
-	if e.EvalType != evalString {
+	switch e.EvalType {
+	case evalString:
+		var se wlsStrEval
+		if err := json.Unmarshal(e.Eval, &se); err != nil {
+			return nil, fmt.Errorf("invalid string evaluator: %w", err)
+		}
+		return decodeStrEval(se)
+	case evalNumeric:
+		var ne wlsNumEval
+		if err := json.Unmarshal(e.Eval, &ne); err != nil {
+			return nil, fmt.Errorf("invalid numeric evaluator: %w", err)
+		}
+		cmp, err := decodeNumCmp(ne.Cmp)
+		if err != nil {
+			return nil, err
+		}
+		return NumericLeaf(ne.ID, cmp, ne.Value), nil
+	case evalUNumeric:
+		var ue wlsUNumEval
+		if err := json.Unmarshal(e.Eval, &ue); err != nil {
+			return nil, fmt.Errorf("invalid unsigned numeric evaluator: %w", err)
+		}
+		cmp, err := decodeNumCmp(ue.Cmp)
+		if err != nil {
+			return nil, err
+		}
+		return UNumericLeaf(ue.ID, cmp, ue.Value), nil
+	default:
 		return nil, fmt.Errorf("unsupported eval_type %q", e.EvalType)
 	}
-	var se wlsStrEval
-	if err := json.Unmarshal(e.Eval, &se); err != nil {
-		return nil, fmt.Errorf("invalid string evaluator: %w", err)
-	}
-	return decodeStrEval(se)
 }
 
 func decodeStrEval(e wlsStrEval) (*Node, error) {
 	switch e.ID {
-	case evalAlwaysTrue:
+	case IDAlwaysTrue:
 		return AlwaysTrue(), nil
-	case evalAlwaysFalse:
+	case IDAlwaysFalse:
 		return AlwaysFalse(), nil
-	case evalAlwaysAbstain:
+	case IDAlwaysAbstain:
 		return AlwaysAbstain(), nil
-	case evalPodLabel:
-		return decodeLabel(SourcePodLabel, e)
-	case evalNamespaceLbl:
-		return decodeLabel(SourceNamespaceLabel, e)
-	case evalNamespaceName:
-		cmp, err := decodeCmp(e.Cmp)
-		if err != nil {
-			return nil, err
-		}
-		return Leaf(SourceNamespaceName, "", cmp, e.Value), nil
-	default:
-		return nil, fmt.Errorf("unsupported evaluator id %q", e.ID)
 	}
-}
-
-func decodeLabel(src Source, e wlsStrEval) (*Node, error) {
-	key, value, found := strings.Cut(e.Value, "=")
-	if !found {
-		return nil, fmt.Errorf("label evaluator value %q must be encoded as key=value", e.Value)
-	}
-	cmp, err := decodeCmp(e.Cmp)
+	cmp, err := decodeStrCmp(e.Cmp)
 	if err != nil {
 		return nil, err
 	}
-	// "key=" with a prefix comparison is the existence convention.
-	if cmp == CmpPrefix && value == "" {
-		return Leaf(src, key, CmpExists, ""), nil
+	if IsLabelID(e.ID) {
+		return decodeLabel(e.ID, cmp, e.Value)
 	}
-	return Leaf(src, key, cmp, value), nil
+	return StringLeaf(e.ID, cmp, e.Value), nil
 }
 
-func decodeCmp(cmp string) (Cmp, error) {
+func decodeLabel(id string, cmp StringCmp, raw string) (*Node, error) {
+	key, value, found := strings.Cut(raw, "=")
+	if !found {
+		return nil, fmt.Errorf("label evaluator value %q must be encoded as key=value", raw)
+	}
+	// "key=" with a prefix comparison is the existence convention.
+	if cmp == CmpPrefix && value == "" {
+		return LabelLeaf(id, key, CmpExists, ""), nil
+	}
+	return LabelLeaf(id, key, cmp, value), nil
+}
+
+func decodeStrCmp(cmp string) (StringCmp, error) {
 	switch cmp {
 	case cmpExact:
 		return CmpExact, nil
@@ -225,6 +257,23 @@ func decodeCmp(cmp string) (Cmp, error) {
 		return CmpWildcard, nil
 	default:
 		return CmpExact, fmt.Errorf("unsupported string comparison %q", cmp)
+	}
+}
+
+func decodeNumCmp(cmp string) (NumericCmp, error) {
+	switch cmp {
+	case cmpEq:
+		return NumEq, nil
+	case cmpGt:
+		return NumGt, nil
+	case cmpGte:
+		return NumGte, nil
+	case cmpLt:
+		return NumLt, nil
+	case cmpLte:
+		return NumLte, nil
+	default:
+		return NumEq, fmt.Errorf("unsupported numeric comparison %q", cmp)
 	}
 }
 
@@ -246,8 +295,10 @@ func decodeActions(actions []wlsAction) Outcome {
 		switch a.Action {
 		case actionInjectAllow:
 			out.Inject = true
+			out.InjectSet = true
 		case actionInjectDeny:
 			out.Inject = false
+			out.InjectSet = true
 		case actionEnableSDK:
 			for _, v := range a.Values {
 				lang, version, _ := strings.Cut(v, "=")

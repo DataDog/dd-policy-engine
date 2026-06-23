@@ -8,44 +8,92 @@ package policies
 
 import "strings"
 
-// Facts carries the workload attributes a policy is evaluated against.
-type Facts struct {
-	NamespaceName   string
-	NamespaceLabels map[string]string
-	PodLabels       map[string]string
+// maxEvalDepth bounds the rule-tree recursion, mirroring PLCS_MAX_EVAL_DEPTH in
+// the C engine (c/src/evaluator.c). A node deeper than this evaluates to
+// ResultAbstain instead of recursing further.
+const maxEvalDepth = 64
+
+// Context carries the workload facts a policy is evaluated against, keyed by
+// evaluator id. It mirrors the C engine's per-id value registry: a fact that is
+// not present means the source is unavailable in this environment and the leaf
+// evaluates to ResultAbstain (like the C engine's NULL context), rather than
+// comparing against a zero value.
+//
+// Label-type ids (see IsLabelID) read from Labels (a real key->value map, the
+// Go enhancement over the C single-string-per-id model); all other string ids
+// read from Strings; numeric ids read from Numbers (signed) or UNumbers
+// (unsigned) depending on the evaluator kind.
+type Context struct {
+	Strings  map[string]string
+	Labels   map[string]map[string]string
+	Numbers  map[string]int64
+	UNumbers map[string]uint64
 }
 
-// Decide evaluates the policies in order and returns the outcome of the first
-// one whose rule evaluates to ResultTrue. This reproduces the "first match
-// wins" semantics of the native target matcher. The boolean is false when no
-// policy matched.
-func Decide(ps []Policy, f Facts) (Outcome, bool) {
+// Decide evaluates every policy (like the C engine's plcs_evaluate_buffer,
+// which has no first-match short-circuit) and folds the outcomes of all
+// policies whose rule evaluates to ResultTrue, in document order. The boolean
+// is false when no policy matched.
+//
+// Folding rules: a later policy's explicit inject decision (INJECT_ALLOW /
+// INJECT_DENY) overrides an earlier one; TracerVersions are merged with the
+// later policy winning per tracer; TracerConfigs are concatenated in order.
+func Decide(ps []Policy, ctx Context) (Outcome, bool) {
+	var out Outcome
+	matched := false
 	for i := range ps {
-		if Evaluate(ps[i].Rules, f) == ResultTrue {
-			return ps[i].Outcome, true
+		if Evaluate(ps[i].Rules, ctx) != ResultTrue {
+			continue
 		}
+		matched = true
+		out = mergeOutcome(out, ps[i].Outcome)
 	}
-	return Outcome{}, false
+	return out, matched
+}
+
+// mergeOutcome folds src into dst following the precedence documented on Decide.
+func mergeOutcome(dst, src Outcome) Outcome {
+	if src.InjectSet {
+		dst.Inject = src.Inject
+		dst.InjectSet = true
+	}
+	for k, v := range src.TracerVersions {
+		if dst.TracerVersions == nil {
+			dst.TracerVersions = map[string]string{}
+		}
+		dst.TracerVersions[k] = v
+	}
+	dst.TracerConfigs = append(dst.TracerConfigs, src.TracerConfigs...)
+	return dst
 }
 
 // Evaluate walks the rule tree and returns its tri-state result.
-func Evaluate(n *Node, f Facts) Result {
+func Evaluate(n *Node, ctx Context) Result {
+	return evaluate(n, ctx, 0)
+}
+
+// evaluate is the depth-tracking core of Evaluate. depth mirrors the C engine:
+// the root is evaluated at depth 0 and a node deeper than maxEvalDepth abstains.
+func evaluate(n *Node, ctx Context, depth int) Result {
+	if depth > maxEvalDepth {
+		return ResultAbstain
+	}
 	if n == nil {
 		return ResultAbstain
 	}
 	if n.Eval != nil {
-		return n.Eval.eval(f)
+		return n.Eval.eval(ctx)
 	}
 	switch n.Op {
 	case OpNot:
 		if len(n.Children) != 1 {
 			return ResultAbstain
 		}
-		return doNot(Evaluate(n.Children[0], f))
+		return doNot(evaluate(n.Children[0], ctx, depth+1))
 	case OpOr:
 		res := ResultFalse
 		for _, c := range n.Children {
-			res = doOr(res, Evaluate(c, f))
+			res = doOr(res, evaluate(c, ctx, depth+1))
 			if res == ResultTrue {
 				return res
 			}
@@ -54,7 +102,7 @@ func Evaluate(n *Node, f Facts) Result {
 	case OpAnd:
 		res := ResultTrue
 		for _, c := range n.Children {
-			res = doAnd(res, Evaluate(c, f))
+			res = doAnd(res, evaluate(c, ctx, depth+1))
 			if res == ResultFalse {
 				return res
 			}
@@ -101,43 +149,69 @@ func doNot(a Result) Result {
 	}
 }
 
-func (e *Evaluator) eval(f Facts) Result {
-	switch e.Source {
-	case SourceAlwaysTrue:
-		return ResultTrue
-	case SourceAlwaysFalse:
-		return ResultFalse
-	case SourceAlwaysAbstain:
-		return ResultAbstain
-	case SourceNamespaceName:
-		return boolToResult(compare(e.Cmp, e.Value, f.NamespaceName))
-	case SourceNamespaceLabel:
-		v, ok := f.NamespaceLabels[e.Key]
-		return labelResult(e.Cmp, e.Value, v, ok)
-	case SourcePodLabel:
-		v, ok := f.PodLabels[e.Key]
-		return labelResult(e.Cmp, e.Value, v, ok)
+func (e *Evaluator) eval(ctx Context) Result {
+	switch e.Kind {
+	case EvalString:
+		return e.evalString(ctx)
+	case EvalNumeric:
+		v, ok := ctx.Numbers[e.ID]
+		if !ok {
+			return ResultAbstain
+		}
+		return compareNumeric(e.NumCmp, e.NumValue, v)
+	case EvalUNumeric:
+		v, ok := ctx.UNumbers[e.ID]
+		if !ok {
+			return ResultAbstain
+		}
+		return compareNumeric(e.NumCmp, e.UNumValue, v)
 	default:
 		return ResultAbstain
 	}
 }
 
-// labelResult resolves a label-keyed evaluator. A missing label is false for
-// every comparison except CmpExists (which reports presence). This matches
-// Kubernetes label-selector semantics once composed with the tree operators:
-// In/matchLabels require presence, while NotIn/DoesNotExist match absent keys
-// via the surrounding NOT.
-func labelResult(cmp Cmp, want, got string, present bool) Result {
+func (e *Evaluator) evalString(ctx Context) Result {
+	switch e.ID {
+	case IDAlwaysTrue:
+		return ResultTrue
+	case IDAlwaysFalse:
+		return ResultFalse
+	case IDAlwaysAbstain:
+		return ResultAbstain
+	}
+	if IsLabelID(e.ID) {
+		labels, ok := ctx.Labels[e.ID]
+		if !ok {
+			// The label source itself is unavailable in this environment.
+			return ResultAbstain
+		}
+		v, present := labels[e.Key]
+		return labelResult(e.StrCmp, e.StrValue, v, present)
+	}
+	v, ok := ctx.Strings[e.ID]
+	if !ok {
+		// Source unavailable here: mirrors the C engine's NULL context.
+		return ResultAbstain
+	}
+	return boolToResult(compareString(e.StrCmp, e.StrValue, v))
+}
+
+// labelResult resolves a label-keyed evaluator against a present label source.
+// A missing label key is false for every comparison except CmpExists (which
+// reports presence). This matches Kubernetes label-selector semantics once
+// composed with the tree operators: In/matchLabels require presence, while
+// NotIn/DoesNotExist match absent keys via the surrounding NOT.
+func labelResult(cmp StringCmp, want, got string, present bool) Result {
 	if cmp == CmpExists {
 		return boolToResult(present)
 	}
 	if !present {
 		return ResultFalse
 	}
-	return boolToResult(compare(cmp, want, got))
+	return boolToResult(compareString(cmp, want, got))
 }
 
-func compare(cmp Cmp, pattern, value string) bool {
+func compareString(cmp StringCmp, pattern, value string) bool {
 	switch cmp {
 	case CmpExact:
 		return pattern == value
@@ -153,6 +227,25 @@ func compare(cmp Cmp, pattern, value string) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// compareNumeric mirrors plcs_default_numeric_evaluator: it computes
+// "evaluator value <cmp> workload value".
+func compareNumeric[T int64 | uint64](cmp NumericCmp, policy, workload T) Result {
+	switch cmp {
+	case NumEq:
+		return boolToResult(policy == workload)
+	case NumGt:
+		return boolToResult(policy > workload)
+	case NumGte:
+		return boolToResult(policy >= workload)
+	case NumLt:
+		return boolToResult(policy < workload)
+	case NumLte:
+		return boolToResult(policy <= workload)
+	default:
+		return ResultAbstain
 	}
 }
 

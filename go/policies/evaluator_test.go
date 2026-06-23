@@ -153,50 +153,166 @@ func TestWildcardMatch(t *testing.T) {
 }
 
 func TestEmptyCompositeShortCircuit(t *testing.T) {
-	if got := Evaluate(&Node{Op: OpAnd}, Facts{}); got != ResultTrue {
+	if got := Evaluate(&Node{Op: OpAnd}, Context{}); got != ResultTrue {
 		t.Errorf("empty AND = %v want ResultTrue", got)
 	}
-	if got := Evaluate(&Node{Op: OpOr}, Facts{}); got != ResultFalse {
+	if got := Evaluate(&Node{Op: OpOr}, Context{}); got != ResultFalse {
 		t.Errorf("empty OR = %v want ResultFalse", got)
 	}
-	if got := Evaluate(Not(&Node{Op: OpAnd}), Facts{}); got != ResultFalse {
+	if got := Evaluate(Not(&Node{Op: OpAnd}), Context{}); got != ResultFalse {
 		t.Errorf("NOT(empty AND) = %v want ResultFalse", got)
 	}
 }
 
 func TestEvaluateLeafLabels(t *testing.T) {
-	f := Facts{
-		NamespaceName: "payments",
-		PodLabels:     map[string]string{"app": "web", "tier": "frontend"},
+	ctx := Context{
+		Strings: map[string]string{IDNamespaceName: "payments"},
+		Labels: map[string]map[string]string{
+			IDPodLabel:       {"app": "web", "tier": "frontend"},
+			IDNamespaceLabel: {},
+		},
 	}
 	tests := []struct {
 		name string
 		node *Node
 		want Result
 	}{
-		{"pod label match", Leaf(SourcePodLabel, "app", CmpExact, "web"), ResultTrue},
-		{"pod label mismatch", Leaf(SourcePodLabel, "app", CmpExact, "db"), ResultFalse},
-		{"pod label absent is false", Leaf(SourcePodLabel, "missing", CmpExact, "x"), ResultFalse},
-		{"exists present", Leaf(SourcePodLabel, "tier", CmpExists, ""), ResultTrue},
-		{"exists absent", Leaf(SourcePodLabel, "missing", CmpExists, ""), ResultFalse},
-		{"namespace name match", Leaf(SourceNamespaceName, "", CmpExact, "payments"), ResultTrue},
-		{"namespace name mismatch", Leaf(SourceNamespaceName, "", CmpExact, "billing"), ResultFalse},
-		{"namespace label source absent", Leaf(SourceNamespaceLabel, "team", CmpExact, "x"), ResultFalse},
+		{"pod label match", LabelLeaf(IDPodLabel, "app", CmpExact, "web"), ResultTrue},
+		{"pod label mismatch", LabelLeaf(IDPodLabel, "app", CmpExact, "db"), ResultFalse},
+		{"pod label absent is false", LabelLeaf(IDPodLabel, "missing", CmpExact, "x"), ResultFalse},
+		{"exists present", LabelLeaf(IDPodLabel, "tier", CmpExists, ""), ResultTrue},
+		{"exists absent", LabelLeaf(IDPodLabel, "missing", CmpExists, ""), ResultFalse},
+		{"namespace name match", StringLeaf(IDNamespaceName, CmpExact, "payments"), ResultTrue},
+		{"namespace name mismatch", StringLeaf(IDNamespaceName, CmpExact, "billing"), ResultFalse},
+		{"namespace label key absent is false", LabelLeaf(IDNamespaceLabel, "team", CmpExact, "x"), ResultFalse},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Evaluate(tc.node, f); got != tc.want {
+			if got := Evaluate(tc.node, ctx); got != tc.want {
 				t.Errorf("got %v want %v", got, tc.want)
 			}
 		})
 	}
 }
 
-func TestDecideFirstMatchWins(t *testing.T) {
+// TestSourceUnavailableAbstains checks that a fact source absent from the
+// Context abstains rather than comparing a zero value, mirroring the C engine
+// returning ABSTAIN on a NULL context. A present-but-empty source still
+// evaluates concretely.
+func TestSourceUnavailableAbstains(t *testing.T) {
+	// String source unavailable.
+	n := StringLeaf(IDNamespaceName, CmpExact, "payments")
+	if got := Evaluate(n, Context{}); got != ResultAbstain {
+		t.Errorf("unavailable namespace name = %v want ResultAbstain", got)
+	}
+	if got := Evaluate(n, Context{Strings: map[string]string{IDNamespaceName: ""}}); got != ResultFalse {
+		t.Errorf("present-but-empty namespace name vs \"payments\" = %v want ResultFalse", got)
+	}
+
+	// Label source unavailable vs present-but-missing key.
+	lbl := LabelLeaf(IDPodLabel, "app", CmpExact, "web")
+	if got := Evaluate(lbl, Context{}); got != ResultAbstain {
+		t.Errorf("unavailable pod labels = %v want ResultAbstain", got)
+	}
+	if got := Evaluate(lbl, Context{Labels: map[string]map[string]string{IDPodLabel: {}}}); got != ResultFalse {
+		t.Errorf("present-but-missing pod label = %v want ResultFalse", got)
+	}
+
+	// Numeric source unavailable.
+	num := NumericLeaf("JAVA_HEAP", NumEq, 100)
+	if got := Evaluate(num, Context{}); got != ResultAbstain {
+		t.Errorf("unavailable numeric fact = %v want ResultAbstain", got)
+	}
+}
+
+// TestEvaluateNumeric exercises signed and unsigned numeric evaluators,
+// mirroring plcs_default_numeric_evaluator ("evaluator value <cmp> workload").
+func TestEvaluateNumeric(t *testing.T) {
+	numCtx := Context{Numbers: map[string]int64{"RUNTIME_VERSION_MAJOR": 17}}
+	numCases := []struct {
+		name string
+		node *Node
+		want Result
+	}{
+		{"eq true", NumericLeaf("RUNTIME_VERSION_MAJOR", NumEq, 17), ResultTrue},
+		{"eq false", NumericLeaf("RUNTIME_VERSION_MAJOR", NumEq, 11), ResultFalse},
+		{"gt true (policy>workload)", NumericLeaf("RUNTIME_VERSION_MAJOR", NumGt, 21), ResultTrue},
+		{"gt false", NumericLeaf("RUNTIME_VERSION_MAJOR", NumGt, 8), ResultFalse},
+		{"lte true", NumericLeaf("RUNTIME_VERSION_MAJOR", NumLte, 17), ResultTrue},
+		{"lt false equal", NumericLeaf("RUNTIME_VERSION_MAJOR", NumLt, 17), ResultFalse},
+	}
+	for _, tc := range numCases {
+		t.Run("num/"+tc.name, func(t *testing.T) {
+			if got := Evaluate(tc.node, numCtx); got != tc.want {
+				t.Errorf("got %v want %v", got, tc.want)
+			}
+		})
+	}
+
+	uCtx := Context{UNumbers: map[string]uint64{"JAVA_HEAP": 1024}}
+	uCases := []struct {
+		name string
+		node *Node
+		want Result
+	}{
+		{"eq true", UNumericLeaf("JAVA_HEAP", NumEq, 1024), ResultTrue},
+		{"gte true", UNumericLeaf("JAVA_HEAP", NumGte, 2048), ResultTrue},
+		{"lt true", UNumericLeaf("JAVA_HEAP", NumLt, 512), ResultTrue},
+		{"lt false", UNumericLeaf("JAVA_HEAP", NumLt, 4096), ResultFalse},
+	}
+	for _, tc := range uCases {
+		t.Run("unum/"+tc.name, func(t *testing.T) {
+			if got := Evaluate(tc.node, uCtx); got != tc.want {
+				t.Errorf("got %v want %v", got, tc.want)
+			}
+		})
+	}
+
+	// A signed evaluator does not read the unsigned registry and vice versa.
+	if got := Evaluate(NumericLeaf("JAVA_HEAP", NumEq, 1024), uCtx); got != ResultAbstain {
+		t.Errorf("signed evaluator reading unsigned-only fact = %v want ResultAbstain", got)
+	}
+}
+
+// TestEvaluateGenericStringID checks that an arbitrary, non-Kubernetes string
+// evaluator id (here a host process fact) is supported generically.
+func TestEvaluateGenericStringID(t *testing.T) {
+	ctx := Context{Strings: map[string]string{"RUNTIME_LANGUAGE": "java"}}
+	if got := Evaluate(StringLeaf("RUNTIME_LANGUAGE", CmpExact, "java"), ctx); got != ResultTrue {
+		t.Errorf("runtime language match = %v want ResultTrue", got)
+	}
+	if got := Evaluate(StringLeaf("RUNTIME_LANGUAGE", CmpExact, "python"), ctx); got != ResultFalse {
+		t.Errorf("runtime language mismatch = %v want ResultFalse", got)
+	}
+}
+
+// TestEvaluateDepthLimit checks that a rule tree deeper than maxEvalDepth
+// abstains instead of recursing, mirroring PLCS_MAX_EVAL_DEPTH in the C engine.
+func TestEvaluateDepthLimit(t *testing.T) {
+	// Wrap a TRUE leaf in NOT a number of times. Each NOT adds one level; an
+	// even count would normally yield TRUE.
+	nest := func(levels int) *Node {
+		n := AlwaysTrue()
+		for i := 0; i < levels; i++ {
+			n = Not(n)
+		}
+		return n
+	}
+	// Within the limit: 2 NOTs over TRUE stays TRUE.
+	if got := Evaluate(nest(2), Context{}); got != ResultTrue {
+		t.Errorf("shallow tree = %v want ResultTrue", got)
+	}
+	// Beyond the limit: the deepest nodes abstain, so the whole tree abstains.
+	if got := Evaluate(nest(maxEvalDepth+10), Context{}); got != ResultAbstain {
+		t.Errorf("over-deep tree = %v want ResultAbstain", got)
+	}
+}
+
+func TestDecideEvaluatesAllPolicies(t *testing.T) {
 	ps := []Policy{
 		{
 			Name:    "java",
-			Rules:   Leaf(SourcePodLabel, "app", CmpExact, "db"),
+			Rules:   LabelLeaf(IDPodLabel, "app", CmpExact, "db"),
 			Outcome: Outcome{TracerVersions: map[string]string{"java": "1"}},
 		},
 		{
@@ -206,18 +322,39 @@ func TestDecideFirstMatchWins(t *testing.T) {
 		},
 	}
 
-	out, ok := Decide(ps, Facts{PodLabels: map[string]string{"app": "db"}})
-	if !ok || out.TracerVersions["java"] != "1" {
-		t.Fatalf("expected java policy, got %+v ok=%v", out, ok)
+	// app=db: both the java policy and the catch-all match; outcomes fold.
+	out, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "db"}}})
+	if !ok || out.TracerVersions["java"] != "1" || out.TracerVersions["php"] != "2" {
+		t.Fatalf("expected folded java+php outcome, got %+v ok=%v", out, ok)
 	}
 
-	out, ok = Decide(ps, Facts{PodLabels: map[string]string{"app": "web"}})
-	if !ok || out.TracerVersions["php"] != "2" {
-		t.Fatalf("expected catch-all policy, got %+v ok=%v", out, ok)
+	// app=web: only the catch-all matches.
+	out, ok = Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "web"}}})
+	if !ok || len(out.TracerVersions) != 1 || out.TracerVersions["php"] != "2" {
+		t.Fatalf("expected only php outcome, got %+v ok=%v", out, ok)
 	}
 
-	_, ok = Decide(ps[:1], Facts{PodLabels: map[string]string{"app": "web"}})
-	if ok {
+	// Without a catch-all, a non-matching pod matches nothing.
+	if _, ok := Decide(ps[:1], Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "web"}}}); ok {
 		t.Fatalf("expected no match")
+	}
+}
+
+// TestDecideInjectPrecedence checks the inject folding rules: a policy without
+// an explicit inject decision does not flip the decision, and a later explicit
+// decision overrides an earlier one.
+func TestDecideInjectPrecedence(t *testing.T) {
+	allow := Policy{Name: "allow", Rules: AlwaysTrue(), Outcome: Outcome{Inject: true, InjectSet: true}}
+	sdkOnly := Policy{Name: "sdk-only", Rules: AlwaysTrue(), Outcome: Outcome{TracerVersions: map[string]string{"java": "1"}}}
+	deny := Policy{Name: "deny", Rules: AlwaysTrue(), Outcome: Outcome{InjectSet: true}}
+
+	out, _ := Decide([]Policy{allow, sdkOnly}, Context{})
+	if !out.InjectSet || !out.Inject {
+		t.Fatalf("sdk-only policy must not clear the allow decision: %+v", out)
+	}
+
+	out, _ = Decide([]Policy{allow, deny}, Context{})
+	if !out.InjectSet || out.Inject {
+		t.Fatalf("later deny must override earlier allow: %+v", out)
 	}
 }

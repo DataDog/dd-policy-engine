@@ -39,11 +39,11 @@ func TestParsePodLabelAndActions(t *testing.T) {
 		t.Fatalf("unexpected parse: %+v", ps)
 	}
 
-	out, ok := Decide(ps, Facts{PodLabels: map[string]string{"app": "db-user"}})
+	out, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "db-user"}}})
 	if !ok || !out.Inject || out.TracerVersions["java"] != "latest" {
 		t.Fatalf("db-user pod: %+v ok=%v", out, ok)
 	}
-	if _, ok := Decide(ps, Facts{PodLabels: map[string]string{"app": "other"}}); ok {
+	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "other"}}}); ok {
 		t.Fatalf("non-matching pod should not match")
 	}
 }
@@ -58,7 +58,7 @@ func TestParseInjectDeny(t *testing.T) {
       }]
     }`
 	ps := mustParse(t, raw)
-	out, ok := Decide(ps, Facts{PodLabels: map[string]string{"app": "legacy"}})
+	out, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "legacy"}}})
 	if !ok {
 		t.Fatalf("policy should match")
 	}
@@ -91,13 +91,13 @@ func TestParseExistenceAndNot(t *testing.T) {
     }`
 	ps := mustParse(t, raw)
 
-	if _, ok := Decide(ps, Facts{PodLabels: map[string]string{"tier": "frontend"}}); !ok {
+	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"tier": "frontend"}}}); !ok {
 		t.Errorf("tier present, deprecated absent should match")
 	}
-	if _, ok := Decide(ps, Facts{PodLabels: map[string]string{}}); ok {
+	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {}}}); ok {
 		t.Errorf("tier absent should not match")
 	}
-	if _, ok := Decide(ps, Facts{PodLabels: map[string]string{"tier": "x", "deprecated": "true"}}); ok {
+	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"tier": "x", "deprecated": "true"}}}); ok {
 		t.Errorf("deprecated present should not match")
 	}
 }
@@ -112,10 +112,10 @@ func TestParseWildcardPodLabel(t *testing.T) {
       }]
     }`
 	ps := mustParse(t, raw)
-	if _, ok := Decide(ps, Facts{PodLabels: map[string]string{"app": "k8s-payments-svc"}}); !ok {
+	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "k8s-payments-svc"}}}); !ok {
 		t.Errorf("wildcard label should match k8s-payments-svc")
 	}
-	if _, ok := Decide(ps, Facts{PodLabels: map[string]string{"app": "other"}}); ok {
+	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "other"}}}); ok {
 		t.Errorf("wildcard label should not match other")
 	}
 }
@@ -146,11 +146,11 @@ func TestParseNamespaceNameAndDefault(t *testing.T) {
 		t.Fatalf("expected 2 policies, got %d", len(ps))
 	}
 
-	out, ok := Decide(ps, Facts{NamespaceName: "billing"})
+	out, ok := Decide(ps, Context{Strings: map[string]string{IDNamespaceName: "billing"}})
 	if !ok || out.TracerVersions["java"] != "latest" {
 		t.Fatalf("billing should hit first policy: %+v ok=%v", out, ok)
 	}
-	out, ok = Decide(ps, Facts{NamespaceName: "default"})
+	out, ok = Decide(ps, Context{Strings: map[string]string{IDNamespaceName: "default"}})
 	if !ok || !out.Inject || len(out.TracerVersions) != 0 {
 		t.Fatalf("default ns should hit catch-all: %+v ok=%v", out, ok)
 	}
@@ -184,12 +184,14 @@ func TestParseUUID(t *testing.T) {
 
 func TestParseErrors(t *testing.T) {
 	cases := map[string]string{
-		"bad json":         `{`,
-		"unknown id":       `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"POD_ANNOTATION","cmp":"CMP_EXACT","value":"a=b"}}}}]}`,
-		"label no equals":  `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"POD_LABEL","cmp":"CMP_EXACT","value":"app"}}}}]}`,
-		"not too many":     `{"policies":[{"rules":{"node_type":"CompositeNode","node":{"op":"BOOL_NOT","children":[{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}}]}}}]}`,
-		"unknown node":     `{"policies":[{"rules":{"node_type":"Mystery","node":{}}}]}`,
-		"unsupported eval": `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"NumEvaluator","eval":{}}}}]}`,
+		"bad json":            `{`,
+		"unknown string cmp":  `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"NAMESPACE_NAME","cmp":"CMP_BOGUS","value":"x"}}}}]}`,
+		"numeric missing cmp": `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"NumEvaluator","eval":{}}}}]}`,
+		"unknown numeric cmp": `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"UNumEvaluator","eval":{"id":"JAVA_HEAP","cmp":"CMP_BOGUS","value":1}}}}]}`,
+		"unsupported eval":    `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"BogusEvaluator","eval":{}}}}]}`,
+		"label no equals":     `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"POD_LABEL","cmp":"CMP_EXACT","value":"app"}}}}]}`,
+		"not too many":        `{"policies":[{"rules":{"node_type":"CompositeNode","node":{"op":"BOOL_NOT","children":[{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}}]}}}]}`,
+		"unknown node":        `{"policies":[{"rules":{"node_type":"Mystery","node":{}}}]}`,
 	}
 	for name, raw := range cases {
 		t.Run(name, func(t *testing.T) {
