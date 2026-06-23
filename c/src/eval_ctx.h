@@ -123,7 +123,6 @@ typedef struct plcs_eval_ctx {
  */
 void plcs_eval_ctx_set_error(plcs_errors error);
 
-
 /**
  * @brief Sets an error code for a string evaluator
  * @param ix A plcs_string_evaluators enum ID
@@ -156,5 +155,3 @@ const char *plcs_eval_ctx_get_matched_description(void);
  * @param description const char* description of the rule that triggered the action.
  */
 void plcs_eval_ctx_set_matched_description(const char *description);
-
-

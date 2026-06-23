@@ -210,7 +210,6 @@ void plcs_eval_ctx_set_matched_description(const char *description) {
   ctx.matched_description = description;
 }
 
-
 plcs_errors plcs_eval_ctx_peek_last_error(void) {
   return ctx.error;
 }

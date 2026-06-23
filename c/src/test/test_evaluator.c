@@ -1009,9 +1009,16 @@ UTEST(evaluator_integration, evaluate_generated_header_if_available) {
 static const char *g_captured_description = NULL;
 
 static plcs_errors test_action_capture(
-    plcs_evaluation_result res, char *values[], size_t value_len,
-    const char *description, int action_id) {
-  (void)values; (void)value_len; (void)description; (void)action_id;
+    plcs_evaluation_result res,
+    char *values[],
+    size_t value_len,
+    const char *description,
+    int action_id
+) {
+  (void)values;
+  (void)value_len;
+  (void)description;
+  (void)action_id;
   if (res == PLCS_EVAL_RESULT_TRUE)
     g_captured_description = plcs_eval_ctx_get_matched_description();
   return PLCS_ESUCCESS;
@@ -1030,15 +1037,17 @@ static void matched_description_test_setup(void) {
   plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH);
 }
 
-#define ASSERT_DESCRIPTION(expected) \
-  ASSERT_TRUE(g_captured_description != NULL); \
+#define ASSERT_DESCRIPTION(expected)                                                                                   \
+  ASSERT_TRUE(g_captured_description != NULL);                                                                         \
   ASSERT_EQ(strcmp(g_captured_description, (expected)), 0)
 
 /* Policy[0]: inner OR short-circuits, outer OR does not overwrite */
 UTEST(evaluator_matched_description, nested_or_inner_value_exact) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "jvm");
-  plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, "org.apache.cassandra.service.CassandraDaemon");
+  plcs_eval_ctx_set_str_eval_param(
+      PLCS_STR_EVAL_RUNTIME_ENTRY_POINT_CLASS, "org.apache.cassandra.service.CassandraDaemon"
+  );
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
   ASSERT_DESCRIPTION("[skip] Apache Cassandra — JVM main class matches 'org.apache.cassandra.service.CassandraDaemon'");
 }
