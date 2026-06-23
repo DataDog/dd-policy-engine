@@ -7,13 +7,15 @@
 //go:build conformance_cgo
 
 // This file is the cgo bridge to the real C engine (libpolicies.a), used by the
-// cross-engine conformance test (conformance_cross_test.go). cgo is not allowed
-// in _test.go files, so the bridge lives here in a regular, build-tagged source
-// file and the test calls into it.
+// cross-engine conformance test (cross_test.go). cgo is not allowed in _test.go
+// files, so the bridge lives here in a regular, build-tagged source file and the
+// test calls into it. It is deliberately kept in this separate "conformance"
+// package (not "policies") so that its FlatBuffers/schema imports never become
+// dependencies of the importable "policies" package.
 //
 // It is gated behind the "conformance_cgo" build tag and requires CGO_ENABLED=1
 // plus the C toolchain, so the default CGO_ENABLED=0 builds and the portable
-// Go-only corpus test (conformance_test.go) are unaffected. Build/run with:
+// Go-only corpus test (corpus_test.go) are unaffected. Build/run with:
 //
 //	make -C go conformance-cross
 //
@@ -24,7 +26,7 @@
 // abstain on an unset source), so the two engines are compared on identical
 // semantics rather than on accidental host wiring.
 
-package policies
+package conformance
 
 /*
 #include <stddef.h>
@@ -233,6 +235,54 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
+// dd-wls JSON identifiers, mirroring the wire enums decoded by
+// policies/dd_wls.go. They are duplicated here (rather than imported) on
+// purpose: this keeps the FlatBuffers/schema dependency confined to the
+// conformance package and out of the importable "policies" package.
+const (
+	confNodeEvaluator = "EvaluatorNode"
+	confNodeComposite = "CompositeNode"
+
+	confEvalString   = "StrEvaluator"
+	confEvalNumeric  = "NumEvaluator"
+	confEvalUNumeric = "UNumEvaluator"
+)
+
+type confNodeWrap struct {
+	NodeType string          `json:"node_type"`
+	Node     json.RawMessage `json:"node"`
+}
+
+type confComposite struct {
+	Description string         `json:"description"`
+	Op          string         `json:"op"`
+	Children    []confNodeWrap `json:"children"`
+}
+
+type confEvaluatorNode struct {
+	Description string          `json:"description"`
+	EvalType    string          `json:"eval_type"`
+	Eval        json.RawMessage `json:"eval"`
+}
+
+type confStrEval struct {
+	ID    string `json:"id"`
+	Cmp   string `json:"cmp"`
+	Value string `json:"value"`
+}
+
+type confNumEval struct {
+	ID    string `json:"id"`
+	Cmp   string `json:"cmp"`
+	Value int64  `json:"value"`
+}
+
+type confUNumEval struct {
+	ID    string `json:"id"`
+	Cmp   string `json:"cmp"`
+	Value uint64 `json:"value"`
+}
+
 // cResultName maps a C plcs_evaluation_result (TRUE=0, FALSE=1, ABSTAIN=2) to
 // the corpus result name. Note the C enum order differs from the Go one, so
 // the mapping must go through names rather than raw integers.
@@ -252,7 +302,7 @@ func cResultName(r C.int) string {
 // decodes the same dd-wls JSON the Go decoder reads, so both engines start from
 // one source of truth.
 func buildRulesBuffer(rules json.RawMessage) ([]byte, error) {
-	var w wlsNodeWrap
+	var w confNodeWrap
 	if err := json.Unmarshal(rules, &w); err != nil {
 		return nil, err
 	}
@@ -265,10 +315,10 @@ func buildRulesBuffer(rules json.RawMessage) ([]byte, error) {
 	return b.FinishedBytes(), nil
 }
 
-func buildNodeWrap(b *flatbuffers.Builder, w wlsNodeWrap) (flatbuffers.UOffsetT, error) {
+func buildNodeWrap(b *flatbuffers.Builder, w confNodeWrap) (flatbuffers.UOffsetT, error) {
 	switch w.NodeType {
-	case nodeComposite:
-		var c wlsComposite
+	case confNodeComposite:
+		var c confComposite
 		if err := json.Unmarshal(w.Node, &c); err != nil {
 			return 0, err
 		}
@@ -282,30 +332,30 @@ func buildNodeWrap(b *flatbuffers.Builder, w wlsNodeWrap) (flatbuffers.UOffsetT,
 		}
 		comp := schema.CompositeNodeCreate(b, wls.EnumValuesBoolOperation[c.Op], c.Description, children)
 		return schema.NodeTypeWrapperCreate(b, comp, wls.NodeTypeCompositeNode), nil
-	case nodeEvaluator:
-		var e wlsEvaluatorNode
+	case confNodeEvaluator:
+		var e confEvaluatorNode
 		if err := json.Unmarshal(w.Node, &e); err != nil {
 			return 0, err
 		}
 		var evalOff flatbuffers.UOffsetT
 		var evalType wls.EvaluatorType
 		switch e.EvalType {
-		case evalString:
-			var se wlsStrEval
+		case confEvalString:
+			var se confStrEval
 			if err := json.Unmarshal(e.Eval, &se); err != nil {
 				return 0, err
 			}
 			evalOff = schema.StrEvaluatorCreate(b, wls.EnumValuesStringEvaluators[se.ID], se.Value, wls.EnumValuesCmpTypeSTR[se.Cmp])
 			evalType = wls.EvaluatorTypeStrEvaluator
-		case evalNumeric:
-			var ne wlsNumEval
+		case confEvalNumeric:
+			var ne confNumEval
 			if err := json.Unmarshal(e.Eval, &ne); err != nil {
 				return 0, err
 			}
 			evalOff = schema.NumEvaluatorCreate(b, wls.EnumValuesNumericEvaluators[ne.ID], ne.Value, wls.EnumValuesCmpTypeNUM[ne.Cmp])
 			evalType = wls.EvaluatorTypeNumEvaluator
-		case evalUNumeric:
-			var ue wlsUNumEval
+		case confEvalUNumeric:
+			var ue confUNumEval
 			if err := json.Unmarshal(e.Eval, &ue); err != nil {
 				return 0, err
 			}

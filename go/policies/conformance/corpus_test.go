@@ -4,12 +4,14 @@
 //
 // Copyright 2025-Present Datadog, Inc.
 
-package policies
+package conformance
 
 import (
 	"encoding/json"
 	"os"
 	"testing"
+
+	"github.com/DataDog/dd-policy-engine/go/policies"
 )
 
 // The conformance corpus is the cross-engine contract that guarantees the Go
@@ -27,10 +29,11 @@ import (
 //   - the "KEY=" existence convention and absent-key handling,
 //   - ABSTAIN when a fact source is unavailable (unset namespace name).
 //
-// Comparator edge cases (wildcard backtracking, empty strings) live in
-// TestWildcardMatch, which mirrors c/src/test/test_evaluator.c directly.
+// Comparator edge cases (wildcard backtracking, empty strings) live in the
+// policies package's TestWildcardMatch, which mirrors c/src/test/test_evaluator.c
+// directly.
 
-const conformanceCorpusPath = "testdata/conformance/vectors.json"
+const conformanceCorpusPath = "testdata/vectors.json"
 
 type conformanceCorpus struct {
 	Vectors []conformanceVector `json:"vectors"`
@@ -52,8 +55,8 @@ type conformanceFacts struct {
 	UNumbers map[string]uint64            `json:"unumbers"`
 }
 
-func (f conformanceFacts) toContext() Context {
-	return Context{
+func (f conformanceFacts) toContext() policies.Context {
+	return policies.Context{
 		Strings:  f.Strings,
 		Labels:   f.Labels,
 		Numbers:  f.Numbers,
@@ -61,24 +64,24 @@ func (f conformanceFacts) toContext() Context {
 	}
 }
 
-func resultFromName(name string) (Result, bool) {
+func resultFromName(name string) (policies.Result, bool) {
 	switch name {
 	case "TRUE":
-		return ResultTrue, true
+		return policies.ResultTrue, true
 	case "FALSE":
-		return ResultFalse, true
+		return policies.ResultFalse, true
 	case "ABSTAIN":
-		return ResultAbstain, true
+		return policies.ResultAbstain, true
 	default:
-		return ResultAbstain, false
+		return policies.ResultAbstain, false
 	}
 }
 
-func resultName(r Result) string {
+func resultName(r policies.Result) string {
 	switch r {
-	case ResultTrue:
+	case policies.ResultTrue:
 		return "TRUE"
-	case ResultFalse:
+	case policies.ResultFalse:
 		return "FALSE"
 	default:
 		return "ABSTAIN"
@@ -107,7 +110,8 @@ func wrapVectorAsDocument(name string, rules json.RawMessage) ([]byte, error) {
 	return json.Marshal(doc)
 }
 
-func TestConformanceCorpus(t *testing.T) {
+func loadCorpus(t *testing.T) conformanceCorpus {
+	t.Helper()
 	raw, err := os.ReadFile(conformanceCorpusPath)
 	if err != nil {
 		t.Fatalf("read corpus: %v", err)
@@ -119,6 +123,11 @@ func TestConformanceCorpus(t *testing.T) {
 	if len(corpus.Vectors) == 0 {
 		t.Fatal("conformance corpus is empty")
 	}
+	return corpus
+}
+
+func TestConformanceCorpus(t *testing.T) {
+	corpus := loadCorpus(t)
 
 	for _, v := range corpus.Vectors {
 		t.Run(v.Name, func(t *testing.T) {
@@ -131,7 +140,7 @@ func TestConformanceCorpus(t *testing.T) {
 			if err != nil {
 				t.Fatalf("wrap vector: %v", err)
 			}
-			ps, err := ParsePolicies(doc)
+			ps, err := policies.ParsePolicies(doc)
 			if err != nil {
 				t.Fatalf("ParsePolicies: %v", err)
 			}
@@ -139,7 +148,7 @@ func TestConformanceCorpus(t *testing.T) {
 				t.Fatalf("expected 1 policy, got %d", len(ps))
 			}
 
-			got := Evaluate(ps[0].Rules, v.Facts.toContext())
+			got := policies.Evaluate(ps[0].Rules, v.Facts.toContext())
 			if got != want {
 				t.Errorf("vector %q: got %s want %s", v.Name, resultName(got), v.Expect)
 			}

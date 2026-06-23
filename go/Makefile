@@ -51,7 +51,7 @@ conformance-cross:
 	@CGO_ENABLED=1 \
 		CGO_CFLAGS="-I$(C_ROOT)/include -I$(C_ROOT)/src -I$(C_SCHEMA_OUTPUT_DIR)" \
 		CGO_LDFLAGS="$(LIBPOLICIES) -lflatccrt" \
-		go test -tags conformance_cgo ./policies/ -run TestConformanceCrossEngine -v
+		go test -tags conformance_cgo ./policies/conformance/ -run TestConformanceCrossEngine -v
 
 # Verify by unmarshalling compiled policy to JSON
 verify_json:

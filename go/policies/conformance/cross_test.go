@@ -7,42 +7,31 @@
 //go:build conformance_cgo
 
 // Cross-engine half of the conformance suite: it runs every vector of
-// testdata/conformance/vectors.json through BOTH engines in a single process
-// and asserts they agree:
+// testdata/vectors.json through BOTH engines in a single process and asserts
+// they agree:
 //
 //   - the Go engine, via the public ParsePolicies + Evaluate path, and
-//   - the real C engine (libpolicies.a), linked through cgo (see
-//     conformance_cgo.go), fed the exact same vector serialized to a
-//     FlatBuffers NodeTypeWrapper buffer (the wire form the C engine consumes
-//     in production).
+//   - the real C engine (libpolicies.a), linked through cgo (see cgo.go), fed
+//     the exact same vector serialized to a FlatBuffers NodeTypeWrapper buffer
+//     (the wire form the C engine consumes in production).
 //
 // Gated behind the "conformance_cgo" build tag; run with `make -C go
-// conformance-cross`. The portable, Go-only corpus test lives in
-// conformance_test.go and runs everywhere.
+// conformance-cross`. The portable, Go-only corpus test lives in corpus_test.go
+// and runs everywhere.
 
-package policies
+package conformance
 
 import (
-	"encoding/json"
-	"os"
 	"testing"
+
+	"github.com/DataDog/dd-policy-engine/go/policies"
 )
 
 // TestConformanceCrossEngine runs every corpus vector through the Go engine and
 // the C engine and fails on any disagreement between them or with the expected
 // result. It is the executable form of the cross-engine contract.
 func TestConformanceCrossEngine(t *testing.T) {
-	raw, err := os.ReadFile(conformanceCorpusPath)
-	if err != nil {
-		t.Fatalf("read corpus: %v", err)
-	}
-	var corpus conformanceCorpus
-	if err := json.Unmarshal(raw, &corpus); err != nil {
-		t.Fatalf("parse corpus: %v", err)
-	}
-	if len(corpus.Vectors) == 0 {
-		t.Fatal("conformance corpus is empty")
-	}
+	corpus := loadCorpus(t)
 
 	for _, v := range corpus.Vectors {
 		t.Run(v.Name, func(t *testing.T) {
@@ -55,14 +44,14 @@ func TestConformanceCrossEngine(t *testing.T) {
 			if err != nil {
 				t.Fatalf("wrap vector: %v", err)
 			}
-			ps, err := ParsePolicies(doc)
+			ps, err := policies.ParsePolicies(doc)
 			if err != nil {
 				t.Fatalf("ParsePolicies: %v", err)
 			}
 			if len(ps) != 1 {
 				t.Fatalf("expected 1 policy, got %d", len(ps))
 			}
-			goName := resultName(Evaluate(ps[0].Rules, v.Facts.toContext()))
+			goName := resultName(policies.Evaluate(ps[0].Rules, v.Facts.toContext()))
 
 			// C engine, fed the same vector serialized to FlatBuffers.
 			buf, err := buildRulesBuffer(v.Rules)
