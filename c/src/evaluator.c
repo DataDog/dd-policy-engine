@@ -312,10 +312,12 @@ static inline void capture_matched_description(dd_ns(NodeTypeWrapper_table_t) no
         dd_ns(EvaluatorType_union_t) eval = dd_ns(EvaluatorNode_eval_union)(eval_node);
         if (eval.type == dd_ns(EvaluatorType_StrEvaluator)) {
           dd_ns(StrEvaluator_table_t) str_eval = eval.value;
-          const char *field = str_eval_field_label(dd_ns(StrEvaluator_id)(str_eval));
+          plcs_string_evaluators eval_id = dd_ns(StrEvaluator_id)(str_eval);
+          const char *field = str_eval_field_label(eval_id);
           const char *op = cmp_op_label(dd_ns(StrEvaluator_cmp)(str_eval));
           const char *value = dd_ns(StrEvaluator_value)(str_eval);
-          snprintf(synth_buf, sizeof(synth_buf), "%s %s '%s'", field ? field : "?", op, value ? value : "");
+          const char *ctx = plcs_eval_ctx_get_string_param(eval_id);
+          snprintf(synth_buf, sizeof(synth_buf), "%s '%s' %s '%s'", field ? field : "?", ctx ? ctx : "?", op, value ? value : "");
           plcs_eval_ctx_set_matched_description(synth_buf);
           return;
         }

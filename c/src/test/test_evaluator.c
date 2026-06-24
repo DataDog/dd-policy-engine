@@ -1100,5 +1100,5 @@ UTEST(evaluator_matched_description, synthesized_description) {
   matched_description_test_setup();
   plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH, "/opt/myapp/bin");
   plcs_evaluate_buffer(test_matched_description_policies, test_matched_description_policies_len);
-  ASSERT_DESCRIPTION("[skip] executable full path starts with '/opt/'");
+  ASSERT_DESCRIPTION("[skip] executable full path '/opt/myapp/bin' starts with '/opt/'");
 }
