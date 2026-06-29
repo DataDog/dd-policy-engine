@@ -49,7 +49,7 @@ __flatbuffers_define_fixed_array_primitives(flatbuffers_, dd_wls_UUID, dd_wls_UU
 static const flatbuffers_voffset_t __dd_wls_Policy_required[] = { 0 };
 typedef flatbuffers_ref_t dd_wls_Policy_ref_t;
 static dd_wls_Policy_ref_t dd_wls_Policy_clone(flatbuffers_builder_t *B, dd_wls_Policy_table_t t);
-__flatbuffers_build_table(flatbuffers_, dd_wls_Policy, 5)
+__flatbuffers_build_table(flatbuffers_, dd_wls_Policy, 6)
 
 static const flatbuffers_voffset_t __dd_wls_Policies_required[] = { 0 };
 typedef flatbuffers_ref_t dd_wls_Policies_ref_t;
@@ -57,9 +57,9 @@ static dd_wls_Policies_ref_t dd_wls_Policies_clone(flatbuffers_builder_t *B, dd_
 __flatbuffers_build_table(flatbuffers_, dd_wls_Policies, 1)
 
 #define __dd_wls_Policy_formal_args ,\
-  flatbuffers_string_ref_t v0, dd_wls_NodeTypeWrapper_ref_t v1, dd_wls_Action_vec_ref_t v2, dd_wls_UUID_t *v3, int64_t v4
+  flatbuffers_string_ref_t v0, dd_wls_NodeTypeWrapper_ref_t v1, dd_wls_Action_vec_ref_t v2, dd_wls_UUID_t *v3, int64_t v4, flatbuffers_string_ref_t v5
 #define __dd_wls_Policy_call_args ,\
-  v0, v1, v2, v3, v4
+  v0, v1, v2, v3, v4, v5
 static inline dd_wls_Policy_ref_t dd_wls_Policy_create(flatbuffers_builder_t *B __dd_wls_Policy_formal_args);
 __flatbuffers_build_table_prolog(flatbuffers_, dd_wls_Policy, dd_wls_Policy_file_identifier, dd_wls_Policy_type_identifier)
 
@@ -73,6 +73,7 @@ __flatbuffers_build_table_field(1, flatbuffers_, dd_wls_Policy_rules, dd_wls_Nod
 __flatbuffers_build_table_vector_field(2, flatbuffers_, dd_wls_Policy_actions, dd_wls_Action, dd_wls_Policy)
 __flatbuffers_build_struct_field(3, flatbuffers_, dd_wls_Policy_id, dd_wls_UUID, 16, 8, dd_wls_Policy)
 __flatbuffers_build_scalar_field(4, flatbuffers_, dd_wls_Policy_version, flatbuffers_int64, int64_t, 8, 8, INT64_C(0), dd_wls_Policy)
+__flatbuffers_build_string_field(5, flatbuffers_, dd_wls_Policy_rule_id, dd_wls_Policy)
 
 static inline dd_wls_Policy_ref_t dd_wls_Policy_create(flatbuffers_builder_t *B __dd_wls_Policy_formal_args)
 {
@@ -81,7 +82,8 @@ static inline dd_wls_Policy_ref_t dd_wls_Policy_create(flatbuffers_builder_t *B 
         || dd_wls_Policy_version_add(B, v4)
         || dd_wls_Policy_description_add(B, v0)
         || dd_wls_Policy_rules_add(B, v1)
-        || dd_wls_Policy_actions_add(B, v2)) {
+        || dd_wls_Policy_actions_add(B, v2)
+        || dd_wls_Policy_rule_id_add(B, v5)) {
         return 0;
     }
     return dd_wls_Policy_end(B);
@@ -95,7 +97,8 @@ static dd_wls_Policy_ref_t dd_wls_Policy_clone(flatbuffers_builder_t *B, dd_wls_
         || dd_wls_Policy_version_pick(B, t)
         || dd_wls_Policy_description_pick(B, t)
         || dd_wls_Policy_rules_pick(B, t)
-        || dd_wls_Policy_actions_pick(B, t)) {
+        || dd_wls_Policy_actions_pick(B, t)
+        || dd_wls_Policy_rule_id_pick(B, t)) {
         return 0;
     }
     __flatbuffers_memoize_end(B, t, dd_wls_Policy_end(B));

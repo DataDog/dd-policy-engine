@@ -119,6 +119,12 @@ __flatbuffers_define_vector_field(2, dd_wls_Policy, actions, dd_wls_Action_vec_t
 __flatbuffers_define_struct_field(3, dd_wls_Policy, id, dd_wls_UUID_struct_t, 0)
 /**  used to track the version number of this policy */
 __flatbuffers_define_scalar_field(4, dd_wls_Policy, version, flatbuffers_int64, int64_t, INT64_C(0))
+/**  Stable identifier of the rule this policy represents, used to attribute an
+ *  evaluation outcome back to its source rule (for example, linking a skipped
+ *  or instrumented process back to the rule on the Instrumentation Rules page).
+ *  For Remote Config rules this is the rule's UUID; for hardcoded/built-in
+ *  policies it is the sentinel "hardcoded". */
+__flatbuffers_define_string_field(5, dd_wls_Policy, rule_id, 0)
 
 /**  Represents a collection of policies.
  *  This allows for concatenation of policies from different sources.

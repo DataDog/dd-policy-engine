@@ -28,6 +28,12 @@ table Policy {
   id:UUID;
   /// used to track the version number of this policy
   version: long=0;
+  /// Stable identifier of the rule this policy represents, used to attribute an
+  /// evaluation outcome back to its source rule (for example, linking a skipped
+  /// or instrumented process back to the rule on the Instrumentation Rules page).
+  /// For Remote Config rules this is the rule's UUID; for hardcoded/built-in
+  /// policies it is the sentinel "hardcoded".
+  rule_id: string;
 }
 
 /// Represents a collection of policies.

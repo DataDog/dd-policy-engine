@@ -121,8 +121,21 @@ func (rcv *Policy) MutateVersion(n int64) bool {
 	return rcv._tab.MutateInt64Slot(12, n)
 }
 
+/// Stable identifier of the rule this policy represents, used to attribute an
+/// evaluation outcome back to its source rule (for example, linking a skipped
+/// or instrumented process back to the rule on the Instrumentation Rules page).
+/// For Remote Config rules this is the rule's UUID; for hardcoded/built-in
+/// policies it is the sentinel "hardcoded".
+func (rcv *Policy) RuleId() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func PolicyStart(builder *flatbuffers.Builder) {
-	builder.StartObject(5)
+	builder.StartObject(6)
 }
 func PolicyAddDescription(builder *flatbuffers.Builder, description flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(description), 0)
@@ -141,6 +154,9 @@ func PolicyAddId(builder *flatbuffers.Builder, id flatbuffers.UOffsetT) {
 }
 func PolicyAddVersion(builder *flatbuffers.Builder, version int64) {
 	builder.PrependInt64Slot(4, version, 0)
+}
+func PolicyAddRuleId(builder *flatbuffers.Builder, ruleId flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(5, flatbuffers.UOffsetT(ruleId), 0)
 }
 func PolicyEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

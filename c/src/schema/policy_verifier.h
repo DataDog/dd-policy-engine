@@ -66,6 +66,7 @@ static int dd_wls_Policy_verify_table(flatcc_table_verifier_descriptor_t *td)
     if ((ret = flatcc_verify_table_vector_field(td, 2, 0, &dd_wls_Action_verify_table) /* actions */)) return ret;
     if ((ret = flatcc_verify_field(td, 3, 16, 8) /* id */)) return ret;
     if ((ret = flatcc_verify_field(td, 4, 8, 8) /* version */)) return ret;
+    if ((ret = flatcc_verify_string_field(td, 5, 0) /* rule_id */)) return ret;
     return flatcc_verify_ok;
 }
 
