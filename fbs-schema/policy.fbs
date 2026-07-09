@@ -9,11 +9,6 @@ include "nodes.fbs";
 
 namespace dd.wls;
 
-/// unfortunetly flatbuffers doesnt support fixed size arrays in go so we can't use it
-/// the solution is to split it into two unsigned longs :(
-/// this should be populate after caculation, and removed prior to verification.
-struct UUID { hi:ulong; lo:ulong; }
-
 /// Represents a policy that contains rules and actions.
 /// The rules are represented as a tree structure where each node can be a leaf (with an evaluator) or a root (with child nodes).
 table Policy {
@@ -23,9 +18,10 @@ table Policy {
   rules: NodeTypeWrapper; // this is a tree
   /// The actions are taken post evaluation of the policy.
   actions: [Action];
-  /// 128 bit UUID represented as 16 raw bytes
-  /// this can be used to verify integrity (but NOT origin - this is not a signature!)
-  id:UUID;
+  /// Stable identifier for this policy, used to attribute an evaluation outcome
+  /// back to its source. For Remote Config policies this is the rule's UUID;
+  /// for hardcoded/built-in policies it is the sentinel "hardcoded".
+  id:string;
   /// used to track the version number of this policy
   version: long=0;
 }
