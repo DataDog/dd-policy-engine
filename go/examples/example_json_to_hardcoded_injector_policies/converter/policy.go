@@ -75,5 +75,5 @@ func (p JSONPolicy) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOff
 
 	action := schema.ActionCreate(builder, GetActionId(p.Skip), p.Description, []string{p.Runtime})
 
-	return schema.PolicyCreate(builder, p.Description, root, []flatbuffers.UOffsetT{action}), nil
+	return schema.PolicyCreate(builder, p.Description, root, []flatbuffers.UOffsetT{action}, "hardcoded"), nil
 }

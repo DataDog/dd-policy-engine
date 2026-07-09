@@ -254,6 +254,6 @@ func addRule(builder *PolicyBuilder, id string, description string, ast parser.A
 	nodeRoot := createConditionalNode(builder.builder, wls.BoolOperationBOOL_AND, id, nodes)
 	action := schema.ActionCreate(builder.builder, actionKind, id, []string{})
 
-	builder.offsets = append(builder.offsets, schema.PolicyCreate(builder.builder, description, nodeRoot, []flatbuffers.UOffsetT{action}))
+	builder.offsets = append(builder.offsets, schema.PolicyCreate(builder.builder, description, nodeRoot, []flatbuffers.UOffsetT{action}, ""))
 	return nil
 }
