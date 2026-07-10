@@ -37,10 +37,8 @@ jobs:
           make docker-run "cmake --install build --prefix=libpolicies"
       - name: Package libpolicies
         run: tar -czf libpolicies-linux-${{ matrix.arch }}.tar.gz libpolicies
-      - name: Build dd-rules-converter
+      - name: Build dd-requirements-converter
         run: make docker-run "make -C go build"
-      - name: Package dd-rules-converter
-        run: tar -czf dd-rules-converter-linux-${{ matrix.arch }}.tar.gz go/dd-rules-converter
       - name: Package dd-requirements-converter
         run: tar -czf dd-requirements-converter-linux-${{ matrix.arch }}.tar.gz go/dd-requirements-converter
       - name: Export library
@@ -49,7 +47,6 @@ jobs:
           name: libpolicies-linux-${{ matrix.arch }}
           path: |
             libpolicies-linux-${{ matrix.arch }}.tar.gz
-            dd-rules-converter-linux-${{ matrix.arch }}.tar.gz
             dd-requirements-converter-linux-${{ matrix.arch }}.tar.gz
 
   package-dd-compile-policy-linux:
@@ -154,11 +151,8 @@ jobs:
         run: Compress-Archive -Path ./libpolicies -DestinationPath libpolicies-win-${{ matrix.arch }}.zip
       - name: Build Go commands
         run: |
-          go build -o dd-rules-converter.exe ./cmd/dd-rules-converter
           go build -o dd-requirements-converter.exe ./cmd/dd-requirements-converter
         working-directory: go
-      - name: Package dd-rules-converter
-        run: Compress-Archive -Path ./go/dd-rules-converter.exe -DestinationPath dd-rules-converter-win-${{ matrix.arch }}.zip
       - name: Package dd-requirements-converter
         run: Compress-Archive -Path ./go/dd-requirements-converter.exe -DestinationPath dd-requirements-converter-win-${{ matrix.arch }}.zip
       - name: Export library
@@ -167,7 +161,6 @@ jobs:
           name: libpolicies-win-${{ matrix.arch }}
           path: |
             libpolicies-win-${{ matrix.arch }}.zip
-            dd-rules-converter-win-${{ matrix.arch }}.zip
             dd-requirements-converter-win-${{ matrix.arch }}.zip
 
   generate-github-draft-release:

@@ -1,5 +1,4 @@
 # Files generated on make
-go/dd-rules-converter
 go/examples/example_generate_c_header_buffer/out/
 go/examples/example_json_to_hardcoded_injector_policies/out/
 
