@@ -289,6 +289,8 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
+  plcs_eval_ctx_set_current_policy_id(dd_ns(Policy_id)(policy));
+
   // perform actions given evaluation result
   return perform_actions(eval_res, actions);
 }
