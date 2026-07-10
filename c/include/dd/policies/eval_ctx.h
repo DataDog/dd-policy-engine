@@ -173,12 +173,6 @@ plcs_errors plcs_eval_ctx_get_last_error(void);
 plcs_errors plcs_eval_ctx_peek_last_error(void);
 
 /**
- * @brief Gets the id of the policy currently being evaluated.
- * @return the current policy's id, or PLCS_STR_NOT_SET (NULL) if none is being evaluated.
- */
-const char *plcs_eval_ctx_get_current_policy_id(void);
-
-/**
  * @brief Initializes the context model.
  * This function sets all evaluator function pointers to NULL and parameters to
  * their 'not set' values

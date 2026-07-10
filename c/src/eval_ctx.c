@@ -94,10 +94,6 @@ plcs_errors plcs_eval_ctx_register_action(plcs_action_function_ptr action, plcs_
   return PLCS_ESUCCESS;
 }
 
-void plcs_eval_ctx_set_current_policy_id(const char *policy_id) {
-  ctx.current_policy_id = policy_id;
-}
-
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix) {
   if (ix < 0 || ix >= PLCS_ACTIONS__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
@@ -216,10 +212,6 @@ plcs_errors plcs_eval_ctx_peek_last_error(void) {
   return ctx.error;
 }
 
-const char *plcs_eval_ctx_get_current_policy_id(void) {
-  return ctx.current_policy_id;
-}
-
 plcs_errors plcs_eval_ctx_get_last_error(void) {
   plcs_errors error = ctx.error;
   // reset
@@ -252,7 +244,6 @@ void plcs_eval_ctx_reset(void) {
   }
 
   ctx.error = PLCS_ESUCCESS;
-  ctx.current_policy_id = PLCS_STR_NOT_SET;
 }
 
 plcs_errors plcs_eval_ctx_init(void) {

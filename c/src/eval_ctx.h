@@ -111,9 +111,6 @@ typedef struct plcs_eval_ctx {
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
 
-  /**< The id of the policy currently being evaluated */
-  const char *current_policy_id;
-
 } plcs_eval_ctx;
 
 /**
@@ -121,12 +118,6 @@ typedef struct plcs_eval_ctx {
  * @param error plcs_errors enum
  */
 void plcs_eval_ctx_set_error(plcs_errors error);
-
-/**
- * @brief Sets the id of the policy currently being evaluated.
- * @param policy_id the policy's id, or PLCS_STR_NOT_SET (NULL) if none.
- */
-void plcs_eval_ctx_set_current_policy_id(const char *policy_id);
 
 /**
  * @brief Sets an error code for an action

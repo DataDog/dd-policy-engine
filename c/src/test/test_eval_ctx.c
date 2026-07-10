@@ -298,18 +298,6 @@ UTEST(eval_ctx, last_error_set_and_get) {
   ASSERT_EQ(plcs_eval_ctx_peek_last_error(), (plcs_errors)PLCS_ESUCCESS);
 }
 
-UTEST(eval_ctx, current_policy_id_set_and_get) {
-  (void)plcs_eval_ctx_init();
-
-  ASSERT_TRUE(plcs_eval_ctx_get_current_policy_id() == PLCS_STR_NOT_SET);
-
-  plcs_eval_ctx_set_current_policy_id("some-policy-id");
-  ASSERT_STREQ(plcs_eval_ctx_get_current_policy_id(), "some-policy-id");
-
-  plcs_eval_ctx_reset();
-  ASSERT_TRUE(plcs_eval_ctx_get_current_policy_id() == PLCS_STR_NOT_SET);
-}
-
 UTEST(eval_ctx, set_error_out_of_bound) {
   plcs_eval_ctx_set_action_error(PLCS_ACTIONS__COUNT, 0);
   int err = plcs_eval_ctx_get_last_error();
