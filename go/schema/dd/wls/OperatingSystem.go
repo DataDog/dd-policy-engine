@@ -4,9 +4,9 @@ package wls
 
 import "strconv"
 
-/// Canonical set of operating systems recognized by the policy engine.
-/// The string representation uses lowercase (e.g. "linux", "windows").
-/// IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
+// / Canonical set of operating systems recognized by the policy engine.
+// / The string representation uses lowercase (e.g. "linux", "windows").
+// / IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
 type OperatingSystem int8
 
 const (

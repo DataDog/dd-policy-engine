@@ -6,8 +6,8 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// Represents a String evaluator
-/// Each evaluator has an ID, a comparison type and a value to compare against.
+// / Represents a String evaluator
+// / Each evaluator has an ID, a comparison type and a value to compare against.
 type StrEvaluator struct {
 	_tab flatbuffers.Table
 }
@@ -43,7 +43,7 @@ func (rcv *StrEvaluator) Table() flatbuffers.Table {
 	return rcv._tab
 }
 
-/// The ID is a unique identifier for the evaluator.
+// / The ID is a unique identifier for the evaluator.
 func (rcv *StrEvaluator) Id() StringEvaluators {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
@@ -52,12 +52,12 @@ func (rcv *StrEvaluator) Id() StringEvaluators {
 	return 0
 }
 
-/// The ID is a unique identifier for the evaluator.
+// / The ID is a unique identifier for the evaluator.
 func (rcv *StrEvaluator) MutateId(n StringEvaluators) bool {
 	return rcv._tab.MutateInt8Slot(4, int8(n))
 }
 
-/// The comparison type is used to determine how to compare the value against the evaluator's value.
+// / The comparison type is used to determine how to compare the value against the evaluator's value.
 func (rcv *StrEvaluator) Cmp() CmpTypeSTR {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
@@ -66,12 +66,12 @@ func (rcv *StrEvaluator) Cmp() CmpTypeSTR {
 	return 0
 }
 
-/// The comparison type is used to determine how to compare the value against the evaluator's value.
+// / The comparison type is used to determine how to compare the value against the evaluator's value.
 func (rcv *StrEvaluator) MutateCmp(n CmpTypeSTR) bool {
 	return rcv._tab.MutateInt8Slot(6, int8(n))
 }
 
-/// The value is the value to compare against.
+// / The value is the value to compare against.
 func (rcv *StrEvaluator) Value() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
@@ -80,7 +80,7 @@ func (rcv *StrEvaluator) Value() []byte {
 	return nil
 }
 
-/// The value is the value to compare against.
+// / The value is the value to compare against.
 func StrEvaluatorStart(builder *flatbuffers.Builder) {
 	builder.StartObject(3)
 }

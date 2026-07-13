@@ -6,9 +6,9 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// Represents a root node in the policy tree.
-/// It contains a description, a boolean operation (AND, OR, NOT) and a list of child nodes.
-/// The children are wrapped in NodeTypeWrapper to allow for union vectors.
+// / Represents a root node in the policy tree.
+// / It contains a description, a boolean operation (AND, OR, NOT) and a list of child nodes.
+// / The children are wrapped in NodeTypeWrapper to allow for union vectors.
 type CompositeNode struct {
 	_tab flatbuffers.Table
 }
@@ -64,8 +64,8 @@ func (rcv *CompositeNode) MutateOp(n BoolOperation) bool {
 	return rcv._tab.MutateInt8Slot(6, int8(n))
 }
 
-/// At some point we will switch back to; children: [NodeType]; 
-/// (union vectors are not supported in GO so we are wrapping the table in a table)
+// / At some point we will switch back to; children: [NodeType];
+// / (union vectors are not supported in GO so we are wrapping the table in a table)
 func (rcv *CompositeNode) Children(obj *NodeTypeWrapper, j int) bool {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
@@ -86,8 +86,8 @@ func (rcv *CompositeNode) ChildrenLength() int {
 	return 0
 }
 
-/// At some point we will switch back to; children: [NodeType]; 
-/// (union vectors are not supported in GO so we are wrapping the table in a table)
+// / At some point we will switch back to; children: [NodeType];
+// / (union vectors are not supported in GO so we are wrapping the table in a table)
 func CompositeNodeStart(builder *flatbuffers.Builder) {
 	builder.StartObject(3)
 }

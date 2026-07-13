@@ -6,10 +6,10 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// Represents a collection of policies.
-/// This allows for concatenation of policies from different sources.
-/// The policies are stored in a vector of Policy.
-/// This is also the root type of the FlatBuffer schema!!!
+// / Represents a collection of policies.
+// / This allows for concatenation of policies from different sources.
+// / The policies are stored in a vector of Policy.
+// / This is also the root type of the FlatBuffer schema!!!
 type Policies struct {
 	_tab flatbuffers.Table
 }

@@ -4,9 +4,9 @@ package wls
 
 import "strconv"
 
-/// Canonical set of machine architectures recognized by the policy engine.
-/// The string representation uses the kernel-reported format (e.g. "aarch64", "x86_64", "arm", "x86").
-/// IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
+// / Canonical set of machine architectures recognized by the policy engine.
+// / The string representation uses the kernel-reported format (e.g. "aarch64", "x86_64", "arm", "x86").
+// / IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
 type MachineArchitecture int8
 
 const (
