@@ -60,6 +60,7 @@ dkms.conf
 
 # build folder
 build/
+build-*/
 
 # Coverage files
 *.gcov
