@@ -45,7 +45,7 @@ func createDenyByRuntimePolicy(builder *flatbuffers.Builder, runtime string) fla
 	// Start by creating the leaf evaluator (StrEvaluator for runtime language check)
 	node := createStrEvaluatorNode(builder, wls.StringEvaluatorsRUNTIME_LANGUAGE, runtime, wls.CmpTypeSTRCMP_EXACT, "Validate runtime is "+runtime)
 	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, "Deny "+runtime+" runtime!", []string{"value_1", "value_2", "value_3"})
-	return schema.PolicyCreate(builder, "DenyByRuntimePolicy("+runtime+")", node, []flatbuffers.UOffsetT{action}, "")
+	return schema.PolicyCreate(builder, "DenyByRuntimePolicy("+runtime+")", node, []flatbuffers.UOffsetT{action})
 }
 
 func createRoot(builder *flatbuffers.Builder, oper wls.BoolOperation, description string, nodes []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
@@ -63,7 +63,7 @@ func createDenyByMultipleEvaluatorsPolicy(builder *flatbuffers.Builder, runtime 
 	nodeRoot := createRoot(builder, wls.BoolOperationBOOL_AND, "evaluate if runtime and exe prefix equal to something :)", []flatbuffers.UOffsetT{nodeRuntime, nodeExePrefix})
 
 	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, "Deny "+runtime+" runtime!", []string{"value_1", "value_2", "value_3"})
-	return schema.PolicyCreate(builder, "DenyByRuntimePolicy("+runtime+")", nodeRoot, []flatbuffers.UOffsetT{action}, "")
+	return schema.PolicyCreate(builder, "DenyByRuntimePolicy("+runtime+")", nodeRoot, []flatbuffers.UOffsetT{action})
 
 }
 
@@ -109,7 +109,7 @@ func createFlatPolicyNoEvaluators() string {
 	fileName := "FlatPolicyNoEvaluators.bin"
 	builder := flatbuffers.NewBuilder(1024)
 	action := schema.ActionCreate(builder, wls.ActionIdINJECT_ALLOW, "These actions will execute without executing any evaluators", []string{"value_1", "value_2", "value_3", "value_4", "value_5"})
-	policy := schema.PolicyCreate(builder, "AllowAllPolicy", 0, []flatbuffers.UOffsetT{action}, "")
+	policy := schema.PolicyCreate(builder, "AllowAllPolicy", 0, []flatbuffers.UOffsetT{action})
 	policies := schema.PoliciesCreate(builder, []flatbuffers.UOffsetT{policy})
 
 	builder.Finish(policies)
@@ -121,7 +121,7 @@ func createFlatPolicyNoEvaluators() string {
 func createEmptyPolicies() string {
 	fileName := "EmptyPolicies.bin"
 	builder := flatbuffers.NewBuilder(1024)
-	policy := schema.PolicyCreate(builder, "EmptyPolicy", 0, []flatbuffers.UOffsetT{}, "")
+	policy := schema.PolicyCreate(builder, "EmptyPolicy", 0, []flatbuffers.UOffsetT{})
 	policies := schema.PoliciesCreate(builder, []flatbuffers.UOffsetT{policy})
 
 	builder.Finish(policies)
@@ -134,7 +134,7 @@ func createFlatPolicyNoActions() string {
 	fileName := "FlatPolicyNoActions.bin"
 	builder := flatbuffers.NewBuilder(1024)
 	node := createStrEvaluatorNode(builder, wls.StringEvaluatorsRUNTIME_LANGUAGE, "some runtime", wls.CmpTypeSTRCMP_EXACT, "Validate runtime is some runtime")
-	policy := schema.PolicyCreate(builder, "PolicyWithoutActions", node, []flatbuffers.UOffsetT{}, "")
+	policy := schema.PolicyCreate(builder, "PolicyWithoutActions", node, []flatbuffers.UOffsetT{})
 	policies := schema.PoliciesCreate(builder, []flatbuffers.UOffsetT{policy})
 
 	builder.Finish(policies)
@@ -146,7 +146,7 @@ func createFlatPolicyNoActions() string {
 func createZeropPolicies() string {
 	fileName := "ZeropPolicies.bin"
 	builder := flatbuffers.NewBuilder(1024)
-	policy := schema.PolicyCreate(builder, "EmptyPolicy", 0, []flatbuffers.UOffsetT{}, "")
+	policy := schema.PolicyCreate(builder, "EmptyPolicy", 0, []flatbuffers.UOffsetT{})
 	policies := schema.PoliciesCreate(builder, []flatbuffers.UOffsetT{policy})
 
 	builder.Finish(policies)

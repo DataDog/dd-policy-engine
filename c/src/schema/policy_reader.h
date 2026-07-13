@@ -24,6 +24,11 @@
 #define flatbuffers_extension "bin"
 #endif
 
+typedef struct dd_wls_UUID dd_wls_UUID_t;
+typedef const dd_wls_UUID_t *dd_wls_UUID_struct_t;
+typedef dd_wls_UUID_t *dd_wls_UUID_mutable_struct_t;
+typedef const dd_wls_UUID_t *dd_wls_UUID_vec_t;
+typedef dd_wls_UUID_t *dd_wls_UUID_mutable_vec_t;
 
 typedef const struct dd_wls_Policy_table *dd_wls_Policy_table_t;
 typedef struct dd_wls_Policy_table *dd_wls_Policy_mutable_table_t;
@@ -33,6 +38,18 @@ typedef const struct dd_wls_Policies_table *dd_wls_Policies_table_t;
 typedef struct dd_wls_Policies_table *dd_wls_Policies_mutable_table_t;
 typedef const flatbuffers_uoffset_t *dd_wls_Policies_vec_t;
 typedef flatbuffers_uoffset_t *dd_wls_Policies_mutable_vec_t;
+#ifndef dd_wls_UUID_file_identifier
+#define dd_wls_UUID_file_identifier 0
+#endif
+/* deprecated, use dd_wls_UUID_file_identifier */
+#ifndef dd_wls_UUID_identifier
+#define dd_wls_UUID_identifier 0
+#endif
+#define dd_wls_UUID_type_hash ((flatbuffers_thash_t)0x23726554)
+#define dd_wls_UUID_type_identifier "\x54\x65\x72\x23"
+#ifndef dd_wls_UUID_file_extension
+#define dd_wls_UUID_file_extension "bin"
+#endif
 #ifndef dd_wls_Policy_file_identifier
 #define dd_wls_Policy_file_identifier 0
 #endif
@@ -59,6 +76,27 @@ typedef flatbuffers_uoffset_t *dd_wls_Policies_mutable_vec_t;
 #endif
 
 
+/**  unfortunetly flatbuffers doesnt support fixed size arrays in go so we can't use it
+ *  the solution is to split it into two unsigned longs :(
+ *  this should be populate after caculation, and removed prior to verification. */
+struct dd_wls_UUID {
+    alignas(8) uint64_t hi;
+    alignas(8) uint64_t lo;
+};
+static_assert(sizeof(dd_wls_UUID_t) == 16, "struct size mismatch");
+
+static inline const dd_wls_UUID_t *dd_wls_UUID__const_ptr_add(const dd_wls_UUID_t *p, size_t i) { return p + i; }
+static inline dd_wls_UUID_t *dd_wls_UUID__ptr_add(dd_wls_UUID_t *p, size_t i) { return p + i; }
+static inline dd_wls_UUID_struct_t dd_wls_UUID_vec_at(dd_wls_UUID_vec_t vec, size_t i)
+__flatbuffers_struct_vec_at(vec, i)
+static inline size_t dd_wls_UUID__size(void) { return 16; }
+static inline size_t dd_wls_UUID_vec_len(dd_wls_UUID_vec_t vec)
+__flatbuffers_vec_len(vec)
+__flatbuffers_struct_as_root(dd_wls_UUID)
+
+__flatbuffers_define_struct_scalar_field(dd_wls_UUID, hi, flatbuffers_uint64, uint64_t)
+__flatbuffers_define_struct_scalar_field(dd_wls_UUID, lo, flatbuffers_uint64, uint64_t)
+
 
 /**  Represents a policy that contains rules and actions.
  *  The rules are represented as a tree structure where each node can be a leaf (with an evaluator) or a root (with child nodes). */
@@ -76,10 +114,9 @@ __flatbuffers_define_string_field(0, dd_wls_Policy, description, 0)
 __flatbuffers_define_table_field(1, dd_wls_Policy, rules, dd_wls_NodeTypeWrapper_table_t, 0)
 /**  The actions are taken post evaluation of the policy. */
 __flatbuffers_define_vector_field(2, dd_wls_Policy, actions, dd_wls_Action_vec_t, 0)
-/**  Stable identifier for this policy, used to attribute an evaluation outcome
- *  back to its source. For Remote Config policies this is the rule's UUID;
- *  for hardcoded/built-in policies it is the sentinel "hardcoded". */
-__flatbuffers_define_string_field(3, dd_wls_Policy, id, 0)
+/**  128 bit UUID represented as 16 raw bytes
+ *  this can be used to verify integrity (but NOT origin - this is not a signature!) */
+__flatbuffers_define_struct_field(3, dd_wls_Policy, id, dd_wls_UUID_struct_t, 0)
 /**  used to track the version number of this policy */
 __flatbuffers_define_scalar_field(4, dd_wls_Policy, version, flatbuffers_int64, int64_t, INT64_C(0))
 

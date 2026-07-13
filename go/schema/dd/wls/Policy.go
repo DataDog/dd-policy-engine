@@ -90,20 +90,23 @@ func (rcv *Policy) ActionsLength() int {
 }
 
 // / The actions are taken post evaluation of the policy.
-// / Stable identifier for this policy, used to attribute an evaluation outcome
-// / back to its source. For Remote Config policies this is the rule's UUID;
-// / for hardcoded/built-in policies it is the sentinel "hardcoded".
-func (rcv *Policy) Id() []byte {
+// / 128 bit UUID represented as 16 raw bytes
+// / this can be used to verify integrity (but NOT origin - this is not a signature!)
+func (rcv *Policy) Id(obj *UUID) *UUID {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
 	if o != 0 {
-		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+		x := o + rcv._tab.Pos
+		if obj == nil {
+			obj = new(UUID)
+		}
+		obj.Init(rcv._tab.Bytes, x)
+		return obj
 	}
 	return nil
 }
 
-// / Stable identifier for this policy, used to attribute an evaluation outcome
-// / back to its source. For Remote Config policies this is the rule's UUID;
-// / for hardcoded/built-in policies it is the sentinel "hardcoded".
+// / 128 bit UUID represented as 16 raw bytes
+// / this can be used to verify integrity (but NOT origin - this is not a signature!)
 // / used to track the version number of this policy
 func (rcv *Policy) Version() int64 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
@@ -134,7 +137,7 @@ func PolicyStartActionsVector(builder *flatbuffers.Builder, numElems int) flatbu
 	return builder.StartVector(4, numElems, 4)
 }
 func PolicyAddId(builder *flatbuffers.Builder, id flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(id), 0)
+	builder.PrependStructSlot(3, flatbuffers.UOffsetT(id), 0)
 }
 func PolicyAddVersion(builder *flatbuffers.Builder, version int64) {
 	builder.PrependInt64Slot(4, version, 0)

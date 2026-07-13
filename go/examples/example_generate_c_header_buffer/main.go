@@ -38,7 +38,7 @@ func createDenyByRuntimePolicy(builder *flatbuffers.Builder, runtime string) fla
 	// Start by creating the leaf evaluator (StrEvaluator for runtime language check)
 	node := createStrEvaluatorNode(builder, wls.StringEvaluatorsRUNTIME_LANGUAGE, runtime, wls.CmpTypeSTRCMP_EXACT, "Validate runtime is "+runtime)
 	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, "Deny "+runtime+" runtime!", []string{"value_1", "value_2", "value_3"})
-	return schema.PolicyCreate(builder, "DenyByRuntimePolicy("+runtime+")", node, []flatbuffers.UOffsetT{action}, "")
+	return schema.PolicyCreate(builder, "DenyByRuntimePolicy("+runtime+")", node, []flatbuffers.UOffsetT{action})
 }
 
 func generateCHeader(varName string, data []byte) string {
