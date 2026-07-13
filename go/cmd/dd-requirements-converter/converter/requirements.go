@@ -59,6 +59,6 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 	compositeNode := schema.NodeTypeWrapperCreate(builder, composite, wls.NodeTypeCompositeNode)
 
 	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, "requirements", nil)
-	policy := schema.PolicyCreate(builder, "All requirements", compositeNode, []flatbuffers.UOffsetT{action}, "hardcoded")
+	policy := schema.PolicyCreate(builder, "All requirements", compositeNode, []flatbuffers.UOffsetT{action})
 	return schema.PoliciesCreate(builder, []flatbuffers.UOffsetT{policy}), nil
 }

@@ -83,21 +83,14 @@ func NodeTypeWrapperCreate(builder *flatbuffers.Builder, nodeOffset flatbuffers.
 	return wls.NodeTypeWrapperEnd(builder)
 }
 
-func PolicyCreate(builder *flatbuffers.Builder, description string, rulesRoot flatbuffers.UOffsetT, actions []flatbuffers.UOffsetT, id string) flatbuffers.UOffsetT {
+func PolicyCreate(builder *flatbuffers.Builder, description string, rulesRoot flatbuffers.UOffsetT, actions []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
 	fbDescription := builder.CreateString(description)
 	actionsVector := builder.CreateVectorOfTables(actions)
-	var fbID flatbuffers.UOffsetT
-	if id != "" {
-		fbID = builder.CreateString(id)
-	}
 
 	wls.PolicyStart(builder)
 	wls.PolicyAddDescription(builder, fbDescription)
 	wls.PolicyAddRules(builder, rulesRoot)
 	wls.PolicyAddActions(builder, actionsVector)
-	if id != "" {
-		wls.PolicyAddId(builder, fbID)
-	}
 
 	return wls.PolicyEnd(builder)
 }
