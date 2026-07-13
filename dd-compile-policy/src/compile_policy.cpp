@@ -24,7 +24,10 @@ int main(int argc, char *argv[]) {
   options.add_options()("input-file", "Input JSON file path",
                         cxxopts::value<std::string>())(
       "input-string", "Input JSON string", cxxopts::value<std::string>())(
-      "output-file", "Output binary file path",
+      "output-file", "Output binary file path", cxxopts::value<std::string>())(
+      "schema-file",
+      "Path to a binary FlatBuffers schema (.bfbs) to compile against, "
+      "overriding the built-in policy schema",
       cxxopts::value<std::string>())("h,help", "Print usage");
 
   auto result = options.parse(argc, argv);
@@ -69,9 +72,24 @@ int main(int argc, char *argv[]) {
 
   flatbuffers::Parser parser;
 
-  // Load binary schema (.bfbs)
-  if (!parser.Deserialize(reinterpret_cast<const uint8_t *>(schema_policy_bfbs),
-                          schema_policy_bfbs_len)) {
+  // Load binary schema (.bfbs): a custom schema file if provided, otherwise
+  // the schema built into this binary.
+  const uint8_t *schema_bytes =
+      reinterpret_cast<const uint8_t *>(schema_policy_bfbs);
+  size_t schema_len = schema_policy_bfbs_len;
+  std::string schema_file_buf;
+
+  if (result.count("schema-file")) {
+    const std::string schema_path = result["schema-file"].as<std::string>();
+    if (!flatbuffers::LoadFile(schema_path.c_str(), true, &schema_file_buf)) {
+      std::cerr << "failed to open schema file " << schema_path << std::endl;
+      return EXIT_FAILURE;
+    }
+    schema_bytes = reinterpret_cast<const uint8_t *>(schema_file_buf.data());
+    schema_len = schema_file_buf.size();
+  }
+
+  if (!parser.Deserialize(schema_bytes, schema_len)) {
     std::cerr << "Failed to parse binary schema\n";
     return EXIT_FAILURE;
   }
