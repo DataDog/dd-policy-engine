@@ -49,6 +49,13 @@ target_sources(dd-policy-engine.unit-tests
     ${CMAKE_CURRENT_SOURCE_DIR}/test_value_sets.c
 )
 
+if(DD_POLICY_BUILD_REPROS)
+  target_sources(dd-policy-engine.unit-tests
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/test_repros.c
+  )
+endif()
+
 target_include_directories(dd-policy-engine.unit-tests
   PRIVATE
     ${CMAKE_BINARY_DIR}/c
@@ -62,4 +69,3 @@ target_link_libraries(dd-policy-engine.unit-tests
 )
 
 utest_discover_tests(dd-policy-engine.unit-tests)
-
