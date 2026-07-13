@@ -4,8 +4,8 @@ package wls
 
 import "strconv"
 
-/// EvaluatorType is a union of all the evaluators supported by the policy engine.
-/// NOTE: StrArrEvaluator is not supported yet, but it is reserved for future use.
+// / EvaluatorType is a union of all the evaluators supported by the policy engine.
+// / NOTE: StrArrEvaluator is not supported yet, but it is reserved for future use.
 type EvaluatorType byte
 
 const (

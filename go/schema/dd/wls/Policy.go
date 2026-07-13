@@ -6,8 +6,8 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// Represents a policy that contains rules and actions.
-/// The rules are represented as a tree structure where each node can be a leaf (with an evaluator) or a root (with child nodes).
+// / Represents a policy that contains rules and actions.
+// / The rules are represented as a tree structure where each node can be a leaf (with an evaluator) or a root (with child nodes).
 type Policy struct {
 	_tab flatbuffers.Table
 }
@@ -43,7 +43,7 @@ func (rcv *Policy) Table() flatbuffers.Table {
 	return rcv._tab
 }
 
-/// The policy can have a description for debugging purposes.
+// / The policy can have a description for debugging purposes.
 func (rcv *Policy) Description() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
@@ -52,8 +52,8 @@ func (rcv *Policy) Description() []byte {
 	return nil
 }
 
-/// The policy can have a description for debugging purposes.
-/// The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers. 
+// / The policy can have a description for debugging purposes.
+// / The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers.
 func (rcv *Policy) Rules(obj *NodeTypeWrapper) *NodeTypeWrapper {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
@@ -67,8 +67,8 @@ func (rcv *Policy) Rules(obj *NodeTypeWrapper) *NodeTypeWrapper {
 	return nil
 }
 
-/// The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers. 
-/// The actions are taken post evaluation of the policy.
+// / The rules are represented as a NodeTypeWrapper to allow for union vectors in FlatBuffers.
+// / The actions are taken post evaluation of the policy.
 func (rcv *Policy) Actions(obj *Action, j int) bool {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
@@ -89,10 +89,10 @@ func (rcv *Policy) ActionsLength() int {
 	return 0
 }
 
-/// The actions are taken post evaluation of the policy.
-/// Stable identifier for this policy, used to attribute an evaluation outcome
-/// back to its source. For Remote Config policies this is the rule's UUID;
-/// for hardcoded/built-in policies it is the sentinel "hardcoded".
+// / The actions are taken post evaluation of the policy.
+// / Stable identifier for this policy, used to attribute an evaluation outcome
+// / back to its source. For Remote Config policies this is the rule's UUID;
+// / for hardcoded/built-in policies it is the sentinel "hardcoded".
 func (rcv *Policy) Id() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
 	if o != 0 {
@@ -101,10 +101,10 @@ func (rcv *Policy) Id() []byte {
 	return nil
 }
 
-/// Stable identifier for this policy, used to attribute an evaluation outcome
-/// back to its source. For Remote Config policies this is the rule's UUID;
-/// for hardcoded/built-in policies it is the sentinel "hardcoded".
-/// used to track the version number of this policy
+// / Stable identifier for this policy, used to attribute an evaluation outcome
+// / back to its source. For Remote Config policies this is the rule's UUID;
+// / for hardcoded/built-in policies it is the sentinel "hardcoded".
+// / used to track the version number of this policy
 func (rcv *Policy) Version() int64 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
 	if o != 0 {
@@ -113,7 +113,7 @@ func (rcv *Policy) Version() int64 {
 	return 0
 }
 
-/// used to track the version number of this policy
+// / used to track the version number of this policy
 func (rcv *Policy) MutateVersion(n int64) bool {
 	return rcv._tab.MutateInt64Slot(12, n)
 }

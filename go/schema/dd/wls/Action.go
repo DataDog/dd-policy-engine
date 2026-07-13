@@ -6,7 +6,7 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// Represents an action taken post evaluation
+// / Represents an action taken post evaluation
 type Action struct {
 	_tab flatbuffers.Table
 }
@@ -42,7 +42,7 @@ func (rcv *Action) Table() flatbuffers.Table {
 	return rcv._tab
 }
 
-/// An enum representing the type of action to take.
+// / An enum representing the type of action to take.
 func (rcv *Action) Action() ActionId {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
@@ -51,12 +51,12 @@ func (rcv *Action) Action() ActionId {
 	return 0
 }
 
-/// An enum representing the type of action to take.
+// / An enum representing the type of action to take.
 func (rcv *Action) MutateAction(n ActionId) bool {
 	return rcv._tab.MutateInt8Slot(4, int8(n))
 }
 
-/// For debugging purposes a description string can be passed 
+// / For debugging purposes a description string can be passed
 func (rcv *Action) Description() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
@@ -65,8 +65,8 @@ func (rcv *Action) Description() []byte {
 	return nil
 }
 
-/// For debugging purposes a description string can be passed 
-/// Each action defines the values it accepts\supports.
+// / For debugging purposes a description string can be passed
+// / Each action defines the values it accepts\supports.
 func (rcv *Action) Values(j int) []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
@@ -84,7 +84,7 @@ func (rcv *Action) ValuesLength() int {
 	return 0
 }
 
-/// Each action defines the values it accepts\supports.
+// / Each action defines the values it accepts\supports.
 func ActionStart(builder *flatbuffers.Builder) {
 	builder.StartObject(3)
 }

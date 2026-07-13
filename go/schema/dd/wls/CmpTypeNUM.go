@@ -4,12 +4,12 @@ package wls
 
 import "strconv"
 
-/// These are the supported comparison operators for Numeric evaluators:
-/// CMP_EQ : Compare equal `==`
-/// CMP_GT : Compare Greater Than `>`
-/// CMP_GTE : Compare Greater Than Equal `>=`
-/// CMP_LT : Compare Lower Than `<`
-/// CMP_LTE : Compare Lower Than Equal `<=`
+// / These are the supported comparison operators for Numeric evaluators:
+// / CMP_EQ : Compare equal `==`
+// / CMP_GT : Compare Greater Than `>`
+// / CMP_GTE : Compare Greater Than Equal `>=`
+// / CMP_LT : Compare Lower Than `<`
+// / CMP_LTE : Compare Lower Than Equal `<=`
 type CmpTypeNUM int8
 
 const (

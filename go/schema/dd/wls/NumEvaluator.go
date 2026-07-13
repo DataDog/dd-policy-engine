@@ -6,8 +6,8 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// Represents a signed Numeric evaluator
-/// This evaluator is used for signed numeric comparisons.
+// / Represents a signed Numeric evaluator
+// / This evaluator is used for signed numeric comparisons.
 type NumEvaluator struct {
 	_tab flatbuffers.Table
 }
@@ -43,7 +43,7 @@ func (rcv *NumEvaluator) Table() flatbuffers.Table {
 	return rcv._tab
 }
 
-/// Each evaluator has an ID, a comparison type and a value to compare against.
+// / Each evaluator has an ID, a comparison type and a value to compare against.
 func (rcv *NumEvaluator) Id() NumericEvaluators {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
@@ -52,12 +52,12 @@ func (rcv *NumEvaluator) Id() NumericEvaluators {
 	return 0
 }
 
-/// Each evaluator has an ID, a comparison type and a value to compare against.
+// / Each evaluator has an ID, a comparison type and a value to compare against.
 func (rcv *NumEvaluator) MutateId(n NumericEvaluators) bool {
 	return rcv._tab.MutateInt8Slot(4, int8(n))
 }
 
-/// The comparison type is used to determine how to compare the value against the evaluator's value.
+// / The comparison type is used to determine how to compare the value against the evaluator's value.
 func (rcv *NumEvaluator) Cmp() CmpTypeNUM {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
@@ -66,12 +66,12 @@ func (rcv *NumEvaluator) Cmp() CmpTypeNUM {
 	return 0
 }
 
-/// The comparison type is used to determine how to compare the value against the evaluator's value.
+// / The comparison type is used to determine how to compare the value against the evaluator's value.
 func (rcv *NumEvaluator) MutateCmp(n CmpTypeNUM) bool {
 	return rcv._tab.MutateInt8Slot(6, int8(n))
 }
 
-/// The value is a signed long.
+// / The value is a signed long.
 func (rcv *NumEvaluator) Value() int64 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
@@ -80,7 +80,7 @@ func (rcv *NumEvaluator) Value() int64 {
 	return 0
 }
 
-/// The value is a signed long.
+// / The value is a signed long.
 func (rcv *NumEvaluator) MutateValue(n int64) bool {
 	return rcv._tab.MutateInt64Slot(8, n)
 }

@@ -4,10 +4,10 @@ package wls
 
 import "strconv"
 
-/// Each ID represents a Numeric evaluator
-/// Each evaluator ID should be UNIQUE!
-/// The numeric evaluators are the same for signed and unsigned types.
-/// IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry)
+// / Each ID represents a Numeric evaluator
+// / Each evaluator ID should be UNIQUE!
+// / The numeric evaluators are the same for signed and unsigned types.
+// / IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry)
 type NumericEvaluators int8
 
 const (
@@ -29,7 +29,7 @@ const (
 	/// Represents the count of Numeric evaluators.
 	/// This is used to ensure that the enum is always in sync with the number of evaluators.
 	/// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
-	NumericEvaluatorsNUM_EVAL_COUNT          NumericEvaluators = 14
+	NumericEvaluatorsNUM_EVAL_COUNT NumericEvaluators = 14
 )
 
 var EnumNamesNumericEvaluators = map[NumericEvaluators]string{

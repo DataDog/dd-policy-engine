@@ -4,8 +4,8 @@ package wls
 
 import "strconv"
 
-/// Represents an 'optional' Boolean results where EVAL_RESULT_ABSTAIN is a *dont care* result.
-/// For more details about the *dont care* results please refer the RFC\Documentation.
+// / Represents an 'optional' Boolean results where EVAL_RESULT_ABSTAIN is a *dont care* result.
+// / For more details about the *dont care* results please refer the RFC\Documentation.
 type EvaluationResult int8
 
 const (
@@ -13,7 +13,7 @@ const (
 	EvaluationResultEVAL_RESULT_FALSE   EvaluationResult = 0
 	EvaluationResultEVAL_RESULT_TRUE    EvaluationResult = 1
 	/// Synthetic count to align with other enumerations
-	EvaluationResultEVAL_RESULT_COUNT   EvaluationResult = 3
+	EvaluationResultEVAL_RESULT_COUNT EvaluationResult = 3
 )
 
 var EnumNamesEvaluationResult = map[EvaluationResult]string{

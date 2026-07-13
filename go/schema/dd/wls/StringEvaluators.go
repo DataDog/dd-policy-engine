@@ -4,93 +4,93 @@ package wls
 
 import "strconv"
 
-/// Each ID represents a String evaluator
-/// Each evaluator ID should be UNIQUE!
-/// IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry)
+// / Each ID represents a String evaluator
+// / Each evaluator ID should be UNIQUE!
+// / IMPORTANT! When adding a new evaluator make sure you add it as the last one (just before the _COUNT entry)
 type StringEvaluators int8
 
 const (
 	/// An enum representing the type of action to take.
-	StringEvaluatorsSTRING_EVAL_UNKNOWN         StringEvaluators = 0
-	StringEvaluatorsCOMPONENT                   StringEvaluators = 1
-	StringEvaluatorsPROCESS_EXE                 StringEvaluators = 2
-	StringEvaluatorsPROCESS_EXE_FULL_PATH       StringEvaluators = 3
-	StringEvaluatorsPROCESS_BASEDIR_PATH        StringEvaluators = 4
-	StringEvaluatorsPROCESS_ARGV                StringEvaluators = 5
-	StringEvaluatorsPROCESS_CWD                 StringEvaluators = 6
-	StringEvaluatorsRUNTIME_LANGUAGE            StringEvaluators = 7
-	/// [python, node, .NET] the [.py/shebang, .js, .dll] file, 
-	StringEvaluatorsRUNTIME_ENTRY_POINT_FILE    StringEvaluators = 8
+	StringEvaluatorsSTRING_EVAL_UNKNOWN   StringEvaluators = 0
+	StringEvaluatorsCOMPONENT             StringEvaluators = 1
+	StringEvaluatorsPROCESS_EXE           StringEvaluators = 2
+	StringEvaluatorsPROCESS_EXE_FULL_PATH StringEvaluators = 3
+	StringEvaluatorsPROCESS_BASEDIR_PATH  StringEvaluators = 4
+	StringEvaluatorsPROCESS_ARGV          StringEvaluators = 5
+	StringEvaluatorsPROCESS_CWD           StringEvaluators = 6
+	StringEvaluatorsRUNTIME_LANGUAGE      StringEvaluators = 7
+	/// [python, node, .NET] the [.py/shebang, .js, .dll] file,
+	StringEvaluatorsRUNTIME_ENTRY_POINT_FILE StringEvaluators = 8
 	/// Used to evaluate the jar file passed to the JVM
-	StringEvaluatorsRUNTIME_ENTRY_POINT_JAR     StringEvaluators = 9
+	StringEvaluatorsRUNTIME_ENTRY_POINT_JAR StringEvaluators = 9
 	/// Used to evaluate the class passed to the JVM
-	StringEvaluatorsRUNTIME_ENTRY_POINT_CLASS   StringEvaluators = 10
+	StringEvaluatorsRUNTIME_ENTRY_POINT_CLASS StringEvaluators = 10
 	/// Used to evaluate the class passed to the JVM
 	StringEvaluatorsRUNTIME_ENTRY_POINT_PACKAGE StringEvaluators = 11
 	StringEvaluatorsRUNTIME_ENTRY_POINT_MODULE  StringEvaluators = 12
 	/// Used to evalute the source file passed to the JVM
-	StringEvaluatorsRUNTIME_ENTRY_POINT_SOURCE  StringEvaluators = 13
+	StringEvaluatorsRUNTIME_ENTRY_POINT_SOURCE StringEvaluators = 13
 	/// Used to evaluate different Doptions passed to the JVM
-	StringEvaluatorsRUNTIME_DOPTION             StringEvaluators = 14
+	StringEvaluatorsRUNTIME_DOPTION StringEvaluators = 14
 	/// Used to evaluate the runtime version
 	/// Remember current implementation will only support string comparisons!
 	/// For a numeric comparison look at the NumericEvaluators!
-	StringEvaluatorsRUNTIME_VERSION             StringEvaluators = 15
+	StringEvaluatorsRUNTIME_VERSION StringEvaluators = 15
 	/// Used to evaluate the flavors (glibc, musl, etc.)
-	StringEvaluatorsLIBC_FLAVOR                 StringEvaluators = 16
+	StringEvaluatorsLIBC_FLAVOR StringEvaluators = 16
 	/// Used to evaluate the libc version
 	/// Remember current implementation will only support string comparisons!
 	/// For a numeric comparison look at the NumericEvaluators!
-	StringEvaluatorsLIBC_VERSION                StringEvaluators = 17
+	StringEvaluatorsLIBC_VERSION StringEvaluators = 17
 	/// Used to evaluate the architecture (x86_64, amd64, aarch64, etc.)
-	StringEvaluatorsMACHINE_ARCHITECTURE        StringEvaluators = 18
+	StringEvaluatorsMACHINE_ARCHITECTURE StringEvaluators = 18
 	/// Used to evaluate the hostname
 	/// NOTE: the correctness of the hotname really depends heavily on the component implementing this evaluator!
-	StringEvaluatorsHOST_NAME                   StringEvaluators = 19
+	StringEvaluatorsHOST_NAME StringEvaluators = 19
 	/// Used to evaluate the IP
 	/// NOTE: the correctness of the hotname really depends heavily on the component implementing this evaluator!
-	StringEvaluatorsHOST_IP                     StringEvaluators = 20
-	StringEvaluatorsOS                          StringEvaluators = 21
-	StringEvaluatorsOS_DISTRO                   StringEvaluators = 22
-	StringEvaluatorsOS_DISTRO_VERSION           StringEvaluators = 23
-	StringEvaluatorsOS_DISTRO_CODENAME          StringEvaluators = 24
-	StringEvaluatorsOS_KERNEL_VERSION           StringEvaluators = 25
-	StringEvaluatorsOS_KERNEL_NAME              StringEvaluators = 26
-	StringEvaluatorsOS_USER                     StringEvaluators = 27
-	StringEvaluatorsOS_USER_GROUP               StringEvaluators = 28
-	StringEvaluatorsCONTAINER_IMAGE             StringEvaluators = 29
-	StringEvaluatorsCONTAINER_ID                StringEvaluators = 30
-	/// When you want to pass a true, false or abstain value to an 
+	StringEvaluatorsHOST_IP            StringEvaluators = 20
+	StringEvaluatorsOS                 StringEvaluators = 21
+	StringEvaluatorsOS_DISTRO          StringEvaluators = 22
+	StringEvaluatorsOS_DISTRO_VERSION  StringEvaluators = 23
+	StringEvaluatorsOS_DISTRO_CODENAME StringEvaluators = 24
+	StringEvaluatorsOS_KERNEL_VERSION  StringEvaluators = 25
+	StringEvaluatorsOS_KERNEL_NAME     StringEvaluators = 26
+	StringEvaluatorsOS_USER            StringEvaluators = 27
+	StringEvaluatorsOS_USER_GROUP      StringEvaluators = 28
+	StringEvaluatorsCONTAINER_IMAGE    StringEvaluators = 29
+	StringEvaluatorsCONTAINER_ID       StringEvaluators = 30
+	/// When you want to pass a true, false or abstain value to an
 	/// action without evaluating anything, these can be used
-	StringEvaluatorsALWAYS_TRUE                 StringEvaluators = 31
-	StringEvaluatorsALWAYS_FALSE                StringEvaluators = 32
-	StringEvaluatorsALWAYS_ABSTAIN              StringEvaluators = 33
-	StringEvaluatorsIIS_APPLICATION_POOL        StringEvaluators = 34
-	StringEvaluatorsPROCESS_ARGV_0              StringEvaluators = 35
-	StringEvaluatorsPROCESS_ARGV_1              StringEvaluators = 36
-	StringEvaluatorsPROCESS_ARGV_2              StringEvaluators = 37
-	StringEvaluatorsPROCESS_ARGV_3              StringEvaluators = 38
-	StringEvaluatorsPROCESS_ARGV_4              StringEvaluators = 39
-	StringEvaluatorsPROCESS_ARGV_5              StringEvaluators = 40
-	StringEvaluatorsPROCESS_ARGV_N              StringEvaluators = 41
-	StringEvaluatorsPROCESS_ARGV_N_2            StringEvaluators = 42
-	StringEvaluatorsPROCESS_ARGV_N_3            StringEvaluators = 43
-	StringEvaluatorsPROCESS_ARGV_N_4            StringEvaluators = 44
-	StringEvaluatorsPROCESS_ARGV_N_5            StringEvaluators = 45
-	StringEvaluatorsPROCESS_ARGV_N_6            StringEvaluators = 46
-	StringEvaluatorsPROCESS_ENVAR               StringEvaluators = 47
+	StringEvaluatorsALWAYS_TRUE          StringEvaluators = 31
+	StringEvaluatorsALWAYS_FALSE         StringEvaluators = 32
+	StringEvaluatorsALWAYS_ABSTAIN       StringEvaluators = 33
+	StringEvaluatorsIIS_APPLICATION_POOL StringEvaluators = 34
+	StringEvaluatorsPROCESS_ARGV_0       StringEvaluators = 35
+	StringEvaluatorsPROCESS_ARGV_1       StringEvaluators = 36
+	StringEvaluatorsPROCESS_ARGV_2       StringEvaluators = 37
+	StringEvaluatorsPROCESS_ARGV_3       StringEvaluators = 38
+	StringEvaluatorsPROCESS_ARGV_4       StringEvaluators = 39
+	StringEvaluatorsPROCESS_ARGV_5       StringEvaluators = 40
+	StringEvaluatorsPROCESS_ARGV_N       StringEvaluators = 41
+	StringEvaluatorsPROCESS_ARGV_N_2     StringEvaluators = 42
+	StringEvaluatorsPROCESS_ARGV_N_3     StringEvaluators = 43
+	StringEvaluatorsPROCESS_ARGV_N_4     StringEvaluators = 44
+	StringEvaluatorsPROCESS_ARGV_N_5     StringEvaluators = 45
+	StringEvaluatorsPROCESS_ARGV_N_6     StringEvaluators = 46
+	StringEvaluatorsPROCESS_ENVAR        StringEvaluators = 47
 	/// The tag portion of the container image reference (e.g. "latest", "v2.1")
-	StringEvaluatorsCONTAINER_IMAGE_TAG         StringEvaluators = 48
+	StringEvaluatorsCONTAINER_IMAGE_TAG StringEvaluators = 48
 	/// The OCI image digest, including the algorithm prefix (e.g. "sha256:abc123...")
-	StringEvaluatorsCONTAINER_IMAGE_DIGEST      StringEvaluators = 49
+	StringEvaluatorsCONTAINER_IMAGE_DIGEST StringEvaluators = 49
 	/// The human-readable container name assigned by the container runtime
-	StringEvaluatorsCONTAINER_NAME              StringEvaluators = 50
+	StringEvaluatorsCONTAINER_NAME StringEvaluators = 50
 	/// A container label as "KEY=VALUE", with CMP_WILDCARD can check wildcards too
-	StringEvaluatorsCONTAINER_LABEL             StringEvaluators = 51
+	StringEvaluatorsCONTAINER_LABEL StringEvaluators = 51
 	/// Represents the count of String evaluators.
 	/// This is used to ensure that the enum is always in sync with the number of evaluators.
 	/// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.
-	StringEvaluatorsSTR_EVAL_COUNT              StringEvaluators = 52
+	StringEvaluatorsSTR_EVAL_COUNT StringEvaluators = 52
 )
 
 var EnumNamesStringEvaluators = map[StringEvaluators]string{

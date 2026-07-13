@@ -6,8 +6,8 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// Represents a wrapper for NodeType to allow for union vectors in FlatBuffers.
-/// This is necessary because union vectors are not supported directly in all FlatBuffers implementations :(
+// / Represents a wrapper for NodeType to allow for union vectors in FlatBuffers.
+// / This is necessary because union vectors are not supported directly in all FlatBuffers implementations :(
 type NodeTypeWrapper struct {
 	_tab flatbuffers.Table
 }

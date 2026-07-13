@@ -4,9 +4,9 @@ package wls
 
 import "strconv"
 
-/// Represents the type of node in the policy tree.
-/// It can either be a leaf node (which contains an evaluator) or a root node (which contains children nodes).
-/// The NodeType is a union of EvaluatorNode and CompositeNode.
+// / Represents the type of node in the policy tree.
+// / It can either be a leaf node (which contains an evaluator) or a root node (which contains children nodes).
+// / The NodeType is a union of EvaluatorNode and CompositeNode.
 type NodeType byte
 
 const (

@@ -4,12 +4,12 @@ package wls
 
 import "strconv"
 
-/// These are the supported comparison operators for String evaluators:
-/// CMP_PREFIX : Compare if the string starts with the value
-/// CMP_SUFFIX : Compare if the string ends with the value
-/// CMP_CONTAINS : Compare if the string contains the value
-/// CMP_EXACT : Compare if the string is exactly equal to the value
-/// CMP_WILDCARD : Compare using wildcard matching ('?' single char, '*' any chars)
+// / These are the supported comparison operators for String evaluators:
+// / CMP_PREFIX : Compare if the string starts with the value
+// / CMP_SUFFIX : Compare if the string ends with the value
+// / CMP_CONTAINS : Compare if the string contains the value
+// / CMP_EXACT : Compare if the string is exactly equal to the value
+// / CMP_WILDCARD : Compare using wildcard matching ('?' single char, '*' any chars)
 type CmpTypeSTR int8
 
 const (

@@ -4,8 +4,8 @@ package wls
 
 import "strconv"
 
-/// Each Action should have an ID associated with it - it should be unique! 
-/// IMPORTANT! When adding a new action make sure you add it as the last one (just before the ACTIONS_COUNT entry)
+// / Each Action should have an ID associated with it - it should be unique!
+// / IMPORTANT! When adding a new action make sure you add it as the last one (just before the ACTIONS_COUNT entry)
 type ActionId int8
 
 const (
@@ -20,8 +20,8 @@ const (
 	/// for example to turn "someapp arg1 arg2" into "wrapper_bin wrapper_arg wrapper_arg2 someapp arg1 arg2 --anotherarg=1 --anotherarg2 anotherval"
 	/// you should pass {"wrapper_bin wrapper_arg wrapper_arg2", "--anotherarg=1 --anotherarg2 anotherval"}
 	/// its on the action implementation to seperate these into execve arguments
-	ActionIdREEXEC          ActionId = 6
-	ActionIdACTIONS_COUNT   ActionId = 7
+	ActionIdREEXEC        ActionId = 6
+	ActionIdACTIONS_COUNT ActionId = 7
 )
 
 var EnumNamesActionId = map[ActionId]string{

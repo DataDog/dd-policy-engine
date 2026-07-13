@@ -4,9 +4,9 @@ package wls
 
 import "strconv"
 
-/// Canonical set of runtime languages recognized by the policy engine.
-/// The string representation uses lowercase (e.g. "jvm", "python").
-/// IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
+// / Canonical set of runtime languages recognized by the policy engine.
+// / The string representation uses lowercase (e.g. "jvm", "python").
+// / IMPORTANT! When adding a new value make sure you add it BEFORE the _COUNT entry.
 type RuntimeLanguage int8
 
 const (

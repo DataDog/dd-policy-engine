@@ -630,8 +630,8 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 			wantVersionErr: true,
 		},
 		{
-			name:              "empty requirements",
-			inputJSON:         `{}`,
+			name:           "empty requirements",
+			inputJSON:      `{}`,
 			wantVersionErr: true,
 		},
 		{

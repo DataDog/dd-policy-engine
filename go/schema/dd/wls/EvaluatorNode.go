@@ -6,8 +6,8 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// Represents a leaf node in the policy tree.
-/// It contains a description and an evaluator.
+// / Represents a leaf node in the policy tree.
+// / It contains a description and an evaluator.
 type EvaluatorNode struct {
 	_tab flatbuffers.Table
 }
@@ -43,7 +43,7 @@ func (rcv *EvaluatorNode) Table() flatbuffers.Table {
 	return rcv._tab
 }
 
-/// The description is used for debugging purposes.
+// / The description is used for debugging purposes.
 func (rcv *EvaluatorNode) Description() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
@@ -52,7 +52,7 @@ func (rcv *EvaluatorNode) Description() []byte {
 	return nil
 }
 
-/// The description is used for debugging purposes.
+// / The description is used for debugging purposes.
 func (rcv *EvaluatorNode) EvalType() EvaluatorType {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
@@ -65,7 +65,7 @@ func (rcv *EvaluatorNode) MutateEvalType(n EvaluatorType) bool {
 	return rcv._tab.MutateByteSlot(6, byte(n))
 }
 
-/// The evaluator is a union of different evaluator types (String, Numeric, etc.).
+// / The evaluator is a union of different evaluator types (String, Numeric, etc.).
 func (rcv *EvaluatorNode) Eval(obj *flatbuffers.Table) bool {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
@@ -75,7 +75,7 @@ func (rcv *EvaluatorNode) Eval(obj *flatbuffers.Table) bool {
 	return false
 }
 
-/// The evaluator is a union of different evaluator types (String, Numeric, etc.).
+// / The evaluator is a union of different evaluator types (String, Numeric, etc.).
 func EvaluatorNodeStart(builder *flatbuffers.Builder) {
 	builder.StartObject(3)
 }

@@ -4,7 +4,7 @@ package wls
 
 import "strconv"
 
-/// These are the supported boolean operators when evaluating multiple conditions
+// / These are the supported boolean operators when evaluating multiple conditions
 type BoolOperation int8
 
 const (

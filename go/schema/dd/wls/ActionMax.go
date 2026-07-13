@@ -4,7 +4,7 @@ package wls
 
 import "strconv"
 
-/// Max values that can be propogated across languages.
+// / Max values that can be propogated across languages.
 type ActionMax int16
 
 const (
