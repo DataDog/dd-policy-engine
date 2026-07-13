@@ -1,6 +1,4 @@
-//go:build repro
-
-package repros
+package converter
 
 import (
 	"encoding/json"
@@ -8,7 +6,6 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/DataDog/dd-policy-engine/go/cmd/dd-requirements-converter/converter"
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
 
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -89,7 +86,7 @@ func evaluateNode(t *testing.T, wrapper *wls.NodeTypeWrapper, ctx runtimeContext
 }
 
 func TestUnsupportedLibcPatchDoesNotDenyEarlierPatch(t *testing.T) {
-	var requirement converter.JSONlibc
+	var requirement JSONlibc
 	if err := json.Unmarshal([]byte(`{"arch":"x64","supported":false,"min":"2.30.5"}`), &requirement); err != nil {
 		t.Fatal(err)
 	}
@@ -121,9 +118,9 @@ func TestUnsupportedLibcPatchDoesNotDenyEarlierPatch(t *testing.T) {
 
 func TestInvalidDenyOSCannotBroadenRule(t *testing.T) {
 	builder := flatbuffers.NewBuilder(128)
-	offset, err := (converter.JSONDeny{
+	offset, err := (JSONDeny{
 		Os:   "freebsd",
-		Cmds: []converter.CmdPattern{"/usr/bin/curl"},
+		Cmds: []CmdPattern{"/usr/bin/curl"},
 	}).ConvertToWLS(builder)
 	if err == nil {
 		t.Fatalf("invalid OS was dropped, broadening the command deny rule at offset %d", offset)
@@ -132,7 +129,7 @@ func TestInvalidDenyOSCannotBroadenRule(t *testing.T) {
 
 func TestDarwinDenyMatchesCanonicalMacOS(t *testing.T) {
 	builder := flatbuffers.NewBuilder(128)
-	offset, err := (converter.JSONDeny{Os: "darwin"}).ConvertToWLS(builder)
+	offset, err := (JSONDeny{Os: "darwin"}).ConvertToWLS(builder)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,9 +144,9 @@ func TestDarwinDenyMatchesCanonicalMacOS(t *testing.T) {
 }
 
 func TestEmptyLibcVersionReturnsError(t *testing.T) {
-	const helper = "DD_REPRO_EMPTY_LIBC_VERSION"
+	const helper = "DD_TEST_EMPTY_LIBC_VERSION"
 	if os.Getenv(helper) == "1" {
-		var requirement converter.JSONlibc
+		var requirement JSONlibc
 		if err := json.Unmarshal([]byte(`{"arch":"x64","supported":true,"min":""}`), &requirement); err != nil {
 			os.Exit(2)
 		}

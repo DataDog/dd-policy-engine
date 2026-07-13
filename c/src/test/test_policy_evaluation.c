@@ -5,10 +5,7 @@
  *
  * Copyright 2025-Present Datadog, Inc.
  * ----
- * Opt-in regression repros. Enable with DD_POLICY_BUILD_REPROS=ON.
- *
- * These tests assert the intended behavior and therefore fail on a revision
- * where the corresponding bug is present.
+ * End-to-end policy evaluation regression tests.
  */
 
 #include "utest/utest.h"
@@ -29,14 +26,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct repro_buffer {
+typedef struct policy_buffer {
   void *data;
   size_t size;
-} repro_buffer;
+} policy_buffer;
 
-static repro_buffer
+static policy_buffer
 finalize_policies(flatcc_builder_t *builder, const dd_wls_Policy_ref_t *policies, size_t policy_count) {
-  repro_buffer result = {0};
+  policy_buffer result = {0};
   dd_wls_Policy_vec_ref_t policies_vec = dd_wls_Policy_vec_create(builder, policies, policy_count);
   if (policies_vec == 0 || dd_wls_Policies_start_as_root(builder) != 0 ||
       dd_wls_Policies_policies_add(builder, policies_vec) != 0 || dd_wls_Policies_end_as_root(builder) == 0) {
@@ -46,14 +43,14 @@ finalize_policies(flatcc_builder_t *builder, const dd_wls_Policy_ref_t *policies
   result.data = flatcc_builder_finalize_buffer(builder, &result.size);
   if (result.data != NULL && dd_wls_Policies_verify_as_root(result.data, result.size) != 0) {
     flatcc_builder_free(result.data);
-    result = (repro_buffer){0};
+    result = (policy_buffer){0};
   }
   return result;
 }
 
 static dd_wls_Action_ref_t
 create_action(flatcc_builder_t *builder, dd_wls_ActionId_enum_t id, flatbuffers_string_vec_ref_t values) {
-  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "repro action");
+  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "test action");
   return description == 0 ? 0 : dd_wls_Action_create(builder, id, description, values);
 }
 
@@ -64,8 +61,8 @@ static dd_wls_Policy_ref_t create_policy(
     size_t action_count
 ) {
   dd_wls_Action_vec_ref_t actions_vec = dd_wls_Action_vec_create(builder, actions, action_count);
-  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "repro policy");
-  flatbuffers_string_ref_t id = flatbuffers_string_create_str(builder, "repro");
+  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "test policy");
+  flatbuffers_string_ref_t id = flatbuffers_string_create_str(builder, "test");
   if (actions_vec == 0 || description == 0 || id == 0) {
     return 0;
   }
@@ -77,14 +74,14 @@ static dd_wls_Policy_ref_t create_policy(
   return dd_wls_Policy_end(builder);
 }
 
-static repro_buffer finish_single_policy(
+static policy_buffer finish_single_policy(
     flatcc_builder_t *builder,
     dd_wls_NodeTypeWrapper_ref_t rules,
     const dd_wls_ActionId_enum_t *ids,
     size_t action_count,
     size_t value_count
 ) {
-  repro_buffer result = {0};
+  policy_buffer result = {0};
   dd_wls_Action_ref_t *actions = calloc(action_count, sizeof(*actions));
   flatbuffers_string_ref_t *values = calloc(value_count, sizeof(*values));
   if ((action_count != 0 && actions == NULL) || (value_count != 0 && values == NULL)) {
@@ -121,8 +118,8 @@ cleanup:
   return result;
 }
 
-static repro_buffer build_action_policy(const dd_wls_ActionId_enum_t *ids, size_t action_count, size_t value_count) {
-  repro_buffer result = {0};
+static policy_buffer build_action_policy(const dd_wls_ActionId_enum_t *ids, size_t action_count, size_t value_count) {
+  policy_buffer result = {0};
   flatcc_builder_t builder;
   if (flatcc_builder_init(&builder) != 0) {
     return result;
@@ -132,7 +129,7 @@ static repro_buffer build_action_policy(const dd_wls_ActionId_enum_t *ids, size_
 
 static dd_wls_NodeTypeWrapper_ref_t
 build_string_rule(flatcc_builder_t *builder, dd_wls_StringEvaluators_enum_t id, const char *value) {
-  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "string repro");
+  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "string test");
   flatbuffers_string_ref_t expected = flatbuffers_string_create_str(builder, value);
   dd_wls_StrEvaluator_ref_t evaluator = dd_wls_StrEvaluator_create(builder, id, dd_wls_CmpTypeSTR_CMP_EXACT, expected);
   if (description == 0 || expected == 0 || evaluator == 0) {
@@ -149,7 +146,7 @@ static dd_wls_NodeTypeWrapper_ref_t build_numeric_rule(
     dd_wls_CmpTypeNUM_enum_t comparator,
     int64_t value
 ) {
-  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "numeric repro");
+  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "numeric test");
   dd_wls_NumEvaluator_ref_t evaluator = dd_wls_NumEvaluator_create(builder, id, comparator, value);
   if (description == 0 || evaluator == 0) {
     return 0;
@@ -165,7 +162,7 @@ static dd_wls_NodeTypeWrapper_ref_t build_unumeric_rule(
     dd_wls_CmpTypeNUM_enum_t comparator,
     uint64_t value
 ) {
-  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "unsigned numeric repro");
+  flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "unsigned numeric test");
   dd_wls_UNumEvaluator_ref_t evaluator = dd_wls_UNumEvaluator_create(builder, id, comparator, value);
   if (description == 0 || evaluator == 0) {
     return 0;
@@ -175,8 +172,8 @@ static dd_wls_NodeTypeWrapper_ref_t build_unumeric_rule(
   return node == 0 ? 0 : dd_wls_NodeTypeWrapper_create(builder, dd_wls_NodeType_as_EvaluatorNode(node));
 }
 
-static repro_buffer build_numeric_policy(int is_unsigned) {
-  repro_buffer result = {0};
+static policy_buffer build_numeric_policy(int is_unsigned) {
+  policy_buffer result = {0};
   flatcc_builder_t builder;
   if (flatcc_builder_init(&builder) != 0) {
     return result;
@@ -198,8 +195,8 @@ static repro_buffer build_numeric_policy(int is_unsigned) {
   return finish_single_policy(&builder, rule, &action, 1, 0);
 }
 
-static repro_buffer build_invalid_action_then_valid_deny(void) {
-  repro_buffer result = {0};
+static policy_buffer build_invalid_action_then_valid_deny(void) {
+  policy_buffer result = {0};
   flatcc_builder_t builder;
   if (flatcc_builder_init(&builder) != 0) {
     return result;
@@ -225,8 +222,8 @@ cleanup:
   return result;
 }
 
-static repro_buffer build_invalid_boolean_policy(void) {
-  repro_buffer result = {0};
+static policy_buffer build_invalid_boolean_policy(void) {
+  policy_buffer result = {0};
   flatcc_builder_t builder;
   if (flatcc_builder_init(&builder) != 0) {
     return result;
@@ -302,9 +299,9 @@ static plcs_errors mutating_action(
   return PLCS_ESUCCESS;
 }
 
-UTEST(repro_actions, later_success_does_not_erase_failure) {
+UTEST(policy_actions, later_success_does_not_erase_failure) {
   const dd_wls_ActionId_enum_t ids[] = {dd_wls_ActionId_INJECT_DENY, dd_wls_ActionId_INJECT_ALLOW};
-  repro_buffer buffer = build_action_policy(ids, 2, 0);
+  policy_buffer buffer = build_action_policy(ids, 2, 0);
   ASSERT_TRUE(buffer.data != NULL);
 
   (void)plcs_eval_ctx_init();
@@ -320,9 +317,9 @@ UTEST(repro_actions, later_success_does_not_erase_failure) {
   ASSERT_EQ(result, PLCS_EACTIONS_EVAL);
 }
 
-UTEST(repro_actions, const_policy_buffer_is_not_mutated_by_action_values) {
+UTEST(policy_actions, const_policy_buffer_is_not_mutated_by_action_values) {
   const dd_wls_ActionId_enum_t action = dd_wls_ActionId_INJECT_DENY;
-  repro_buffer buffer = build_action_policy(&action, 1, 1);
+  policy_buffer buffer = build_action_policy(&action, 1, 1);
   ASSERT_TRUE(buffer.data != NULL);
   void *original = malloc(buffer.size);
   ASSERT_TRUE(original != NULL);
@@ -341,8 +338,8 @@ UTEST(repro_actions, const_policy_buffer_is_not_mutated_by_action_values) {
   ASSERT_TRUE(unchanged);
 }
 
-UTEST(repro_evaluator, missing_signed_numeric_context_abstains) {
-  repro_buffer buffer = build_numeric_policy(0);
+UTEST(policy_evaluator, missing_signed_numeric_context_abstains) {
+  policy_buffer buffer = build_numeric_policy(0);
   ASSERT_TRUE(buffer.data != NULL);
 
   (void)plcs_eval_ctx_init();
@@ -358,8 +355,8 @@ UTEST(repro_evaluator, missing_signed_numeric_context_abstains) {
   ASSERT_EQ(observed_evaluation_result, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
-UTEST(repro_evaluator, missing_unsigned_numeric_context_abstains) {
-  repro_buffer buffer = build_numeric_policy(1);
+UTEST(policy_evaluator, missing_unsigned_numeric_context_abstains) {
+  policy_buffer buffer = build_numeric_policy(1);
   ASSERT_TRUE(buffer.data != NULL);
 
   (void)plcs_eval_ctx_init();
@@ -375,8 +372,8 @@ UTEST(repro_evaluator, missing_unsigned_numeric_context_abstains) {
   ASSERT_EQ(observed_evaluation_result, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
-UTEST(repro_integrity, invalid_action_cannot_disable_later_deny_policy) {
-  repro_buffer buffer = build_invalid_action_then_valid_deny();
+UTEST(policy_validation, invalid_action_cannot_disable_later_deny_policy) {
+  policy_buffer buffer = build_invalid_action_then_valid_deny();
   ASSERT_TRUE(buffer.data != NULL);
 
   (void)plcs_eval_ctx_init();
@@ -396,8 +393,8 @@ UTEST(repro_integrity, invalid_action_cannot_disable_later_deny_policy) {
   ASSERT_TRUE(safely_handled);
 }
 
-UTEST(repro_integrity, invalid_boolean_operator_is_rejected) {
-  repro_buffer buffer = build_invalid_boolean_policy();
+UTEST(policy_validation, invalid_boolean_operator_is_rejected) {
+  policy_buffer buffer = build_invalid_boolean_policy();
   ASSERT_TRUE(buffer.data != NULL);
 
   (void)plcs_eval_ctx_init();

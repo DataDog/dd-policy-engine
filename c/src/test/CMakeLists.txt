@@ -45,16 +45,10 @@ target_sources(dd-policy-engine.unit-tests
     ${CMAKE_CURRENT_SOURCE_DIR}/test_eval_ctx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_evaluator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_main.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_policy_evaluation.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_policy_reader.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_value_sets.c
 )
-
-if(DD_POLICY_BUILD_REPROS)
-  target_sources(dd-policy-engine.unit-tests
-    PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/test_repros.c
-  )
-endif()
 
 target_include_directories(dd-policy-engine.unit-tests
   PRIVATE
