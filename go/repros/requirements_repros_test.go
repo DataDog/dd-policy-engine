@@ -4,6 +4,8 @@ package repros
 
 import (
 	"encoding/json"
+	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/DataDog/dd-policy-engine/go/cmd/dd-requirements-converter/converter"
@@ -117,13 +119,50 @@ func TestUnsupportedLibcPatchDoesNotDenyEarlierPatch(t *testing.T) {
 	}
 }
 
-func TestInvalidDenyOSIsRejected(t *testing.T) {
+func TestInvalidDenyOSCannotBroadenRule(t *testing.T) {
 	builder := flatbuffers.NewBuilder(128)
-	offset, err := (converter.JSONRequirements{
-		Version: 1,
-		Deny:    []converter.JSONDeny{{Os: "freebsd"}},
+	offset, err := (converter.JSONDeny{
+		Os:   "freebsd",
+		Cmds: []converter.CmdPattern{"/usr/bin/curl"},
 	}).ConvertToWLS(builder)
 	if err == nil {
-		t.Fatalf("requirements with an invalid OS were silently accepted with offset %d", offset)
+		t.Fatalf("invalid OS was dropped, broadening the command deny rule at offset %d", offset)
+	}
+}
+
+func TestDarwinDenyMatchesCanonicalMacOS(t *testing.T) {
+	builder := flatbuffers.NewBuilder(128)
+	offset, err := (converter.JSONDeny{Os: "darwin"}).ConvertToWLS(builder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	builder.Finish(offset)
+	root := wls.GetRootAsNodeTypeWrapper(builder.FinishedBytes(), 0)
+
+	if !evaluateNode(t, root, runtimeContext{
+		strings: map[wls.StringEvaluators]string{wls.StringEvaluatorsOS: "macos"},
+	}) {
+		t.Fatal("darwin requirement did not match the canonical macos runtime value")
+	}
+}
+
+func TestEmptyLibcVersionReturnsError(t *testing.T) {
+	const helper = "DD_REPRO_EMPTY_LIBC_VERSION"
+	if os.Getenv(helper) == "1" {
+		var requirement converter.JSONlibc
+		if err := json.Unmarshal([]byte(`{"arch":"x64","supported":true,"min":""}`), &requirement); err != nil {
+			os.Exit(2)
+		}
+		_, err := requirement.ConvertToWLS(flatbuffers.NewBuilder(128), "glibc")
+		if err != nil {
+			os.Exit(0)
+		}
+		os.Exit(3)
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestEmptyLibcVersionReturnsError$")
+	cmd.Env = append(os.Environ(), helper+"=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("empty version terminated the converter process: %v\n%s", err, output)
 	}
 }
