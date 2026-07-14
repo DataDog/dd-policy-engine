@@ -57,7 +57,7 @@ if(DD_POLICY_ENABLE_SANITIZERS)
     )
     if(CMAKE_C_COMPILER_ID MATCHES "Clang")
       list(APPEND DD_POLICY_SANITIZER_COMPILE_OPTIONS
-        "-fsanitize-ignorelist=${CMAKE_SOURCE_DIR}/.sanitizers.supp"
+        "-fsanitize-ignorelist=${PROJECT_SOURCE_DIR}/.sanitizers.supp"
       )
     endif()
   else()
@@ -123,7 +123,7 @@ if(PROJECT_IS_TOP_LEVEL)
       "GOCACHE=${CMAKE_CURRENT_BINARY_DIR}/go-build-cache"
     )
     set(DD_POLICY_GO_EXTLDFLAGS
-      "$<TARGET_FILE:dd-policy-engine.static-lib>"
+      "\"$<TARGET_FILE:dd-policy-engine.static-lib>\""
     )
     if(DD_POLICY_ENABLE_SANITIZERS)
       string(APPEND DD_POLICY_GO_EXTLDFLAGS
