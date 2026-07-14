@@ -1,9 +1,9 @@
 package converter
 
 import (
+	wls "dd-fbs/schema/dd/wls"
 	"testing"
 
-	wls "github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 

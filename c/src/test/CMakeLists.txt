@@ -54,10 +54,6 @@ target_include_directories(dd-policy-engine.unit-tests
   PRIVATE
     ${CMAKE_BINARY_DIR}/c
     ${CMAKE_SOURCE_DIR}/c/src
-)
-
-target_include_directories(dd-policy-engine.unit-tests
-  SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/c/src/schema
 )
 

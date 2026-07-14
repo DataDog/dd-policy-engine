@@ -497,7 +497,7 @@ UTEST(evaluator, test_evaluate_string_basic_functionality) {
   // shouldn't be any value
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   flatcc_builder_free(buf);
-  flatcc_builder_clear(&b);
+  flatcc_builder_reset(&b);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -534,9 +534,9 @@ UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
   plcs_eval_ctx_reset();
   res = evaluate_numeric(eval, "d");
   // shouldn't be any value
-  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
   flatcc_builder_free(buf);
-  flatcc_builder_clear(&b);
+  flatcc_builder_reset(&b);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -578,7 +578,7 @@ UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
 
   res = evaluate_unumeric(NULL, "d");
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
-  flatcc_builder_clear(&b);
+  flatcc_builder_reset(&b);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -595,6 +595,8 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   /* Mock an EvaluatorNode with basic values */
   /* Note: This test requires proper mocking of FlatCC objects */
 
+#include <stdio.h>
+  printf("hi?!\n");
   /* Initialize context for evaluation */
   int rc = plcs_eval_ctx_init();
   ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
@@ -658,7 +660,6 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
 
   rc = node_evaluator(eval);
   flatcc_builder_free(buf);
-  flatcc_builder_clear(&b);
   ASSERT_EQ(rc, PLCS_EVAL_RESULT_TRUE);
 }
 

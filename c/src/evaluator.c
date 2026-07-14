@@ -12,8 +12,6 @@
 #include <dd/policies/policies.h>
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "eval_ctx.h"
 #include "policy.h"
 #include "wire/action.h"
@@ -55,10 +53,6 @@ plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, co
 
   const long param = plcs_eval_ctx_get_numeric_param(eval_id);
 
-  if (param == PLCS_NUM_NOT_SET) {
-    return PLCS_EVAL_RESULT_ABSTAIN;
-  }
-
   plcs_numeric_evaluator_function_ptr eval = plcs_eval_ctx_get_numeric_evaluator(eval_id);
   if (!eval) {
     eval = plcs_default_numeric_evaluator;
@@ -80,10 +74,6 @@ plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum,
   plcs_numeric_evaluators eval_id = dd_ns(UNumEvaluator_id)(eval_unum);
 
   const unsigned long param = plcs_eval_ctx_get_unumeric_param(eval_id);
-
-  if (param == PLCS_UNUM_NOT_SET) {
-    return PLCS_EVAL_RESULT_ABSTAIN;
-  }
 
   plcs_unumeric_evaluator_function_ptr eval = plcs_eval_ctx_get_unumeric_evaluator(eval_id);
   if (!eval) {
@@ -161,17 +151,20 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   switch (oper) {
     case dd_ns(BoolOperation_BOOL_AND):
       return DoAnd(a, b);
+      break;
 
     case dd_ns(BoolOperation_BOOL_OR):
       return DoOr(a, b);
+      break;
 
     case dd_ns(BoolOperation_BOOL_NOT):
       return DoNot(a);
+      break;
 
-    case dd_ns(BoolOperation_BOOL_UNKNOWN):
-    case dd_ns(BoolOperation_BOOL_COUNT):
     default:
+      // error unknown result
       return PLCS_EVAL_RESULT_ABSTAIN;
+      break;
   }
 }
 
@@ -188,7 +181,8 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
 
   switch (oper) {
     case dd_ns(BoolOperation_BOOL_UNKNOWN):
-      return PLCS_EVAL_RESULT_ABSTAIN;
+      res = PLCS_EVAL_RESULT_ABSTAIN;
+      break;
 
     case dd_ns(BoolOperation_BOOL_OR):
       res = PLCS_EVAL_RESULT_FALSE;
@@ -206,10 +200,7 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
       return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1));
-
-    case dd_ns(BoolOperation_BOOL_COUNT):
-    default:
-      return PLCS_EVAL_RESULT_ABSTAIN;
+      break;
   }
 
   // keep iterating recursively over the tree
@@ -237,133 +228,55 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
 
   switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
     case dd_ns(NodeType_EvaluatorNode):
-      return node_evaluator(dd_ns(NodeTypeWrapper_node)(node));
+      dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
+      return node_evaluator(evaluator_node);
+      break;
 
     case dd_ns(NodeType_CompositeNode):
-      return composite_evaluator(dd_ns(NodeTypeWrapper_node)(node), depth);
+      dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
+      return composite_evaluator(composite_node, depth);
+      break;
 
     default:
-      return PLCS_EVAL_RESULT_ABSTAIN;
-  }
-}
-
-static void free_action_values(char *values[], size_t values_len) {
-  for (size_t ix = 0; ix < values_len; ++ix) {
-    free(values[ix]);
-  }
-}
-
-static plcs_errors copy_action_values(flatbuffers_string_vec_t source_values, char *values[], size_t values_len) {
-  for (size_t ix = 0; ix < values_len; ++ix) {
-    const char *value = flatbuffers_string_vec_at(source_values, ix);
-    if (!value) {
-      values[ix] = NULL;
-      continue;
-    }
-
-    size_t value_len = strlen(value) + 1;
-    values[ix] = malloc(value_len);
-    if (!values[ix]) {
-      return PLCS_EACTIONS_EVAL;
-    }
-    memcpy(values[ix], value, value_len);
+      // error, unknown node type!
+      break;
   }
 
-  return PLCS_ESUCCESS;
+  // log error
+  return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
 static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns(Action_vec_t) actions_vec) {
-  plcs_errors first_error = PLCS_ESUCCESS;
+  plcs_errors res = PLCS_ESUCCESS;
 
-  size_t actions_len = dd_ns(Action_vec_len)(actions_vec);
-  for (size_t ix = 0; ix < actions_len; ++ix) {
+  // iterate
+  size_t len = dd_ns(Action_vec_len)(actions_vec);
+  for (size_t ix = 0; ix < len; ++ix) {
     dd_ns(Action_table_t) action = dd_ns(Action_vec_at)(actions_vec, ix);
     int action_id = dd_ns(Action_action)(action);
-    plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
-    if (!action_function) {
+    if (action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
       continue;
     }
-
-    flatbuffers_string_vec_t source_values = dd_ns(Action_values)(action);
-    size_t values_len = flatbuffers_vec_len(source_values);
+    size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
+    // something went wrong, we need to bail
     if (values_len >= (size_t)PLCS_ACTION_VALUES_MAX) {
-      if (first_error == PLCS_ESUCCESS) {
-        first_error = PLCS_EIX_OVERFLOW;
-      }
-      continue;
-    }
-
-    char *values[PLCS_ACTION_VALUES_MAX] = {0};
-    plcs_errors action_result = copy_action_values(source_values, values, values_len);
-    if (action_result == PLCS_ESUCCESS) {
-      // Keep the allocated pointers intact for cleanup if the callback replaces
-      // entries in its pointer array.
-      char *callback_values[PLCS_ACTION_VALUES_MAX] = {0};
-      memcpy(callback_values, values, values_len * sizeof(*values));
-      action_result =
-          action_function(eval_res, callback_values, values_len, dd_ns(Action_description)(action), action_id);
-    }
-    free_action_values(values, values_len);
-
-    plcs_eval_ctx_set_action_error(action_id, action_result);
-    if (first_error == PLCS_ESUCCESS && action_result != PLCS_ESUCCESS) {
-      first_error = action_result;
-    }
-  }
-
-  return first_error;
-}
-
-static plcs_errors validate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
-  if (!node || depth > PLCS_MAX_EVAL_DEPTH) {
-    return PLCS_ESUCCESS;
-  }
-
-  if (dd_ns(NodeTypeWrapper_node_type)(node) != dd_ns(NodeType_CompositeNode)) {
-    return PLCS_ESUCCESS;
-  }
-
-  dd_ns(CompositeNode_table_t) composite = dd_ns(NodeTypeWrapper_node)(node);
-  if (!composite) {
-    return PLCS_ESUCCESS;
-  }
-
-  dd_ns(BoolOperation_enum_t) oper = dd_ns(CompositeNode_op)(composite);
-  dd_ns(NodeTypeWrapper_vec_t) children = dd_ns(CompositeNode_children)(composite);
-  size_t children_len = children ? dd_ns(NodeTypeWrapper_vec_len)(children) : 0;
-
-  switch (oper) {
-    case dd_ns(BoolOperation_BOOL_UNKNOWN):
-    case dd_ns(BoolOperation_BOOL_AND):
-    case dd_ns(BoolOperation_BOOL_OR):
-    case dd_ns(BoolOperation_BOOL_NOT):
+      res = PLCS_EIX_OVERFLOW;
       break;
-
-    case dd_ns(BoolOperation_BOOL_COUNT):
-    default:
-      return PLCS_EUNKNOWN_CMP;
-  }
-
-  for (size_t ix = 0; ix < children_len; ++ix) {
-    plcs_errors validation_result = validate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1);
-    if (validation_result != PLCS_ESUCCESS) {
-      return validation_result;
+    }
+    char *values[PLCS_ACTION_VALUES_MAX];
+    for (size_t v_ix = 0; v_ix < values_len; ++v_ix) {
+      values[v_ix] = (char *)flatbuffers_string_vec_at(dd_ns(Action_values(action)), v_ix);
+    }
+    plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
+    if (action_function) {
+      res = action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
+      plcs_eval_ctx_set_action_error(action_id, res);
+    } else {
+      res = PLCS_EACTIONS_EVAL;
     }
   }
 
-  return PLCS_ESUCCESS;
-}
-
-static plcs_errors validate_actions(dd_ns(Action_vec_t) actions) {
-  size_t actions_len = actions ? dd_ns(Action_vec_len)(actions) : 0;
-  for (size_t ix = 0; ix < actions_len; ++ix) {
-    int action_id = dd_ns(Action_action)(dd_ns(Action_vec_at)(actions, ix));
-    if (action_id < 0 || action_id >= dd_ns(ActionId_ACTIONS_COUNT)) {
-      return PLCS_EIX_OVERFLOW;
-    }
-  }
-
-  return PLCS_ESUCCESS;
+  return res;
 }
 
 plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
@@ -372,14 +285,6 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
 
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
-
-  plcs_errors validation_result = validate_actions(actions);
-  if (validation_result == PLCS_ESUCCESS) {
-    validation_result = validate_rules(rules, 0);
-  }
-  if (validation_result != PLCS_ESUCCESS) {
-    return validation_result;
-  }
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
@@ -396,20 +301,21 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
   }
 
   size_t policies_count = dd_ns(Policy_vec_len)(policies);
-  plcs_errors first_error = PLCS_ESUCCESS;
+  plcs_errors total_errors = 0;
   for (size_t ix = 0; ix < policies_count; ++ix) {
     dd_ns(Policy_table_t) policy = dd_ns(Policy_vec_at)(policies, ix);
     if (!policy) {
       // not necessarily an error, could be empty policy
       continue;
     }
-    plcs_errors policy_result = evaluate_policy(policy);
-    if (first_error == PLCS_ESUCCESS && policy_result != PLCS_ESUCCESS) {
-      first_error = policy_result;
-    }
+    plcs_errors res = evaluate_policy(policy);
+    // success is 0, errors are > 0, if total_errors is > 0, it means there was
+    // an error
+    // TODO: track these errors using an errono style map in the eval_ctx
+    total_errors += res;
   }
 
-  return first_error;
+  return total_errors;
 }
 
 const char *plcs_string_evaluators_to_string(enum plcs_string_evaluators v) {

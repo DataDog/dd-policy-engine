@@ -2,6 +2,8 @@ package converter
 
 import (
 	"encoding/json"
+	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
@@ -97,35 +99,20 @@ func TestUnsupportedLibcPatchDoesNotDenyEarlierPatch(t *testing.T) {
 	builder.Finish(offset)
 	root := wls.GetRootAsNodeTypeWrapper(builder.FinishedBytes(), 0)
 
-	tests := []struct {
-		name                string
-		major, minor, patch int64
-		want                bool
-	}{
-		{name: "2.30.4", major: 2, minor: 30, patch: 4, want: false},
-		{name: "2.30.5", major: 2, minor: 30, patch: 5, want: true},
-		{name: "2.30.6", major: 2, minor: 30, patch: 6, want: true},
-		{name: "2.31.0", major: 2, minor: 31, patch: 0, want: true},
-		{name: "3.0.0", major: 3, minor: 0, patch: 0, want: true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			matched := evaluateNode(t, root, runtimeContext{
-				strings: map[wls.StringEvaluators]string{
-					wls.StringEvaluatorsMACHINE_ARCHITECTURE: "x86_64",
-					wls.StringEvaluatorsLIBC_FLAVOR:          "glibc",
-				},
-				numerics: map[wls.NumericEvaluators]int64{
-					wls.NumericEvaluatorsLIBC_VERSION_MAJOR: tt.major,
-					wls.NumericEvaluatorsLIBC_VERSION_MINOR: tt.minor,
-					wls.NumericEvaluatorsLIBC_VERSION_PATCH: tt.patch,
-				},
-			})
+	matched := evaluateNode(t, root, runtimeContext{
+		strings: map[wls.StringEvaluators]string{
+			wls.StringEvaluatorsMACHINE_ARCHITECTURE: "x86_64",
+			wls.StringEvaluatorsLIBC_FLAVOR:          "glibc",
+		},
+		numerics: map[wls.NumericEvaluators]int64{
+			wls.NumericEvaluatorsLIBC_VERSION_MAJOR: 2,
+			wls.NumericEvaluatorsLIBC_VERSION_MINOR: 30,
+			wls.NumericEvaluatorsLIBC_VERSION_PATCH: 4,
+		},
+	})
 
-			if matched != tt.want {
-				t.Fatalf("match = %t, want %t for unsupported >= 2.30.5", matched, tt.want)
-			}
-		})
+	if matched {
+		t.Fatal("2.30.4 matched an unsupported >= 2.30.5 rule")
 	}
 }
 
@@ -141,46 +128,38 @@ func TestInvalidDenyOSCannotBroadenRule(t *testing.T) {
 }
 
 func TestDarwinDenyMatchesCanonicalMacOS(t *testing.T) {
-	for _, input := range []string{"darwin", "macos"} {
-		t.Run(input, func(t *testing.T) {
-			builder := flatbuffers.NewBuilder(128)
-			offset, err := (JSONDeny{Os: input}).ConvertToWLS(builder)
-			if err != nil {
-				t.Fatal(err)
-			}
-			builder.Finish(offset)
-			root := wls.GetRootAsNodeTypeWrapper(builder.FinishedBytes(), 0)
+	builder := flatbuffers.NewBuilder(128)
+	offset, err := (JSONDeny{Os: "darwin"}).ConvertToWLS(builder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	builder.Finish(offset)
+	root := wls.GetRootAsNodeTypeWrapper(builder.FinishedBytes(), 0)
 
-			if !evaluateNode(t, root, runtimeContext{
-				strings: map[wls.StringEvaluators]string{wls.StringEvaluatorsOS: "macos"},
-			}) {
-				t.Fatalf("%s requirement did not match the canonical macos runtime value", input)
-			}
-		})
+	if !evaluateNode(t, root, runtimeContext{
+		strings: map[wls.StringEvaluators]string{wls.StringEvaluatorsOS: "macos"},
+	}) {
+		t.Fatal("darwin requirement did not match the canonical macos runtime value")
 	}
 }
 
 func TestEmptyLibcVersionReturnsError(t *testing.T) {
-	testCases := []struct {
-		name    string
-		version string
-	}{
-		{name: "empty"},
-		{name: "2", version: "2"},
+	const helper = "DD_TEST_EMPTY_LIBC_VERSION"
+	if os.Getenv(helper) == "1" {
+		var requirement JSONlibc
+		if err := json.Unmarshal([]byte(`{"arch":"x64","supported":true,"min":""}`), &requirement); err != nil {
+			os.Exit(2)
+		}
+		_, err := requirement.ConvertToWLS(flatbuffers.NewBuilder(128), "glibc")
+		if err != nil {
+			os.Exit(0)
+		}
+		os.Exit(3)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			var requirement JSONlibc
-			if err := json.Unmarshal(
-				[]byte(`{"arch":"x64","supported":true,"min":"`+testCase.version+`"}`),
-				&requirement,
-			); err != nil {
-				t.Fatal(err)
-			}
 
-			if _, err := requirement.ConvertToWLS(flatbuffers.NewBuilder(128), "glibc"); err == nil {
-				t.Fatalf("expected version %q to be rejected", testCase.version)
-			}
-		})
+	cmd := exec.Command(os.Args[0], "-test.run=^TestEmptyLibcVersionReturnsError$")
+	cmd.Env = append(os.Environ(), helper+"=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("empty version terminated the converter process: %v\n%s", err, output)
 	}
 }

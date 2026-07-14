@@ -235,7 +235,7 @@ void plcs_eval_ctx_reset(void) {
 
     ctx.unumeric_evaluators[i].error = PLCS_ESUCCESS;
     ctx.unumeric_evaluators[i].function_ptr = NULL;
-    ctx.unumeric_evaluators[i].value = PLCS_UNUM_NOT_SET;
+    ctx.unumeric_evaluators[i].value = PLCS_NUM_NOT_SET;
   }
 
   for (int i = 0; i < PLCS_ACTIONS__COUNT; ++i) {

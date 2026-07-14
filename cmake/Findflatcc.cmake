@@ -40,11 +40,3 @@ endif()
 
 # Update target to ALWAYS disable `-Werror` when compiling flatcc.
 set_target_properties(flatccrt-obj PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
-
-# Consumers include FlatCC's portable runtime headers from generated code. Treat
-# those dependency headers as system headers so project warning policies do not
-# turn third-party diagnostics into build failures.
-get_target_property(FLATCC_INCLUDE_DIRS flatccrt-obj INTERFACE_INCLUDE_DIRECTORIES)
-if(FLATCC_INCLUDE_DIRS)
-  target_include_directories(flatccrt-obj SYSTEM INTERFACE ${FLATCC_INCLUDE_DIRS})
-endif()
