@@ -35,8 +35,16 @@ static policy_buffer
 finalize_policies(flatcc_builder_t *builder, const dd_wls_Policy_ref_t *policies, size_t policy_count) {
   policy_buffer result = {0};
   dd_wls_Policy_vec_ref_t policies_vec = dd_wls_Policy_vec_create(builder, policies, policy_count);
-  if (policies_vec == 0 || dd_wls_Policies_start_as_root(builder) != 0 ||
-      dd_wls_Policies_policies_add(builder, policies_vec) != 0 || dd_wls_Policies_end_as_root(builder) == 0) {
+  if (policies_vec == 0) {
+    return result;
+  }
+  if (dd_wls_Policies_start_as_root(builder) != 0) {
+    return result;
+  }
+  if (dd_wls_Policies_policies_add(builder, policies_vec) != 0) {
+    return result;
+  }
+  if (dd_wls_Policies_end_as_root(builder) == 0) {
     return result;
   }
 
@@ -66,9 +74,19 @@ static dd_wls_Policy_ref_t create_policy(
   if (actions_vec == 0 || description == 0 || id == 0) {
     return 0;
   }
-  if (dd_wls_Policy_start(builder) != 0 || dd_wls_Policy_description_add(builder, description) != 0 ||
-      (rules != 0 && dd_wls_Policy_rules_add(builder, rules) != 0) ||
-      dd_wls_Policy_actions_add(builder, actions_vec) != 0 || dd_wls_Policy_id_add(builder, id) != 0) {
+  if (dd_wls_Policy_start(builder) != 0) {
+    return 0;
+  }
+  if (dd_wls_Policy_description_add(builder, description) != 0) {
+    return 0;
+  }
+  if (rules != 0 && dd_wls_Policy_rules_add(builder, rules) != 0) {
+    return 0;
+  }
+  if (dd_wls_Policy_actions_add(builder, actions_vec) != 0) {
+    return 0;
+  }
+  if (dd_wls_Policy_id_add(builder, id) != 0) {
     return 0;
   }
   return dd_wls_Policy_end(builder);
