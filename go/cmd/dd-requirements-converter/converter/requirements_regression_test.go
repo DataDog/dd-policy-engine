@@ -2,8 +2,6 @@ package converter
 
 import (
 	"encoding/json"
-	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
@@ -163,29 +161,25 @@ func TestDarwinDenyMatchesCanonicalMacOS(t *testing.T) {
 }
 
 func TestEmptyLibcVersionReturnsError(t *testing.T) {
-	const helper = "DD_TEST_EMPTY_LIBC_VERSION"
-	if helperValue := os.Getenv(helper); helperValue != "" {
-		version := helperValue
-		if version == "empty" {
-			version = ""
-		}
-		var requirement JSONlibc
-		if err := json.Unmarshal([]byte(`{"arch":"x64","supported":true,"min":"`+version+`"}`), &requirement); err != nil {
-			os.Exit(2)
-		}
-		_, err := requirement.ConvertToWLS(flatbuffers.NewBuilder(128), "glibc")
-		if err != nil {
-			os.Exit(0)
-		}
-		os.Exit(3)
+	testCases := []struct {
+		name    string
+		version string
+	}{
+		{name: "empty"},
+		{name: "2", version: "2"},
 	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			var requirement JSONlibc
+			if err := json.Unmarshal(
+				[]byte(`{"arch":"x64","supported":true,"min":"`+testCase.version+`"}`),
+				&requirement,
+			); err != nil {
+				t.Fatal(err)
+			}
 
-	for _, version := range []string{"empty", "2"} {
-		t.Run(version, func(t *testing.T) {
-			cmd := exec.Command(os.Args[0], "-test.run=^TestEmptyLibcVersionReturnsError$")
-			cmd.Env = append(os.Environ(), helper+"="+version)
-			if output, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("invalid version terminated the converter process: %v\n%s", err, output)
+			if _, err := requirement.ConvertToWLS(flatbuffers.NewBuilder(128), "glibc"); err == nil {
+				t.Fatalf("expected version %q to be rejected", testCase.version)
 			}
 		})
 	}
