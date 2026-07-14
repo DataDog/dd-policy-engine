@@ -271,8 +271,14 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
 }
 
 static plcs_errors validate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
-  if (!node || depth > PLCS_MAX_EVAL_DEPTH) {
+  if (!node) {
     return PLCS_ESUCCESS;
+  }
+
+  // Evaluation treats rules beyond this depth as abstentions. Reject the
+  // policy instead so actions cannot run for an unvalidated subtree.
+  if (depth > PLCS_MAX_EVAL_DEPTH) {
+    return PLCS_EUNKNOWN_CMP;
   }
 
   if (dd_ns(NodeTypeWrapper_node_type)(node) != dd_ns(NodeType_CompositeNode)) {
