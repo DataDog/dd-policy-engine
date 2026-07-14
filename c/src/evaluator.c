@@ -318,20 +318,17 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
   }
 
   size_t policies_count = dd_ns(Policy_vec_len)(policies);
-  plcs_errors first_error = PLCS_ESUCCESS;
+  plcs_errors total_errors = PLCS_ESUCCESS;
   for (size_t ix = 0; ix < policies_count; ++ix) {
     dd_ns(Policy_table_t) policy = dd_ns(Policy_vec_at)(policies, ix);
     if (!policy) {
       // not necessarily an error, could be empty policy
       continue;
     }
-    plcs_errors policy_result = evaluate_policy(policy);
-    if (first_error == PLCS_ESUCCESS && policy_result != PLCS_ESUCCESS) {
-      first_error = policy_result;
-    }
+    total_errors += evaluate_policy(policy);
   }
 
-  return first_error;
+  return total_errors;
 }
 
 const char *plcs_string_evaluators_to_string(enum plcs_string_evaluators v) {

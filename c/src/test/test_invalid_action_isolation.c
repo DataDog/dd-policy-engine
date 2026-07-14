@@ -58,7 +58,7 @@ static dd_wls_NodeTypeWrapper_ref_t build_linux_rule(flatcc_builder_t *builder) 
   return node == 0 ? 0 : dd_wls_NodeTypeWrapper_create(builder, dd_wls_NodeType_as_EvaluatorNode(node));
 }
 
-static policy_buffer build_invalid_action_then_valid_deny(void) {
+static policy_buffer build_invalid_actions_then_valid_deny(void) {
   policy_buffer result = {0};
   flatcc_builder_t builder;
   if (flatcc_builder_init(&builder) != 0) {
@@ -67,15 +67,17 @@ static policy_buffer build_invalid_action_then_valid_deny(void) {
 
   dd_wls_Action_ref_t invalid_action = create_action(&builder, (dd_wls_ActionId_enum_t)-1);
   dd_wls_Policy_ref_t invalid_policy = create_policy(&builder, 0, invalid_action);
+  dd_wls_Policy_ref_t second_invalid_policy = create_policy(&builder, 0, invalid_action);
   dd_wls_NodeTypeWrapper_ref_t valid_rule = build_linux_rule(&builder);
   dd_wls_Action_ref_t deny_action = create_action(&builder, dd_wls_ActionId_INJECT_DENY);
   dd_wls_Policy_ref_t valid_policy = create_policy(&builder, valid_rule, deny_action);
-  if (invalid_action == 0 || invalid_policy == 0 || valid_rule == 0 || deny_action == 0 || valid_policy == 0) {
+  if (invalid_action == 0 || invalid_policy == 0 || second_invalid_policy == 0 || valid_rule == 0 || deny_action == 0 ||
+      valid_policy == 0) {
     goto cleanup;
   }
 
-  dd_wls_Policy_ref_t policy_refs[] = {invalid_policy, valid_policy};
-  dd_wls_Policy_vec_ref_t policies = dd_wls_Policy_vec_create(&builder, policy_refs, 2);
+  dd_wls_Policy_ref_t policy_refs[] = {invalid_policy, second_invalid_policy, valid_policy};
+  dd_wls_Policy_vec_ref_t policies = dd_wls_Policy_vec_create(&builder, policy_refs, 3);
   if (policies == 0 || dd_wls_Policies_start_as_root(&builder) != 0 ||
       dd_wls_Policies_policies_add(&builder, policies) != 0 || dd_wls_Policies_end_as_root(&builder) == 0) {
     goto cleanup;
@@ -111,8 +113,8 @@ static plcs_errors observing_action(
   return PLCS_ESUCCESS;
 }
 
-UTEST(policy_validation, invalid_action_cannot_disable_later_deny_policy) {
-  policy_buffer buffer = build_invalid_action_then_valid_deny();
+UTEST(policy_validation, invalid_actions_cannot_disable_later_deny_policy) {
+  policy_buffer buffer = build_invalid_actions_then_valid_deny();
   ASSERT_TRUE(buffer.data != NULL);
 
   (void)plcs_eval_ctx_init();
@@ -126,7 +128,7 @@ UTEST(policy_validation, invalid_action_cannot_disable_later_deny_policy) {
   int result = plcs_evaluate_buffer(buffer.data, buffer.size);
   flatcc_builder_free(buffer.data);
 
-  ASSERT_EQ(result, PLCS_EIX_OVERFLOW);
+  ASSERT_EQ(result, 2 * PLCS_EIX_OVERFLOW);
   ASSERT_EQ(observed_calls, (size_t)1);
   ASSERT_EQ((int)observed_result, PLCS_EVAL_RESULT_TRUE);
 }
