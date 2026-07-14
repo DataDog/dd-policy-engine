@@ -120,7 +120,7 @@ static plcs_errors observing_action(
   return PLCS_ESUCCESS;
 }
 
-UTEST(policy_validation, invalid_actions_cannot_disable_later_deny_policy) {
+UTEST(policy_validation, unknown_actions_are_skipped_and_valid_action_runs) {
   policy_buffer buffer = build_invalid_actions_then_valid_deny();
   ASSERT_TRUE(buffer.data != NULL);
 
@@ -135,7 +135,7 @@ UTEST(policy_validation, invalid_actions_cannot_disable_later_deny_policy) {
   int result = plcs_evaluate_buffer(buffer.data, buffer.size);
   flatcc_builder_free(buffer.data);
 
-  ASSERT_EQ(result, 2 * PLCS_EIX_OVERFLOW);
+  ASSERT_EQ(result, PLCS_ESUCCESS);
   ASSERT_EQ(observed_calls, (size_t)1);
   ASSERT_EQ((int)observed_result, PLCS_EVAL_RESULT_TRUE);
 }

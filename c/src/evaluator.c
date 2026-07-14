@@ -254,7 +254,7 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
   for (size_t ix = 0; ix < len; ++ix) {
     dd_ns(Action_table_t) action = dd_ns(Action_vec_at)(actions_vec, ix);
     int action_id = dd_ns(Action_action)(action);
-    if (action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
+    if (action_id < 0 || action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
       continue;
     }
     size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
@@ -279,29 +279,12 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
   return res;
 }
 
-static plcs_errors validate_actions(dd_ns(Action_vec_t) actions) {
-  size_t actions_len = actions ? dd_ns(Action_vec_len)(actions) : 0;
-  for (size_t ix = 0; ix < actions_len; ++ix) {
-    int action_id = dd_ns(Action_action)(dd_ns(Action_vec_at)(actions, ix));
-    if (action_id < 0) {
-      return PLCS_EIX_OVERFLOW;
-    }
-  }
-
-  return PLCS_ESUCCESS;
-}
-
 plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract actions
   dd_ns(Action_vec_t) actions = dd_ns(Policy_actions)(policy);
 
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
-
-  plcs_errors validation_result = validate_actions(actions);
-  if (validation_result != PLCS_ESUCCESS) {
-    return validation_result;
-  }
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
