@@ -254,7 +254,7 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_LT, 2),
 					andNode( // major == 2 AND minor > 30
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
-						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LTE, 30),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LT, 30),
 					),
 					andNode( // major == 2 AND minor == 30 AND patch >= 0
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
