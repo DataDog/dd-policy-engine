@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
@@ -31,8 +32,19 @@ func (rv *RequiredVersion) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if versionStr == "" {
-		return nil
+	versionStr = strings.TrimSpace(versionStr)
+	versionCore := versionStr
+	if suffix := strings.IndexAny(versionCore, "-+"); suffix >= 0 {
+		versionCore = versionCore[:suffix]
+	}
+	segments := strings.Split(versionCore, ".")
+	if len(segments) < 2 {
+		return fmt.Errorf("invalid libc version %q: expected at least major.minor", versionStr)
+	}
+	for _, segment := range segments[:2] {
+		if _, err := strconv.ParseUint(segment, 10, 64); err != nil {
+			return fmt.Errorf("invalid libc version %q: expected numeric major.minor", versionStr)
+		}
 	}
 
 	v, err := version.NewVersion(versionStr)
@@ -73,17 +85,7 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 	nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, flavorNode, wls.NodeTypeEvaluatorNode))
 
 	if l.RequiredMinVersion != nil {
-		versionText := strings.TrimSpace(l.RequiredMinVersion.Original())
-		if suffix := strings.IndexAny(versionText, "-+"); suffix >= 0 {
-			versionText = versionText[:suffix]
-		}
-		if prerelease := l.RequiredMinVersion.Prerelease(); prerelease != "" {
-			versionText = strings.TrimSuffix(versionText, prerelease)
-		}
 		segments := l.RequiredMinVersion.Segments()
-		if strings.Count(versionText, ".") < 1 || len(segments) < 2 {
-			return 0, fmt.Errorf("invalid libc version %q: expected at least major.minor", versionText)
-		}
 
 		major := segments[0]
 		minor := segments[1]
