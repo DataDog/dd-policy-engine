@@ -283,7 +283,7 @@ static plcs_errors validate_actions(dd_ns(Action_vec_t) actions) {
   size_t actions_len = actions ? dd_ns(Action_vec_len)(actions) : 0;
   for (size_t ix = 0; ix < actions_len; ++ix) {
     int action_id = dd_ns(Action_action)(dd_ns(Action_vec_at)(actions, ix));
-    if (action_id < 0 || action_id >= dd_ns(ActionId_ACTIONS_COUNT)) {
+    if (action_id < 0) {
       return PLCS_EIX_OVERFLOW;
     }
   }

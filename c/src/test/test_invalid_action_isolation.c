@@ -32,14 +32,18 @@ static dd_wls_Action_ref_t create_action(flatcc_builder_t *builder, dd_wls_Actio
   return values == 0 || description == 0 ? 0 : dd_wls_Action_create(builder, id, description, values);
 }
 
-static dd_wls_Policy_ref_t
-create_policy(flatcc_builder_t *builder, dd_wls_NodeTypeWrapper_ref_t rules, dd_wls_Action_ref_t action) {
-  dd_wls_Action_vec_ref_t actions = dd_wls_Action_vec_create(builder, &action, 1);
+static dd_wls_Policy_ref_t create_policy(
+    flatcc_builder_t *builder,
+    dd_wls_NodeTypeWrapper_ref_t rules,
+    dd_wls_Action_ref_t actions[],
+    size_t actions_len
+) {
+  dd_wls_Action_vec_ref_t actions_vec = dd_wls_Action_vec_create(builder, actions, actions_len);
   flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "test policy");
-  if (actions == 0 || description == 0 || dd_wls_Policy_start(builder) != 0 ||
+  if (actions_vec == 0 || description == 0 || dd_wls_Policy_start(builder) != 0 ||
       dd_wls_Policy_description_add(builder, description) != 0 ||
       (rules != 0 && dd_wls_Policy_rules_add(builder, rules) != 0) ||
-      dd_wls_Policy_actions_add(builder, actions) != 0) {
+      dd_wls_Policy_actions_add(builder, actions_vec) != 0) {
     return 0;
   }
   return dd_wls_Policy_end(builder);
@@ -66,13 +70,16 @@ static policy_buffer build_invalid_actions_then_valid_deny(void) {
   }
 
   dd_wls_Action_ref_t invalid_action = create_action(&builder, (dd_wls_ActionId_enum_t)-1);
-  dd_wls_Policy_ref_t invalid_policy = create_policy(&builder, 0, invalid_action);
-  dd_wls_Policy_ref_t second_invalid_policy = create_policy(&builder, 0, invalid_action);
+  dd_wls_Action_ref_t invalid_actions[] = {invalid_action};
+  dd_wls_Policy_ref_t invalid_policy = create_policy(&builder, 0, invalid_actions, 1);
+  dd_wls_Policy_ref_t second_invalid_policy = create_policy(&builder, 0, invalid_actions, 1);
   dd_wls_NodeTypeWrapper_ref_t valid_rule = build_linux_rule(&builder);
+  dd_wls_Action_ref_t unsupported_action = create_action(&builder, dd_wls_ActionId_ACTIONS_COUNT);
   dd_wls_Action_ref_t deny_action = create_action(&builder, dd_wls_ActionId_INJECT_DENY);
-  dd_wls_Policy_ref_t valid_policy = create_policy(&builder, valid_rule, deny_action);
+  dd_wls_Action_ref_t supported_and_unsupported_actions[] = {unsupported_action, deny_action};
+  dd_wls_Policy_ref_t valid_policy = create_policy(&builder, valid_rule, supported_and_unsupported_actions, 2);
   if (invalid_action == 0 || invalid_policy == 0 || second_invalid_policy == 0 || valid_rule == 0 || deny_action == 0 ||
-      valid_policy == 0) {
+      unsupported_action == 0 || valid_policy == 0) {
     goto cleanup;
   }
 
