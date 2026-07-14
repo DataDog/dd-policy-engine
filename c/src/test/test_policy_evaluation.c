@@ -70,8 +70,7 @@ static dd_wls_Policy_ref_t create_policy(
 ) {
   dd_wls_Action_vec_ref_t actions_vec = dd_wls_Action_vec_create(builder, actions, action_count);
   flatbuffers_string_ref_t description = flatbuffers_string_create_str(builder, "test policy");
-  flatbuffers_string_ref_t id = flatbuffers_string_create_str(builder, "test");
-  if (actions_vec == 0 || description == 0 || id == 0) {
+  if (actions_vec == 0 || description == 0) {
     return 0;
   }
   if (dd_wls_Policy_start(builder) != 0) {
@@ -84,9 +83,6 @@ static dd_wls_Policy_ref_t create_policy(
     return 0;
   }
   if (dd_wls_Policy_actions_add(builder, actions_vec) != 0) {
-    return 0;
-  }
-  if (dd_wls_Policy_id_add(builder, id) != 0) {
     return 0;
   }
   return dd_wls_Policy_end(builder);
