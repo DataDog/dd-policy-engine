@@ -151,20 +151,17 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   switch (oper) {
     case dd_ns(BoolOperation_BOOL_AND):
       return DoAnd(a, b);
-      break;
 
     case dd_ns(BoolOperation_BOOL_OR):
       return DoOr(a, b);
-      break;
 
     case dd_ns(BoolOperation_BOOL_NOT):
       return DoNot(a);
-      break;
 
+    case dd_ns(BoolOperation_BOOL_UNKNOWN):
+    case dd_ns(BoolOperation_BOOL_COUNT):
     default:
-      // error unknown result
       return PLCS_EVAL_RESULT_ABSTAIN;
-      break;
   }
 }
 
@@ -181,8 +178,7 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
 
   switch (oper) {
     case dd_ns(BoolOperation_BOOL_UNKNOWN):
-      res = PLCS_EVAL_RESULT_ABSTAIN;
-      break;
+      return PLCS_EVAL_RESULT_ABSTAIN;
 
     case dd_ns(BoolOperation_BOOL_OR):
       res = PLCS_EVAL_RESULT_FALSE;
@@ -200,7 +196,10 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
       return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1));
-      break;
+
+    case dd_ns(BoolOperation_BOOL_COUNT):
+    default:
+      return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
   // keep iterating recursively over the tree
@@ -228,22 +227,14 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
 
   switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
     case dd_ns(NodeType_EvaluatorNode):
-      dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
-      return node_evaluator(evaluator_node);
-      break;
+      return node_evaluator(dd_ns(NodeTypeWrapper_node)(node));
 
     case dd_ns(NodeType_CompositeNode):
-      dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-      return composite_evaluator(composite_node, depth);
-      break;
+      return composite_evaluator(dd_ns(NodeTypeWrapper_node)(node), depth);
 
     default:
-      // error, unknown node type!
-      break;
+      return PLCS_EVAL_RESULT_ABSTAIN;
   }
-
-  // log error
-  return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
 static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns(Action_vec_t) actions_vec) {
@@ -279,12 +270,57 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
   return res;
 }
 
+static plcs_errors validate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+  if (!node || depth > PLCS_MAX_EVAL_DEPTH) {
+    return PLCS_ESUCCESS;
+  }
+
+  if (dd_ns(NodeTypeWrapper_node_type)(node) != dd_ns(NodeType_CompositeNode)) {
+    return PLCS_ESUCCESS;
+  }
+
+  dd_ns(CompositeNode_table_t) composite = dd_ns(NodeTypeWrapper_node)(node);
+  if (!composite) {
+    return PLCS_ESUCCESS;
+  }
+
+  dd_ns(BoolOperation_enum_t) oper = dd_ns(CompositeNode_op)(composite);
+  dd_ns(NodeTypeWrapper_vec_t) children = dd_ns(CompositeNode_children)(composite);
+  size_t children_len = children ? dd_ns(NodeTypeWrapper_vec_len)(children) : 0;
+
+  switch (oper) {
+    case dd_ns(BoolOperation_BOOL_UNKNOWN):
+    case dd_ns(BoolOperation_BOOL_AND):
+    case dd_ns(BoolOperation_BOOL_OR):
+    case dd_ns(BoolOperation_BOOL_NOT):
+      break;
+
+    case dd_ns(BoolOperation_BOOL_COUNT):
+    default:
+      return PLCS_EUNKNOWN_CMP;
+  }
+
+  for (size_t ix = 0; ix < children_len; ++ix) {
+    plcs_errors validation_result = validate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1);
+    if (validation_result != PLCS_ESUCCESS) {
+      return validation_result;
+    }
+  }
+
+  return PLCS_ESUCCESS;
+}
+
 plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract actions
   dd_ns(Action_vec_t) actions = dd_ns(Policy_actions)(policy);
 
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
+
+  plcs_errors validation_result = validate_rules(rules, 0);
+  if (validation_result != PLCS_ESUCCESS) {
+    return validation_result;
+  }
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
