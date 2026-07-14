@@ -241,25 +241,25 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 			),
 		},
 		{
-			// JSON: {"arch": "x64", "supported": false, "min": "2.30"}
-			// Policy: DENY if arch=x86_64 AND flavor=glibc AND version >= 2.30
-			name:      "unsupported with version - deny if version >= min",
-			inputJSON: `{"arch": "x64", "supported": false, "min": "2.30"}`,
+			// JSON: {"arch": "x64", "supported": false, "min": "2.30.5"}
+			// Policy: DENY at 2.30.5, but not at the immediately preceding 2.30.4 patch.
+			name:      "unsupported at patch boundary - deny if version >= min",
+			inputJSON: `{"arch": "x64", "supported": false, "min": "2.30.5"}`,
 			flavor:    "glibc",
 			expectNil: false,
 			expectedRoot: andNode(
 				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "x86_64"),
 				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "glibc"),
-				orNode( // version >= 2.30
+				orNode( // version >= 2.30.5
 					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_LT, 2),
 					andNode( // major == 2 AND minor > 30
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LT, 30),
 					),
-					andNode( // major == 2 AND minor == 30 AND patch >= 0
+					andNode( // major == 2 AND minor == 30 AND patch >= 5
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_EQ, 30),
-						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_LTE, 0),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_LTE, 5),
 					),
 				),
 			),
