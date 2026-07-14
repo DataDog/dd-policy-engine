@@ -77,6 +77,9 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 		if suffix := strings.IndexAny(versionText, "-+"); suffix >= 0 {
 			versionText = versionText[:suffix]
 		}
+		if prerelease := l.RequiredMinVersion.Prerelease(); prerelease != "" {
+			versionText = strings.TrimSuffix(versionText, prerelease)
+		}
 		segments := l.RequiredMinVersion.Segments()
 		if strings.Count(versionText, ".") < 1 || len(segments) < 2 {
 			return 0, fmt.Errorf("invalid libc version %q: expected at least major.minor", versionText)

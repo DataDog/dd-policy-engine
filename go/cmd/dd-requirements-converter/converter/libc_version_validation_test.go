@@ -14,6 +14,7 @@ func TestInvalidLibcVersionsReturnErrors(t *testing.T) {
 	}{
 		{name: "empty"},
 		{name: "major only", version: "2"},
+		{name: "major only bare prerelease", version: "2rc.1"},
 	}
 
 	for _, testCase := range testCases {
