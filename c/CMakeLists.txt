@@ -40,6 +40,10 @@ target_include_directories(dd-policy-engine.objects
   PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_include_directories(dd-policy-engine.objects
+  SYSTEM PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/schema
 )
 
@@ -107,4 +111,3 @@ set_target_properties(dd-policy-engine.debugger
   PROPERTIES 
     OUTPUT_NAME "basic-debugger"
 )
-

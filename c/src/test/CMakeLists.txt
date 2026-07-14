@@ -54,6 +54,10 @@ target_include_directories(dd-policy-engine.unit-tests
   PRIVATE
     ${CMAKE_BINARY_DIR}/c
     ${CMAKE_SOURCE_DIR}/c/src
+)
+
+target_include_directories(dd-policy-engine.unit-tests
+  SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/c/src/schema
 )
 
@@ -62,4 +66,9 @@ target_link_libraries(dd-policy-engine.unit-tests
     dd-policy-engine::obj
 )
 
-utest_discover_tests(dd-policy-engine.unit-tests)
+if(DD_POLICY_DISCOVER_TESTS)
+  utest_discover_tests(dd-policy-engine.unit-tests)
+else()
+  add_test(NAME dd-policy-engine.unit-tests COMMAND dd-policy-engine.unit-tests)
+  set_tests_properties(dd-policy-engine.unit-tests PROPERTIES TIMEOUT 60)
+endif()
