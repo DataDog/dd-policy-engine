@@ -43,10 +43,8 @@
       "inherits": "msvc-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
-      },
-      "environment": {
-        "ADDITIONAL_C_FLAGS": "/fsanitize=address"
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "DD_POLICY_ENABLE_SANITIZERS": "ON"
       }
     },
     {
@@ -55,10 +53,8 @@
       "inherits": "msvc-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
-      },
-      "environment": {
-        "ADDITIONAL_C_FLAGS": "/fsanitize=address"
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "DD_POLICY_ENABLE_SANITIZERS": "ON"
       }
     },
     {
@@ -76,10 +72,8 @@
       "inherits": "clang-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
-      },
-      "environment": {
-        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined -fsanitize-ignorelist=${sourceDir}/.sanitizers.supp"
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "DD_POLICY_ENABLE_SANITIZERS": "ON"
       }
     },
     {
@@ -88,10 +82,8 @@
       "inherits": "clang-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
-      },
-      "environment": {
-        "ADDITIONAL_C_FLAGS": "-fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address,leak,undefined -fsanitize-ignorelist=${sourceDir}/.sanitizers.supp"
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "DD_POLICY_ENABLE_SANITIZERS": "ON"
       }
     },
     {

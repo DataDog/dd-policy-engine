@@ -47,7 +47,7 @@ You’ll need the FlatBuffers toolchains and compilers:
 - C toolchain (clang/gcc) and ar
 - flatcc (for generating C readers): https://github.com/dvidelabs/flatcc
 - flatc (for generating Go schema): https://github.com/google/flatbuffers
-- Go (per go.mod, Go 1.23.x)
+- Go (use the version declared by `go/go.mod`)
 - Optional: clang-format for formatting (used by `make fmt`)
 
 ---
@@ -75,6 +75,29 @@ C build outputs:
 Go examples output:
 - Binary buffers: under example-specific `out/`
 - Optional C headers with embedded buffers (see below)
+
+### Testing through CMake
+
+The top-level CMake project exposes integration targets that keep the native
+library and Go tests on the same build graph:
+
+```sh
+cmake --preset gcc-dev -B build
+cmake --build build --target go-test
+```
+
+`go-test` first builds the CMake `libpolicies` archive, then runs the complete
+Go suite with cgo enabled, the matching C compiler and public headers, and the
+exact archive produced by that build. A build-tagged smoke test verifies a real
+native symbol is resolved. Use `cmake --build build --target check` to run both
+the C and Go suites. The native cgo target requires a GCC-compatible compiler;
+MSVC builds continue to support the C targets but cannot reliably link their
+archives through the Go cgo toolchain.
+
+For the fastest incremental runs, configure with `-G Ninja`. The cgo smoke
+binary is rebuilt only when the native archive, public headers, Go module files,
+or smoke sources change; regular Go tests and the native dependency graph run
+in parallel.
 
 ---
 
