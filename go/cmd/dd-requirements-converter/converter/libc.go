@@ -3,7 +3,8 @@ package converter
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
+	"strings"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
@@ -72,10 +73,13 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 	nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, flavorNode, wls.NodeTypeEvaluatorNode))
 
 	if l.RequiredMinVersion != nil {
+		versionText := strings.TrimSpace(l.RequiredMinVersion.Original())
+		if suffix := strings.IndexAny(versionText, "-+"); suffix >= 0 {
+			versionText = versionText[:suffix]
+		}
 		segments := l.RequiredMinVersion.Segments()
-
-		if len(segments) < 2 {
-			log.Fatalf("Invalid version: %v", l.RequiredMinVersion)
+		if strings.Count(versionText, ".") < 1 || len(segments) < 2 {
+			return 0, fmt.Errorf("invalid libc version %q: expected at least major.minor", versionText)
 		}
 
 		major := segments[0]
