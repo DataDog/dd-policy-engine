@@ -19,8 +19,15 @@ type JSONDeny struct {
 	Envs        map[string]*string `json:"envars"`
 }
 
-func isValidOS(os string) bool {
-	return os == "windows" || os == "linux" || os == "darwin"
+func normalizeOS(os string) (string, bool) {
+	switch os {
+	case "windows", "linux":
+		return os, true
+	case "darwin", "macos":
+		return "macos", true
+	default:
+		return "", false
+	}
 }
 
 func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
@@ -30,8 +37,13 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		return 0, errors.New("no conditions to match")
 	}
 
-	if d.Os != "" && isValidOS(d.Os) {
-		osEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsOS, d.Os, wls.CmpTypeSTRCMP_EXACT)
+	if d.Os != "" {
+		os, ok := normalizeOS(d.Os)
+		if !ok {
+			return 0, errors.New("unknown operating system")
+		}
+
+		osEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsOS, os, wls.CmpTypeSTRCMP_EXACT)
 		osNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "OS matching", osEval)
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, osNode, wls.NodeTypeEvaluatorNode))
 	}

@@ -53,6 +53,10 @@ plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, co
 
   const long param = plcs_eval_ctx_get_numeric_param(eval_id);
 
+  if (param == PLCS_NUM_NOT_SET) {
+    return PLCS_EVAL_RESULT_ABSTAIN;
+  }
+
   plcs_numeric_evaluator_function_ptr eval = plcs_eval_ctx_get_numeric_evaluator(eval_id);
   if (!eval) {
     eval = plcs_default_numeric_evaluator;
@@ -74,6 +78,10 @@ plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum,
   plcs_numeric_evaluators eval_id = dd_ns(UNumEvaluator_id)(eval_unum);
 
   const unsigned long param = plcs_eval_ctx_get_unumeric_param(eval_id);
+
+  if (param == PLCS_UNUM_NOT_SET) {
+    return PLCS_EVAL_RESULT_ABSTAIN;
+  }
 
   plcs_unumeric_evaluator_function_ptr eval = plcs_eval_ctx_get_unumeric_evaluator(eval_id);
   if (!eval) {
