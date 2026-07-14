@@ -46,6 +46,7 @@ target_sources(dd-policy-engine.unit-tests
     ${CMAKE_CURRENT_SOURCE_DIR}/test_evaluator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_main.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_policy_reader.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_action_value_copy.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_value_sets.c
 )
 
@@ -62,4 +63,3 @@ target_link_libraries(dd-policy-engine.unit-tests
 )
 
 utest_discover_tests(dd-policy-engine.unit-tests)
-
