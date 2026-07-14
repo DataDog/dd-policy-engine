@@ -66,9 +66,4 @@ target_link_libraries(dd-policy-engine.unit-tests
     dd-policy-engine::obj
 )
 
-if(DD_POLICY_DISCOVER_TESTS)
-  utest_discover_tests(dd-policy-engine.unit-tests)
-else()
-  add_test(NAME dd-policy-engine.unit-tests COMMAND dd-policy-engine.unit-tests)
-  set_tests_properties(dd-policy-engine.unit-tests PROPERTIES TIMEOUT 60)
-endif()
+utest_discover_tests(dd-policy-engine.unit-tests)

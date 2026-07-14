@@ -44,7 +44,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
-        "DD_POLICY_DISCOVER_TESTS": "OFF",
         "DD_POLICY_ENABLE_SANITIZERS": "ON"
       }
     },
@@ -55,7 +54,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
-        "DD_POLICY_DISCOVER_TESTS": "OFF",
         "DD_POLICY_ENABLE_SANITIZERS": "ON"
       }
     },
@@ -75,7 +73,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
-        "DD_POLICY_DISCOVER_TESTS": "OFF",
         "DD_POLICY_ENABLE_SANITIZERS": "ON"
       }
     },
@@ -86,7 +83,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
-        "DD_POLICY_DISCOVER_TESTS": "OFF",
         "DD_POLICY_ENABLE_SANITIZERS": "ON"
       }
     },

@@ -30,7 +30,6 @@ option(DD_POLICY_BUILD_TESTS "Enable building tests" ${PROJECT_IS_TOP_LEVEL})
 option(DD_POLICY_BUILD_EXAMPLES "Enable building examples" ${PROJECT_IS_TOP_LEVEL})
 option(DD_POLICY_BUILD_FUZZERS "Enable building fuzzers" OFF)
 option(DD_POLICY_ENABLE_SANITIZERS "Enable supported runtime sanitizers" OFF)
-option(DD_POLICY_DISCOVER_TESTS "Register each unit test separately with CTest" ON)
 
 if (WIN32)
   option(DD_POLICY_ENABLE_STATIC_CRT "Build libpolicy with static CRT" OFF)
