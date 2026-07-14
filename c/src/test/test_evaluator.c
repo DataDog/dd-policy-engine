@@ -107,8 +107,7 @@ static plcs_errors test_action_allow(
   return PLCS_ESUCCESS;
 }
 
-static plcs_errors
-test_action_deny(
+static plcs_errors test_action_deny(
     plcs_evaluation_result res,
     const char *values[],
     size_t value_len,

@@ -72,8 +72,7 @@ static plcs_evaluation_result dummy_unum_eval(
 }
 
 static int g_action_called = 0;
-static plcs_errors
-dummy_action(
+static plcs_errors dummy_action(
     plcs_evaluation_result res,
     const char *values[],
     size_t value_len,
