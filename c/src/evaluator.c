@@ -279,12 +279,29 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
   return res;
 }
 
+static plcs_errors validate_actions(dd_ns(Action_vec_t) actions) {
+  size_t actions_len = actions ? dd_ns(Action_vec_len)(actions) : 0;
+  for (size_t ix = 0; ix < actions_len; ++ix) {
+    int action_id = dd_ns(Action_action)(dd_ns(Action_vec_at)(actions, ix));
+    if (action_id < 0 || action_id >= dd_ns(ActionId_ACTIONS_COUNT)) {
+      return PLCS_EIX_OVERFLOW;
+    }
+  }
+
+  return PLCS_ESUCCESS;
+}
+
 plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract actions
   dd_ns(Action_vec_t) actions = dd_ns(Policy_actions)(policy);
 
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
+
+  plcs_errors validation_result = validate_actions(actions);
+  if (validation_result != PLCS_ESUCCESS) {
+    return validation_result;
+  }
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
@@ -301,21 +318,20 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
   }
 
   size_t policies_count = dd_ns(Policy_vec_len)(policies);
-  plcs_errors total_errors = 0;
+  plcs_errors first_error = PLCS_ESUCCESS;
   for (size_t ix = 0; ix < policies_count; ++ix) {
     dd_ns(Policy_table_t) policy = dd_ns(Policy_vec_at)(policies, ix);
     if (!policy) {
       // not necessarily an error, could be empty policy
       continue;
     }
-    plcs_errors res = evaluate_policy(policy);
-    // success is 0, errors are > 0, if total_errors is > 0, it means there was
-    // an error
-    // TODO: track these errors using an errono style map in the eval_ctx
-    total_errors += res;
+    plcs_errors policy_result = evaluate_policy(policy);
+    if (first_error == PLCS_ESUCCESS && policy_result != PLCS_ESUCCESS) {
+      first_error = policy_result;
+    }
   }
 
-  return total_errors;
+  return first_error;
 }
 
 const char *plcs_string_evaluators_to_string(enum plcs_string_evaluators v) {
