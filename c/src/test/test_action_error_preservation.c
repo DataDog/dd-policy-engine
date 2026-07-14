@@ -44,8 +44,8 @@ static policy_buffer build_action_policy(void) {
   dd_wls_Action_vec_ref_t actions_vec = dd_wls_Action_vec_create(&builder, actions, 3);
   flatbuffers_string_ref_t policy_description = flatbuffers_string_create_str(&builder, "action ordering");
 
-  if (values == 0 || first_description == 0 || second_description == 0 || third_description == 0 ||
-      actions[0] == 0 || actions[1] == 0 || actions[2] == 0 || actions_vec == 0 || policy_description == 0 ||
+  if (values == 0 || first_description == 0 || second_description == 0 || third_description == 0 || actions[0] == 0 ||
+      actions[1] == 0 || actions[2] == 0 || actions_vec == 0 || policy_description == 0 ||
       dd_wls_Policy_start(&builder) != 0 || dd_wls_Policy_description_add(&builder, policy_description) != 0 ||
       dd_wls_Policy_actions_add(&builder, actions_vec) != 0) {
     goto cleanup;
@@ -96,8 +96,7 @@ UTEST(policy_actions, failures_are_retained_in_execution_order) {
   (void)plcs_eval_ctx_init();
   plcs_eval_ctx_reset();
   ASSERT_EQ(
-      (int)plcs_eval_ctx_register_action(action_with_result_from_description, PLCS_ACTION_INJECT_DENY),
-      PLCS_ESUCCESS
+      (int)plcs_eval_ctx_register_action(action_with_result_from_description, PLCS_ACTION_INJECT_DENY), PLCS_ESUCCESS
   );
 
   int result = plcs_evaluate_buffer(buffer.data, buffer.size);

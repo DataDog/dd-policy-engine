@@ -299,10 +299,7 @@ UTEST(eval_ctx, last_error_set_and_get) {
 }
 
 UTEST(eval_ctx, record_action_result_out_of_bound) {
-  ASSERT_EQ(
-      (int)plcs_eval_ctx_record_action_result(PLCS_ACTIONS__COUNT, PLCS_EACTIONS_EVAL, 0),
-      PLCS_EIX_OVERFLOW
-  );
+  ASSERT_EQ((int)plcs_eval_ctx_record_action_result(PLCS_ACTIONS__COUNT, PLCS_EACTIONS_EVAL, 0), PLCS_EIX_OVERFLOW);
   ASSERT_EQ(plcs_get_action_results(NULL, 0), (size_t)0);
 }
 

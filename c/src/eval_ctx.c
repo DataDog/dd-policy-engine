@@ -164,8 +164,7 @@ void plcs_eval_ctx_set_error(plcs_errors error) {
   ctx.error = error;
 }
 
-plcs_errors
-plcs_eval_ctx_record_action_result(plcs_actions action, plcs_errors result, size_t action_index) {
+plcs_errors plcs_eval_ctx_record_action_result(plcs_actions action, plcs_errors result, size_t action_index) {
   if (action < 0 || action >= PLCS_ACTIONS__COUNT) {
     return PLCS_EIX_OVERFLOW;
   }

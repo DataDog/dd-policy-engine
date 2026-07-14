@@ -129,8 +129,7 @@ void plcs_eval_ctx_set_error(plcs_errors error);
  * @param action_index The action's index in its policy action vector.
  * @return PLCS_ESUCCESS, or an error if the result could not be recorded.
  */
-plcs_errors
-plcs_eval_ctx_record_action_result(plcs_actions action, plcs_errors result, size_t action_index);
+plcs_errors plcs_eval_ctx_record_action_result(plcs_actions action, plcs_errors result, size_t action_index);
 
 /**
  * @brief Sets an error code for a string evaluator
