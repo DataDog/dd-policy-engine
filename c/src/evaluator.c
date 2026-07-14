@@ -263,6 +263,7 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
       if (first_error == PLCS_ESUCCESS) {
         first_error = PLCS_EIX_OVERFLOW;
       }
+      (void)plcs_eval_ctx_record_action_result((plcs_actions)action_id, PLCS_EIX_OVERFLOW, ix);
       break;
     }
     char *values[PLCS_ACTION_VALUES_MAX];
@@ -270,16 +271,12 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
       values[v_ix] = (char *)flatbuffers_string_vec_at(dd_ns(Action_values(action)), v_ix);
     }
     plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
-    if (action_function) {
-      plcs_errors action_result =
-          action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
-      plcs_eval_ctx_set_action_error(action_id, action_result);
-      if (first_error == PLCS_ESUCCESS && action_result != PLCS_ESUCCESS) {
-        first_error = action_result;
-      }
-    } else {
+    plcs_errors action_result =
+        action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
+    if (action_result != PLCS_ESUCCESS) {
+      (void)plcs_eval_ctx_record_action_result((plcs_actions)action_id, action_result, ix);
       if (first_error == PLCS_ESUCCESS) {
-        first_error = PLCS_EACTIONS_EVAL;
+        first_error = action_result;
       }
     }
   }

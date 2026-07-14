@@ -80,6 +80,19 @@ plcs_eval_ctx_register_unum_evaluator(plcs_unumeric_evaluator_function_ptr func_
 plcs_errors plcs_eval_ctx_register_action(plcs_action_function_ptr action, plcs_actions ix);
 
 /**
+ * @brief Copies and consumes failed action callback results in execution order.
+ *
+ * Passing NULL or a capacity of zero returns the number of pending results
+ * without consuming them. Otherwise, up to capacity results are copied and
+ * removed from the evaluation context.
+ *
+ * @param results Destination array, or NULL to query the pending count.
+ * @param capacity Number of entries available in results.
+ * @return Number of pending results when querying, otherwise number copied.
+ */
+size_t plcs_get_action_results(plcs_action_result *results, size_t capacity);
+
+/**
  * @brief Sets the local string parameter for string evaluator ix
  *
  * @param value a string representing the local value to evaluate against *NOTE*
