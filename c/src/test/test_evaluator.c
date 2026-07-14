@@ -534,7 +534,7 @@ UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
   plcs_eval_ctx_reset();
   res = evaluate_numeric(eval, "d");
   // shouldn't be any value
-  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   flatcc_builder_free(buf);
   flatcc_builder_reset(&b);
 }
