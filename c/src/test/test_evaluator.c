@@ -93,7 +93,7 @@ static int g_deny_called = 0;
 
 static plcs_errors test_action_allow(
     plcs_evaluation_result res,
-    char *values[],
+    const char *values[],
     size_t value_len,
     const char *description,
     int action_id
@@ -108,7 +108,13 @@ static plcs_errors test_action_allow(
 }
 
 static plcs_errors
-test_action_deny(plcs_evaluation_result res, char *values[], size_t value_len, const char *description, int action_id) {
+test_action_deny(
+    plcs_evaluation_result res,
+    const char *values[],
+    size_t value_len,
+    const char *description,
+    int action_id
+) {
   (void)res;
   (void)values;
   (void)value_len;

@@ -94,7 +94,7 @@ High-level steps:
 4) Register action handlers using:
    - `plcs_eval_ctx_register_action(plcs_action_function_ptr, plcs_actions id)`
    Action signature:
-   - `plcs_errors (*plcs_action_function_ptr)(plcs_evaluation_result res, char* values[], size_t value_len, const char* description, int action_id)`
+   - `plcs_errors (*plcs_action_function_ptr)(plcs_evaluation_result res, const char* values[], size_t value_len, const char* description, int action_id)`
 5) Load a policy buffer (from disk, mmap, or embedded array) and call:
    - `plcs_errors plcs_evaluate_buffer(const uint8_t* buffer)`
 
@@ -162,7 +162,7 @@ Evaluators:
 plcs_actions:
 - Each Action has action: ActionId, description, values: [string]
 - C action handler signature:
-  - `plcs_errors (*plcs_action_function_ptr)(plcs_evaluation_result res, char* values[], size_t value_len, const char* description, int action_id)`
+  - `plcs_errors (*plcs_action_function_ptr)(plcs_evaluation_result res, const char* values[], size_t value_len, const char* description, int action_id)`
 
 ---
 

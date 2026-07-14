@@ -12,8 +12,6 @@
 #include <dd/policies/policies.h>
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "eval_ctx.h"
 #include "policy.h"
 #include "wire/action.h"
@@ -248,33 +246,8 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
   return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
-static void free_action_values(char *values[], size_t values_len) {
-  for (size_t ix = 0; ix < values_len; ++ix) {
-    free(values[ix]);
-  }
-}
-
-static plcs_errors copy_action_values(flatbuffers_string_vec_t source_values, char *values[], size_t values_len) {
-  for (size_t ix = 0; ix < values_len; ++ix) {
-    const char *value = flatbuffers_string_vec_at(source_values, ix);
-    if (!value) {
-      values[ix] = NULL;
-      continue;
-    }
-
-    size_t value_len = strlen(value) + 1;
-    values[ix] = malloc(value_len);
-    if (!values[ix]) {
-      return PLCS_EACTIONS_EVAL;
-    }
-    memcpy(values[ix], value, value_len);
-  }
-
-  return PLCS_ESUCCESS;
-}
-
 static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns(Action_vec_t) actions_vec) {
-  plcs_errors result = PLCS_ESUCCESS;
+  plcs_errors res = PLCS_ESUCCESS;
 
   // iterate
   size_t len = dd_ns(Action_vec_len)(actions_vec);
@@ -284,29 +257,26 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
     if (action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
       continue;
     }
-    flatbuffers_string_vec_t source_values = dd_ns(Action_values)(action);
-    size_t values_len = flatbuffers_vec_len(source_values);
+    size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
     // something went wrong, we need to bail
     if (values_len >= (size_t)PLCS_ACTION_VALUES_MAX) {
-      result = PLCS_EIX_OVERFLOW;
+      res = PLCS_EIX_OVERFLOW;
       break;
     }
-
-    char *values[PLCS_ACTION_VALUES_MAX] = {0};
-    result = copy_action_values(source_values, values, values_len);
-    if (result == PLCS_ESUCCESS) {
-      // Preserve the allocated pointers for cleanup if the callback replaces
-      // entries in its pointer array.
-      char *callback_values[PLCS_ACTION_VALUES_MAX] = {0};
-      memcpy(callback_values, values, values_len * sizeof(*values));
-      plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
-      result = action_function(eval_res, callback_values, values_len, dd_ns(Action_description)(action), action_id);
+    const char *values[PLCS_ACTION_VALUES_MAX];
+    for (size_t v_ix = 0; v_ix < values_len; ++v_ix) {
+      values[v_ix] = flatbuffers_string_vec_at(dd_ns(Action_values(action)), v_ix);
     }
-    free_action_values(values, values_len);
-    plcs_eval_ctx_set_action_error(action_id, result);
+    plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
+    if (action_function) {
+      res = action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
+      plcs_eval_ctx_set_action_error(action_id, res);
+    } else {
+      res = PLCS_EACTIONS_EVAL;
+    }
   }
 
-  return result;
+  return res;
 }
 
 plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {

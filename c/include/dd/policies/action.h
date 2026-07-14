@@ -35,7 +35,7 @@ typedef enum plcs_actions { PLCS_LIST_ACTIONS(ENUM_VAL) PLCS_ACTIONS__COUNT } pl
  */
 typedef plcs_errors (*plcs_action_function_ptr)(
     plcs_evaluation_result res,
-    char *values[],
+    const char *values[],
     size_t value_len,
     const char *description,
     int action_id

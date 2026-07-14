@@ -18,7 +18,6 @@
 #include "policy_verifier.h"
 
 #include <stddef.h>
-#include <stdlib.h>
 #include <string.h>
 
 typedef struct policy_buffer {
@@ -35,10 +34,10 @@ static policy_buffer build_action_policy(void) {
 
   flatbuffers_string_ref_t value = flatbuffers_string_create_str(&builder, "value");
   flatbuffers_string_vec_ref_t values = flatbuffers_string_vec_create(&builder, &value, 1);
-  flatbuffers_string_ref_t action_description = flatbuffers_string_create_str(&builder, "mutating action");
+  flatbuffers_string_ref_t action_description = flatbuffers_string_create_str(&builder, "immutable action values");
   dd_wls_Action_ref_t action = dd_wls_Action_create(&builder, dd_wls_ActionId_INJECT_DENY, action_description, values);
   dd_wls_Action_vec_ref_t actions = dd_wls_Action_vec_create(&builder, &action, 1);
-  flatbuffers_string_ref_t policy_description = flatbuffers_string_create_str(&builder, "const policy buffer");
+  flatbuffers_string_ref_t policy_description = flatbuffers_string_create_str(&builder, "const action values");
 
   if (value == 0 || values == 0 || action_description == 0 || action == 0 || actions == 0 || policy_description == 0 ||
       dd_wls_Policy_start(&builder) != 0 || dd_wls_Policy_description_add(&builder, policy_description) != 0 ||
@@ -64,9 +63,11 @@ cleanup:
   return result;
 }
 
-static plcs_errors mutating_action(
+static int received_expected_value;
+
+static plcs_errors inspect_action_values(
     plcs_evaluation_result result,
-    char *values[],
+    const char *values[],
     size_t value_count,
     const char *description,
     int action_id
@@ -74,28 +75,21 @@ static plcs_errors mutating_action(
   (void)result;
   (void)description;
   (void)action_id;
-  if (value_count != 0) {
-    values[0][0] = 'X';
-    values[0] = NULL;
-  }
+  received_expected_value = value_count == 1 && values[0] != NULL && strcmp(values[0], "value") == 0;
   return PLCS_ESUCCESS;
 }
 
-UTEST(policy_actions, callbacks_receive_owned_value_copies) {
+UTEST(policy_actions, callbacks_receive_immutable_values) {
   policy_buffer buffer = build_action_policy();
   ASSERT_TRUE(buffer.data != NULL);
-  void *original = malloc(buffer.size);
-  ASSERT_TRUE(original != NULL);
-  memcpy(original, buffer.data, buffer.size);
 
   (void)plcs_eval_ctx_init();
   plcs_eval_ctx_reset();
-  ASSERT_EQ((int)plcs_eval_ctx_register_action(mutating_action, PLCS_ACTION_INJECT_DENY), PLCS_ESUCCESS);
+  received_expected_value = 0;
+  ASSERT_EQ((int)plcs_eval_ctx_register_action(inspect_action_values, PLCS_ACTION_INJECT_DENY), PLCS_ESUCCESS);
 
   ASSERT_EQ((int)plcs_evaluate_buffer(buffer.data, buffer.size), PLCS_ESUCCESS);
-  int unchanged = memcmp(original, buffer.data, buffer.size) == 0;
-  free(original);
   flatcc_builder_free(buffer.data);
 
-  ASSERT_TRUE(unchanged);
+  ASSERT_TRUE(received_expected_value);
 }
