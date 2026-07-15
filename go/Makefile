@@ -13,6 +13,7 @@ all: build
 generate-schema-headers:
 	@echo "[i] Generating Go schema..."
 	@flatc -g -o $(SCHEMA_OUTPUT_DIR) $(SCHEMA_DIR)/*.fbs
+	@gofmt -w $(SCHEMA_OUTPUT_DIR)
 
 $(EXAMPLES): generate-schema-headers
 	@echo "[i] Running $@..."
@@ -42,6 +43,13 @@ endif
 	@echo "Verification JSON written to $(BIN:.bin=.json)"
 
 fmt-check:
+	@echo "[i] Checking Go formatting..."
+	@unformatted=$$(gofmt -l . ) || exit 1; \
+	if [ -n "$$unformatted" ]; then \
+		echo "The following files are not gofmt'd:"; \
+		echo "$$unformatted"; \
+		exit 1; \
+	fi
 	go vet ./... || true
 
 fmt:
