@@ -1,5 +1,9 @@
 name: Development
-on: [pull_request, workflow_dispatch]
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches: [main]
 
 env: 
   # Override the `DOCKER_IMAGE` variable in Makefile.docker  

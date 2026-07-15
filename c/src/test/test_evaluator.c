@@ -1150,10 +1150,10 @@ static void build_pod_label_policy_buffer(const char *expected, void **out_buf, 
   dd_wls_Action_vec_ref_t actions = dd_wls_Action_vec_end(&b);
 
   /* Policy(description, rules, actions, id, version) */
-  dd_wls_Policy_ref_t policy = dd_wls_Policy_create(
-      &b, flatbuffers_string_create_str(&b, "k8s pod-label policy"), rules, actions,
-      flatbuffers_string_create_str(&b, "test-pod-label"), 1
-  );
+  dd_wls_UUID_t id;
+  dd_wls_UUID_assign(&id, 0, 0);
+  dd_wls_Policy_ref_t policy =
+      dd_wls_Policy_create(&b, flatbuffers_string_create_str(&b, "k8s pod-label policy"), rules, actions, &id, 1);
 
   dd_wls_Policy_vec_start(&b);
   dd_wls_Policy_vec_push(&b, policy);
