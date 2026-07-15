@@ -37,6 +37,14 @@
 typedef struct plcs_eval_ctx plcs_eval_ctx;
 
 /**
+ * @brief A 128-bit UUID, represented as two 64-bit halves.
+ */
+typedef struct {
+  unsigned long hi;
+  unsigned long lo;
+} plcs_uuid;
+
+/**
  * @brief Registers a new string evaluator.
  *
  * @param func_ptr a function pointer to the string evaluator function.
@@ -112,6 +120,28 @@ plcs_errors plcs_eval_ctx_set_num_eval_param(plcs_numeric_evaluators ix, const l
 plcs_errors plcs_eval_ctx_set_unum_eval_param(plcs_numeric_evaluators ix, const unsigned long value);
 
 /**
+ * @brief Sets the id of the policy currently loaded in the context.
+ * @param id the policy id as a plcs_uuid.
+ * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
+ */
+plcs_errors plcs_eval_ctx_set_policy_id(plcs_uuid id);
+
+/**
+ * @brief Sets the version of the policy currently loaded in the context.
+ * @param version the policy version as a signed long.
+ * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
+ */
+plcs_errors plcs_eval_ctx_set_policy_version(signed long version);
+
+/**
+ * @brief Sets the description of the policy currently loaded in the context.
+ * @param description a string representing the policy description *NOTE*
+ * caller responsible for freeing.
+ * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
+ */
+plcs_errors plcs_eval_ctx_set_policy_description(const char *description);
+
+/**
  * @brief Get a function pointer for a specific evaluator id.
  * @param id plcs_string_evaluators enum.
  * @return NULL on error (also sets ctx.error) or the function ptr.
@@ -159,6 +189,24 @@ unsigned long plcs_eval_ctx_get_unumeric_param(plcs_numeric_evaluators id);
  * @return NULL on error (also sets ctx.error) or the function ptr.
  */
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix);
+
+/**
+ * @brief Get the id of the policy currently loaded in the context.
+ * @return the policy id as a plcs_uuid.
+ */
+plcs_uuid plcs_eval_ctx_get_policy_id(void);
+
+/**
+ * @brief Get the version of the policy currently loaded in the context.
+ * @return the policy version as a signed long.
+ */
+signed long plcs_eval_ctx_get_policy_version(void);
+
+/**
+ * @brief Get the description of the policy currently loaded in the context.
+ * @return the policy description as a const char*.
+ */
+const char *plcs_eval_ctx_get_policy_description(void);
 
 /**
  * @brief An accessor for the last error

@@ -289,6 +289,15 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
+  // extract policy id, version, and description and set them in eval ctx
+  dd_wls_UUID_struct_t policy_id = dd_ns(Policy_id)(policy);
+  if (policy_id) {
+    plcs_uuid id = {.hi = dd_wls_UUID_hi(policy_id), .lo = dd_wls_UUID_lo(policy_id)};
+    plcs_eval_ctx_set_policy_id(id);
+  }
+  plcs_eval_ctx_set_policy_version(dd_ns(Policy_version)(policy));
+  plcs_eval_ctx_set_policy_description(dd_ns(Policy_description)(policy));
+
   // perform actions given evaluation result
   return perform_actions(eval_res, actions);
 }

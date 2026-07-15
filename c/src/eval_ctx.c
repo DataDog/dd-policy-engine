@@ -94,6 +94,33 @@ plcs_errors plcs_eval_ctx_register_action(plcs_action_function_ptr action, plcs_
   return PLCS_ESUCCESS;
 }
 
+plcs_errors plcs_eval_ctx_set_policy_id(plcs_uuid id) {
+  ctx.id = id;
+  return PLCS_ESUCCESS;
+}
+
+plcs_errors plcs_eval_ctx_set_policy_version(signed long version) {
+  ctx.version = version;
+  return PLCS_ESUCCESS;
+}
+
+plcs_errors plcs_eval_ctx_set_policy_description(const char *description) {
+  ctx.description = description;
+  return PLCS_ESUCCESS;
+}
+
+plcs_uuid plcs_eval_ctx_get_policy_id(void) {
+  return ctx.id;
+}
+
+signed long plcs_eval_ctx_get_policy_version(void) {
+  return ctx.version;
+}
+
+const char *plcs_eval_ctx_get_policy_description(void) {
+  return ctx.description;
+}
+
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix) {
   if (ix < 0 || ix >= PLCS_ACTIONS__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
