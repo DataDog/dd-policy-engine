@@ -103,7 +103,11 @@ typedef enum plcs_numeric_comparator {
   X(CONTAINER_IMAGE_TAG, 48)                                                                                           \
   X(CONTAINER_IMAGE_DIGEST, 49)                                                                                        \
   X(CONTAINER_NAME, 50)                                                                                                \
-  X(CONTAINER_LABEL, 51)
+  X(CONTAINER_LABEL, 51)                                                                                               \
+  X(NAMESPACE_NAME, 52)                                                                                                \
+  X(NAMESPACE_LABEL, 53)                                                                                               \
+  X(POD_LABEL, 54)                                                                                                     \
+  X(POD_ANNOTATION, 55)
 
 #define ENUM_STR_CMP_EVAL(ID, IX) PLCS_STR_EVAL_##ID = IX,
 typedef enum plcs_string_evaluators {
