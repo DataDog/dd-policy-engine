@@ -304,6 +304,73 @@ UTEST(eval_ctx, set_error_out_of_bound) {
   ASSERT_EQ(err, PLCS_ESUCCESS);
 }
 
+UTEST(eval_ctx, set_and_get_policy_id) {
+  (void)plcs_eval_ctx_init();
+
+  plcs_uuid id = {.hi = 0x0123456789abcdefULL, .lo = 0xfedcba9876543210ULL};
+  int rc = plcs_eval_ctx_set_policy_id(id);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+
+  plcs_uuid got = plcs_eval_ctx_get_policy_id();
+  ASSERT_EQ(got.hi, id.hi);
+  ASSERT_EQ(got.lo, id.lo);
+}
+
+UTEST(eval_ctx, set_and_get_policy_version) {
+  (void)plcs_eval_ctx_init();
+
+  int64_t version = INT64_C(9223372036854775807);
+  int rc = plcs_eval_ctx_set_policy_version(version);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+
+  ASSERT_EQ(plcs_eval_ctx_get_policy_version(), version);
+}
+
+UTEST(eval_ctx, set_and_get_policy_description) {
+  (void)plcs_eval_ctx_init();
+
+  int rc = plcs_eval_ctx_set_policy_description("a test policy");
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+  ASSERT_EQ(0, strcmp(plcs_eval_ctx_get_policy_description(), "a test policy"));
+
+  /* NULL description clears the stored value */
+  rc = plcs_eval_ctx_set_policy_description(NULL);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+  ASSERT_EQ(0, strcmp(plcs_eval_ctx_get_policy_description(), ""));
+}
+
+UTEST(eval_ctx, set_policy_description_truncates_long_input) {
+  (void)plcs_eval_ctx_init();
+
+  char long_description[PLCS_POLICY_DESCRIPTION_MAX_LEN + 64];
+  memset(long_description, 'x', sizeof(long_description) - 1);
+  long_description[sizeof(long_description) - 1] = '\0';
+
+  int rc = plcs_eval_ctx_set_policy_description(long_description);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+
+  const char *stored = plcs_eval_ctx_get_policy_description();
+  ASSERT_EQ(strlen(stored), (size_t)PLCS_POLICY_DESCRIPTION_MAX_LEN);
+  ASSERT_EQ(0, strncmp(stored, long_description, PLCS_POLICY_DESCRIPTION_MAX_LEN));
+}
+
+UTEST(eval_ctx, reset_clears_policy_id_version_and_description) {
+  (void)plcs_eval_ctx_init();
+
+  plcs_uuid id = {.hi = 1, .lo = 2};
+  plcs_eval_ctx_set_policy_id(id);
+  plcs_eval_ctx_set_policy_version(42);
+  plcs_eval_ctx_set_policy_description("some description");
+
+  plcs_eval_ctx_reset();
+
+  plcs_uuid got = plcs_eval_ctx_get_policy_id();
+  ASSERT_EQ(got.hi, (uint64_t)0);
+  ASSERT_EQ(got.lo, (uint64_t)0);
+  ASSERT_EQ(plcs_eval_ctx_get_policy_version(), (int64_t)0);
+  ASSERT_EQ(0, strcmp(plcs_eval_ctx_get_policy_description(), ""));
+}
+
 /* -------------------------------------------------------------------------- */
 /* Default evaluator sanity checks                                             */
 /* -------------------------------------------------------------------------- */
