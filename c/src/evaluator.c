@@ -305,6 +305,10 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
 }
 
 plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
+  plcs_eval_ctx_set_policy_id((plcs_uuid){.hi = 0, .lo = 0});
+  plcs_eval_ctx_set_policy_version(0);
+  plcs_eval_ctx_set_policy_description(NULL);
+
   dd_ns(Policy_vec_t) policies = plcs_get_policies(buffer, size);
   if (!policies) {
     // not necessarily an error, could be empty policies
