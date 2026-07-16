@@ -112,7 +112,7 @@ typedef struct plcs_eval_ctx {
   plcs_errors error;
 
   plcs_uuid id;
-  signed long version;
+  int64_t version;
   const char *description;
 
 } plcs_eval_ctx;

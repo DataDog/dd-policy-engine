@@ -26,6 +26,7 @@
 #include "evaluator_types.h"
 
 #include <limits.h>
+#include <stdint.h>
 
 #define PLCS_STR_NOT_SET NULL
 #define PLCS_NUM_NOT_SET LONG_MAX
@@ -40,8 +41,8 @@ typedef struct plcs_eval_ctx plcs_eval_ctx;
  * @brief A 128-bit UUID, represented as two 64-bit halves.
  */
 typedef struct {
-  unsigned long hi;
-  unsigned long lo;
+  uint64_t hi;
+  uint64_t lo;
 } plcs_uuid;
 
 /**
@@ -128,10 +129,10 @@ plcs_errors plcs_eval_ctx_set_policy_id(plcs_uuid id);
 
 /**
  * @brief Sets the version of the policy currently loaded in the context.
- * @param version the policy version as a signed long.
+ * @param version the policy version as an int64_t.
  * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
  */
-plcs_errors plcs_eval_ctx_set_policy_version(signed long version);
+plcs_errors plcs_eval_ctx_set_policy_version(int64_t version);
 
 /**
  * @brief Sets the description of the policy currently loaded in the context.
@@ -198,9 +199,9 @@ plcs_uuid plcs_eval_ctx_get_policy_id(void);
 
 /**
  * @brief Get the version of the policy currently loaded in the context.
- * @return the policy version as a signed long.
+ * @return the policy version as an int64_t.
  */
-signed long plcs_eval_ctx_get_policy_version(void);
+int64_t plcs_eval_ctx_get_policy_version(void);
 
 /**
  * @brief Get the description of the policy currently loaded in the context.

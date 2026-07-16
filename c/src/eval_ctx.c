@@ -99,7 +99,7 @@ plcs_errors plcs_eval_ctx_set_policy_id(plcs_uuid id) {
   return PLCS_ESUCCESS;
 }
 
-plcs_errors plcs_eval_ctx_set_policy_version(signed long version) {
+plcs_errors plcs_eval_ctx_set_policy_version(int64_t version) {
   ctx.version = version;
   return PLCS_ESUCCESS;
 }
@@ -113,7 +113,7 @@ plcs_uuid plcs_eval_ctx_get_policy_id(void) {
   return ctx.id;
 }
 
-signed long plcs_eval_ctx_get_policy_version(void) {
+int64_t plcs_eval_ctx_get_policy_version(void) {
   return ctx.version;
 }
 

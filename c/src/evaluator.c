@@ -294,6 +294,8 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   if (policy_id) {
     plcs_uuid id = {.hi = dd_wls_UUID_hi(policy_id), .lo = dd_wls_UUID_lo(policy_id)};
     plcs_eval_ctx_set_policy_id(id);
+  } else {
+    plcs_eval_ctx_set_policy_id((plcs_uuid){.hi = 0, .lo = 0});
   }
   plcs_eval_ctx_set_policy_version(dd_ns(Policy_version)(policy));
   plcs_eval_ctx_set_policy_description(dd_ns(Policy_description)(policy));
