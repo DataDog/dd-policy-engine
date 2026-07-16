@@ -113,7 +113,7 @@ typedef struct plcs_eval_ctx {
 
   plcs_uuid id;
   int64_t version;
-  const char *description;
+  char description[PLCS_POLICY_DESCRIPTION_MAX_LEN + 1];
 
 } plcs_eval_ctx;
 

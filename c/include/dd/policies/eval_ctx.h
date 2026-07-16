@@ -33,6 +33,13 @@
 #define PLCS_UNUM_NOT_SET ULONG_MAX
 
 /**
+ * @brief Maximum length (excluding the null terminator) of a policy
+ * description retained by the eval context. Longer descriptions are
+ * truncated when stored via plcs_eval_ctx_set_policy_description.
+ */
+#define PLCS_POLICY_DESCRIPTION_MAX_LEN 255
+
+/**
  * @brief opaque struct, defined in src/eval_ctx.h
  */
 typedef struct plcs_eval_ctx plcs_eval_ctx;
@@ -136,8 +143,11 @@ plcs_errors plcs_eval_ctx_set_policy_version(int64_t version);
 
 /**
  * @brief Sets the description of the policy currently loaded in the context.
- * @param description a string representing the policy description *NOTE*
- * caller responsible for freeing.
+ * The context copies the string into its own fixed-size storage (truncating
+ * to PLCS_POLICY_DESCRIPTION_MAX_LEN bytes if needed), so the caller retains
+ * ownership of and may free/invalidate `description` immediately after this
+ * call returns.
+ * @param description a string representing the policy description.
  * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
  */
 plcs_errors plcs_eval_ctx_set_policy_description(const char *description);
@@ -205,7 +215,10 @@ int64_t plcs_eval_ctx_get_policy_version(void);
 
 /**
  * @brief Get the description of the policy currently loaded in the context.
- * @return the policy description as a const char*.
+ * @return the policy description as a const char*, owned by the context and
+ * valid until the next call to plcs_eval_ctx_set_policy_description or
+ * plcs_eval_ctx_reset. May be truncated to PLCS_POLICY_DESCRIPTION_MAX_LEN
+ * bytes.
  */
 const char *plcs_eval_ctx_get_policy_description(void);
 
