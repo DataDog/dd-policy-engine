@@ -263,6 +263,8 @@ plcs_errors plcs_eval_ctx_get_last_error(void) {
 }
 
 void plcs_eval_ctx_reset(void) {
+  ctx.id = (plcs_uuid){0};
+  ctx.version = 0;
   ctx.description[0] = '\0';
 
   // Reset all evaluators to NULL and parameters to their 'not set' values
