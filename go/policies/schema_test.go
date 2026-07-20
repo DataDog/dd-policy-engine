@@ -103,5 +103,5 @@ func TestDecoderIdentifiersMatchSchema(t *testing.T) {
 
 	assertSubset(t, "action id",
 		enumMembers(t, "action_ids.fbs", "ActionId"),
-		[]string{actionInjectAllow, actionInjectDeny, actionEnableSDK, actionEnableProfiler})
+		[]string{actionInjectAllow, actionInjectDeny, actionEnableSDK, actionEnableProfiler, actionSetEnvVar})
 }

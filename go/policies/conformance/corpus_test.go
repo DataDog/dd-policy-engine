@@ -17,9 +17,10 @@ import (
 // The conformance corpus is the cross-engine contract that guarantees the Go
 // evaluator stays semantically identical to the C engine (RFC step 3). Each
 // vector is a dd-wls rule tree (the JSON projection of the FlatBuffers schema),
-// a set of facts, and the expected tri-state result. This Go harness runs every
-// vector through the real public API (ParsePolicies + Evaluate); the C harness
-// is expected to run the same logical vectors against libpolicies so any drift
+// a set of facts, the expected tri-state result, and optionally the policy
+// actions plus the expected decoded Outcome. This Go harness runs every vector
+// through the real public API (ParsePolicies + Evaluate); the C harness is
+// expected to run the same logical vectors against libpolicies so any drift
 // between the two engines is caught by a shared corpus rather than by parallel,
 // hand-maintained test suites.
 //
@@ -28,6 +29,12 @@ import (
 //   - the five string comparators (exact/prefix/suffix/contains/wildcard),
 //   - the "KEY=" existence convention and absent-key handling,
 //   - ABSTAIN when a fact source is unavailable (unset namespace name).
+//
+// Vectors with an `actions` array and an `expect_outcome` also exercise action
+// decoding (inject decision, tracer versions, SET_ENVAR/ENABLE_PROFILER env-var
+// configs). That check is Go-only: C actions are host callbacks with no
+// comparable value, so the cross-engine harness asserts eval parity (`expect`)
+// alone and ignores the outcome fields.
 //
 // Comparator edge cases (wildcard backtracking, empty strings) live in the
 // policies package's TestWildcardMatch, which mirrors c/src/test/test_evaluator.c
@@ -44,6 +51,22 @@ type conformanceVector struct {
 	Rules  json.RawMessage  `json:"rules"`
 	Facts  conformanceFacts `json:"facts"`
 	Expect string           `json:"expect"`
+
+	// Actions and ExpectOutcome are optional: when a vector carries them, the Go
+	// harness additionally decodes the policy actions and asserts the resulting
+	// Outcome. The cross-engine (C) harness ignores both and checks only Expect,
+	// because C actions are host callbacks with no comparable engine-level value.
+	Actions       json.RawMessage     `json:"actions,omitempty"`
+	ExpectOutcome *conformanceOutcome `json:"expect_outcome,omitempty"`
+}
+
+// conformanceOutcome is the expected decoded Outcome for a vector's actions.
+// TracerConfigs is compared as a name->value map so ordering is irrelevant.
+type conformanceOutcome struct {
+	Inject         bool              `json:"inject"`
+	InjectSet      bool              `json:"inject_set"`
+	TracerVersions map[string]string `json:"tracer_versions"`
+	TracerConfigs  map[string]string `json:"tracer_configs"`
 }
 
 // conformanceFacts mirrors the generic Context: workload facts keyed by
@@ -88,26 +111,63 @@ func resultName(r policies.Result) string {
 	}
 }
 
-// wrapVectorAsDocument embeds a vector's rule tree into a minimal dd-wls
-// policies document so it can be parsed through the real ParsePolicies path
-// instead of a test-only decoder.
-func wrapVectorAsDocument(name string, rules json.RawMessage) ([]byte, error) {
+// wrapVectorAsDocument embeds a vector's rule tree (and optional actions) into a
+// minimal dd-wls policies document so it can be parsed through the real
+// ParsePolicies path instead of a test-only decoder. actions may be nil, in
+// which case the policy carries an empty actions list.
+func wrapVectorAsDocument(name string, rules, actions json.RawMessage) ([]byte, error) {
+	if len(actions) == 0 {
+		actions = json.RawMessage("[]")
+	}
 	doc := struct {
 		Policies []struct {
 			Description string          `json:"description"`
 			Rules       json.RawMessage `json:"rules"`
-			Actions     []struct{}      `json:"actions"`
+			Actions     json.RawMessage `json:"actions"`
 		} `json:"policies"`
 	}{
 		Policies: []struct {
 			Description string          `json:"description"`
 			Rules       json.RawMessage `json:"rules"`
-			Actions     []struct{}      `json:"actions"`
+			Actions     json.RawMessage `json:"actions"`
 		}{
-			{Description: name, Rules: rules, Actions: []struct{}{}},
+			{Description: name, Rules: rules, Actions: actions},
 		},
 	}
 	return json.Marshal(doc)
+}
+
+// checkOutcome asserts a decoded policy Outcome matches the vector's expectation.
+// TracerConfigs is compared order-insensitively as a name->value map.
+func checkOutcome(t *testing.T, want conformanceOutcome, got policies.Outcome) {
+	t.Helper()
+	if got.Inject != want.Inject || got.InjectSet != want.InjectSet {
+		t.Errorf("outcome inject: got {inject:%v set:%v} want {inject:%v set:%v}",
+			got.Inject, got.InjectSet, want.Inject, want.InjectSet)
+	}
+	if !sameStringMap(got.TracerVersions, want.TracerVersions) {
+		t.Errorf("outcome tracer_versions: got %v want %v", got.TracerVersions, want.TracerVersions)
+	}
+	gotConfigs := map[string]string{}
+	for _, e := range got.TracerConfigs {
+		gotConfigs[e.Name] = e.Value
+	}
+	if !sameStringMap(gotConfigs, want.TracerConfigs) {
+		t.Errorf("outcome tracer_configs: got %v want %v", gotConfigs, want.TracerConfigs)
+	}
+}
+
+// sameStringMap compares two string maps, treating nil and empty as equal.
+func sameStringMap(a, b map[string]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if b[k] != v {
+			return false
+		}
+	}
+	return true
 }
 
 func loadCorpus(t *testing.T) conformanceCorpus {
@@ -136,7 +196,7 @@ func TestConformanceCorpus(t *testing.T) {
 				t.Fatalf("vector %q has invalid expect %q", v.Name, v.Expect)
 			}
 
-			doc, err := wrapVectorAsDocument(v.Name, v.Rules)
+			doc, err := wrapVectorAsDocument(v.Name, v.Rules, v.Actions)
 			if err != nil {
 				t.Fatalf("wrap vector: %v", err)
 			}
@@ -151,6 +211,12 @@ func TestConformanceCorpus(t *testing.T) {
 			got := policies.Evaluate(ps[0].Rules, v.Facts.toContext())
 			if got != want {
 				t.Errorf("vector %q: got %s want %s", v.Name, resultName(got), v.Expect)
+			}
+
+			// When the vector declares expected actions, also assert the decoded
+			// Outcome. This is Go-only; the cross-engine harness checks eval parity.
+			if v.ExpectOutcome != nil {
+				checkOutcome(t, *v.ExpectOutcome, ps[0].Outcome)
 			}
 		})
 	}

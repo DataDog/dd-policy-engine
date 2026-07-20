@@ -38,6 +38,7 @@ build: generate-schema-headers generate-antlr-grammar
 test:
 	go test ./internal/...
 	go test ./cmd/...
+	go test ./policies/...
 
 # Cross-engine conformance: runs testdata/conformance/vectors.json through both
 # the Go engine and the real C engine (libpolicies, via cgo) in one process and
@@ -47,11 +48,11 @@ conformance-cross:
 	@flatcc --reader --verifier --builder --common_reader -o $(C_SCHEMA_OUTPUT_DIR) $(SCHEMA_DIR)/*.fbs
 	@echo "[i] Building libpolicies.a..."
 	@cd $(C_ROOT) && cmake -B build --preset gcc-dev .. && cmake --build build --target dd-policy-engine.static-lib -j
-	@echo "[i] Running cross-engine conformance test..."
+	@echo "[i] Running conformance tests (cross-engine + corpus)..."
 	@CGO_ENABLED=1 \
 		CGO_CFLAGS="-I$(C_ROOT)/include -I$(C_ROOT)/src -I$(C_SCHEMA_OUTPUT_DIR)" \
 		CGO_LDFLAGS="$(LIBPOLICIES) -lflatccrt" \
-		go test -tags conformance_cgo ./policies/conformance/ -run TestConformanceCrossEngine -v
+		go test -tags conformance_cgo ./policies/conformance/ -v
 
 # Verify by unmarshalling compiled policy to JSON
 verify_json:

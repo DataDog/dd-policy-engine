@@ -17,7 +17,12 @@
 // registry. An id with no matching fact in the Context abstains, exactly as the
 // C engine returns ABSTAIN on a NULL context. The purely mechanical parts of
 // the C engine that carry no value in Go (action callbacks, function-pointer
-// registration) are not reproduced; matched policies yield an Outcome instead.
+// registration) are not reproduced; each policy carries a decoded Outcome
+// instead. Evaluate returns a single policy's tri-state result and its Outcome
+// is read directly; combining the outcomes of several matching policies
+// (which policy wins, and in what order) is deliberately left to the consumer,
+// mirroring how the C host accumulates action side effects across policies
+// rather than the engine doing it.
 //
 // String, signed-numeric and unsigned-numeric evaluators are all supported. The
 // one intentional enhancement over C is label-type ids (POD_LABEL,

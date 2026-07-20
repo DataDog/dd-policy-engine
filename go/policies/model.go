@@ -172,9 +172,9 @@ type Outcome struct {
 	// meaningful when InjectSet is true.
 	Inject bool
 	// InjectSet reports whether the policy carried an explicit inject decision
-	// (INJECT_ALLOW or INJECT_DENY). It lets Decide fold multiple matching
-	// policies without a policy that omits an inject action silently flipping
-	// the decision to deny.
+	// (INJECT_ALLOW or INJECT_DENY). It lets a consumer folding several matching
+	// policies tell "no opinion on injection" apart from an explicit deny, so a
+	// policy that omits an inject action does not silently flip the decision.
 	InjectSet bool
 	// TracerVersions maps a tracer name to the version to inject.
 	TracerVersions map[string]string

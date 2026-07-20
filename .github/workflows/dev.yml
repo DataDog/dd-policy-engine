@@ -86,8 +86,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      # sh -c keeps both commands inside the container: docker-run does not wrap
+      # its argument in a shell, so a bare `make -C go && make -C go test` would
+      # run the second half on the host, outside the build image.
       - name: Build and test Go
-        run: make docker-run "make -C go"
+        run: make docker-run "sh -c 'make -C go && make -C go test'"
 
   # Cross-engine conformance: runs the shared corpus through both the Go engine
   # and the real C engine (libpolicies, via cgo) in one process and asserts they
@@ -109,7 +112,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Run cross-engine conformance
         run: make docker-run "make -C go conformance-cross"
 
@@ -243,11 +246,15 @@ jobs:
       packages: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Test Go
-        working-directory: go
+      - name: Install Dependency Manager (scoop)
         run: |
-          go test ./internal/...
-          go test ./cmd/...
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+      - name: Install make
+        run: scoop install main/make@4.4.1
+      - name: Test Go
+        run: make -C go test
 
   coverage:
     needs: build-libpolicies-linux

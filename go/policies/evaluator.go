@@ -30,41 +30,18 @@ type Context struct {
 	UNumbers map[string]uint64
 }
 
-// Decide evaluates every policy (like the C engine's plcs_evaluate_buffer,
-// which has no first-match short-circuit) and folds the outcomes of all
-// policies whose rule evaluates to ResultTrue, in document order. The boolean
-// is false when no policy matched.
-//
-// Folding rules: a later policy's explicit inject decision (INJECT_ALLOW /
-// INJECT_DENY) overrides an earlier one; TracerVersions are merged with the
-// later policy winning per tracer; TracerConfigs are concatenated in order.
-func Decide(ps []Policy, ctx Context) (Outcome, bool) {
-	var out Outcome
-	matched := false
-	for i := range ps {
-		if Evaluate(ps[i].Rules, ctx) != ResultTrue {
-			continue
+// upsertEnvVar sets name=value in configs, replacing any existing entry with the
+// same name rather than appending a duplicate (a later value wins). Environment
+// variable names are unique by definition, so the same config is never emitted
+// twice even when a policy repeats an action that sets it.
+func upsertEnvVar(configs []EnvVar, name, value string) []EnvVar {
+	for i := range configs {
+		if configs[i].Name == name {
+			configs[i].Value = value
+			return configs
 		}
-		matched = true
-		out = mergeOutcome(out, ps[i].Outcome)
 	}
-	return out, matched
-}
-
-// mergeOutcome folds src into dst following the precedence documented on Decide.
-func mergeOutcome(dst, src Outcome) Outcome {
-	if src.InjectSet {
-		dst.Inject = src.Inject
-		dst.InjectSet = true
-	}
-	for k, v := range src.TracerVersions {
-		if dst.TracerVersions == nil {
-			dst.TracerVersions = map[string]string{}
-		}
-		dst.TracerVersions[k] = v
-	}
-	dst.TracerConfigs = append(dst.TracerConfigs, src.TracerConfigs...)
-	return dst
+	return append(configs, EnvVar{Name: name, Value: value})
 }
 
 // Evaluate walks the rule tree and returns its tri-state result.

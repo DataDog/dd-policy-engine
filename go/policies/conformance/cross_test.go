@@ -39,8 +39,10 @@ func TestConformanceCrossEngine(t *testing.T) {
 				t.Fatalf("vector %q has invalid expect %q", v.Name, v.Expect)
 			}
 
-			// Go engine, via the real public API.
-			doc, err := wrapVectorAsDocument(v.Name, v.Rules)
+			// Go engine, via the real public API. Actions are included so the
+			// document parses like production, but only the tri-state eval result
+			// is compared across engines (C has no comparable action outcome).
+			doc, err := wrapVectorAsDocument(v.Name, v.Rules, v.Actions)
 			if err != nil {
 				t.Fatalf("wrap vector: %v", err)
 			}
@@ -58,7 +60,10 @@ func TestConformanceCrossEngine(t *testing.T) {
 			if err != nil {
 				t.Fatalf("build rules buffer: %v", err)
 			}
-			cName := cEvaluateBuffer(buf, v.Facts.Strings, v.Facts.Labels, v.Facts.Numbers, v.Facts.UNumbers)
+			cName, err := cEvaluateBuffer(buf, v.Facts.Strings, v.Facts.Labels, v.Facts.Numbers, v.Facts.UNumbers)
+			if err != nil {
+				t.Fatalf("C evaluate: %v", err)
+			}
 
 			if goName != cName {
 				t.Errorf("engine divergence: Go=%s C=%s (expected %s)", goName, cName, v.Expect)
@@ -70,5 +75,23 @@ func TestConformanceCrossEngine(t *testing.T) {
 				t.Errorf("C engine: got %s, want %s", cName, v.Expect)
 			}
 		})
+	}
+}
+
+// TestBuildRulesBufferRejectsUnknownComparator ensures the C-buffer builder is as
+// strict as the Go decoder (policies.ParsePolicies -> decodeStrCmp): an unknown
+// wire identifier must error rather than silently serialize the enum's zero value
+// (CMP_STR_UNKNOWN). Otherwise a typo in the shared corpus could mask, rather
+// than surface, a real cross-engine divergence.
+func TestBuildRulesBufferRejectsUnknownComparator(t *testing.T) {
+	rules := []byte(`{
+      "node_type": "EvaluatorNode",
+      "node": {
+        "eval_type": "StrEvaluator",
+        "eval": {"id": "NAMESPACE_NAME", "cmp": "CMP_BOGUS", "value": "x"}
+      }
+    }`)
+	if _, err := buildRulesBuffer(rules); err == nil {
+		t.Fatalf("expected buildRulesBuffer to reject unknown comparator %q, got nil error", "CMP_BOGUS")
 	}
 }

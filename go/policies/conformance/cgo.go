@@ -246,6 +246,13 @@ const (
 	confEvalString   = "StrEvaluator"
 	confEvalNumeric  = "NumEvaluator"
 	confEvalUNumeric = "UNumEvaluator"
+
+	// Constant evaluators ignore the comparator; the corpus omits cmp for them,
+	// and the Go decoder (decodeStrEval) short-circuits them before validating
+	// cmp — so buildNodeWrap must not require one either.
+	confIDAlwaysTrue    = "ALWAYS_TRUE"
+	confIDAlwaysFalse   = "ALWAYS_FALSE"
+	confIDAlwaysAbstain = "ALWAYS_ABSTAIN"
 )
 
 type confNodeWrap struct {
@@ -315,11 +322,31 @@ func buildRulesBuffer(rules json.RawMessage) ([]byte, error) {
 	return b.FinishedBytes(), nil
 }
 
+// lookupEnum resolves a dd-wls wire identifier to its generated enum value,
+// erroring on an unknown/typo'd name instead of silently coercing to the zero
+// value (e.g. CMP_STR_UNKNOWN == 0). The harness serializes the shared corpus
+// for the C engine, so it must reject exactly what the Go decoder rejects; a
+// corpus typo would otherwise be built into the buffer and could mask, rather
+// than surface, a real cross-engine divergence. This is deliberately strict (no
+// forward-compat leniency): the corpus ships with the harness, so an unknown
+// name is always a typo, never a future value.
+func lookupEnum[T any](m map[string]T, name, kind string) (T, error) {
+	v, ok := m[name]
+	if !ok {
+		return v, fmt.Errorf("unknown %s %q", kind, name)
+	}
+	return v, nil
+}
+
 func buildNodeWrap(b *flatbuffers.Builder, w confNodeWrap) (flatbuffers.UOffsetT, error) {
 	switch w.NodeType {
 	case confNodeComposite:
 		var c confComposite
 		if err := json.Unmarshal(w.Node, &c); err != nil {
+			return 0, err
+		}
+		op, err := lookupEnum(wls.EnumValuesBoolOperation, c.Op, "boolean operation")
+		if err != nil {
 			return 0, err
 		}
 		children := make([]flatbuffers.UOffsetT, 0, len(c.Children))
@@ -330,7 +357,7 @@ func buildNodeWrap(b *flatbuffers.Builder, w confNodeWrap) (flatbuffers.UOffsetT
 			}
 			children = append(children, off)
 		}
-		comp := schema.CompositeNodeCreate(b, wls.EnumValuesBoolOperation[c.Op], c.Description, children)
+		comp := schema.CompositeNodeCreate(b, op, c.Description, children)
 		return schema.NodeTypeWrapperCreate(b, comp, wls.NodeTypeCompositeNode), nil
 	case confNodeEvaluator:
 		var e confEvaluatorNode
@@ -345,21 +372,54 @@ func buildNodeWrap(b *flatbuffers.Builder, w confNodeWrap) (flatbuffers.UOffsetT
 			if err := json.Unmarshal(e.Eval, &se); err != nil {
 				return 0, err
 			}
-			evalOff = schema.StrEvaluatorCreate(b, wls.EnumValuesStringEvaluators[se.ID], se.Value, wls.EnumValuesCmpTypeSTR[se.Cmp])
+			id, err := lookupEnum(wls.EnumValuesStringEvaluators, se.ID, "string evaluator id")
+			if err != nil {
+				return 0, err
+			}
+			// Constant evaluators (ALWAYS_TRUE/FALSE/ABSTAIN) ignore the comparator
+			// and the corpus omits it; mirror the Go decoder, which short-circuits
+			// them before validating cmp, rather than requiring one that carries no
+			// meaning. Non-constant ids still require a valid comparator.
+			var cmp wls.CmpTypeSTR
+			switch se.ID {
+			case confIDAlwaysTrue, confIDAlwaysFalse, confIDAlwaysAbstain:
+			default:
+				cmp, err = lookupEnum(wls.EnumValuesCmpTypeSTR, se.Cmp, "string comparison")
+				if err != nil {
+					return 0, err
+				}
+			}
+			evalOff = schema.StrEvaluatorCreate(b, id, se.Value, cmp)
 			evalType = wls.EvaluatorTypeStrEvaluator
 		case confEvalNumeric:
 			var ne confNumEval
 			if err := json.Unmarshal(e.Eval, &ne); err != nil {
 				return 0, err
 			}
-			evalOff = schema.NumEvaluatorCreate(b, wls.EnumValuesNumericEvaluators[ne.ID], ne.Value, wls.EnumValuesCmpTypeNUM[ne.Cmp])
+			id, err := lookupEnum(wls.EnumValuesNumericEvaluators, ne.ID, "numeric evaluator id")
+			if err != nil {
+				return 0, err
+			}
+			cmp, err := lookupEnum(wls.EnumValuesCmpTypeNUM, ne.Cmp, "numeric comparison")
+			if err != nil {
+				return 0, err
+			}
+			evalOff = schema.NumEvaluatorCreate(b, id, ne.Value, cmp)
 			evalType = wls.EvaluatorTypeNumEvaluator
 		case confEvalUNumeric:
 			var ue confUNumEval
 			if err := json.Unmarshal(e.Eval, &ue); err != nil {
 				return 0, err
 			}
-			evalOff = schema.UNumEvaluatorCreate(b, wls.EnumValuesNumericEvaluators[ue.ID], ue.Value, wls.EnumValuesCmpTypeNUM[ue.Cmp])
+			id, err := lookupEnum(wls.EnumValuesNumericEvaluators, ue.ID, "numeric evaluator id")
+			if err != nil {
+				return 0, err
+			}
+			cmp, err := lookupEnum(wls.EnumValuesCmpTypeNUM, ue.Cmp, "numeric comparison")
+			if err != nil {
+				return 0, err
+			}
+			evalOff = schema.UNumEvaluatorCreate(b, id, ue.Value, cmp)
 			evalType = wls.EvaluatorTypeUNumEvaluator
 		default:
 			return 0, fmt.Errorf("unsupported eval_type %q", e.EvalType)
@@ -374,16 +434,24 @@ func buildNodeWrap(b *flatbuffers.Builder, w confNodeWrap) (flatbuffers.UOffsetT
 // cEvaluateBuffer loads the given facts into the C evaluation context and
 // evaluates the serialized rule buffer with the real C engine, returning the
 // tri-state result name (TRUE/FALSE/ABSTAIN).
-func cEvaluateBuffer(buf []byte, strings map[string]string, labels map[string]map[string]string, numbers map[string]int64, unumbers map[string]uint64) string {
+func cEvaluateBuffer(buf []byte, strings map[string]string, labels map[string]map[string]string, numbers map[string]int64, unumbers map[string]uint64) (string, error) {
 	C.conf_reset()
 
 	for id, val := range strings {
+		eid, err := lookupEnum(wls.EnumValuesStringEvaluators, id, "string evaluator id")
+		if err != nil {
+			return "", err
+		}
 		cs := C.CString(val)
-		C.conf_set_string(C.int(wls.EnumValuesStringEvaluators[id]), cs)
+		C.conf_set_string(C.int(eid), cs)
 		C.free(unsafe.Pointer(cs))
 	}
 	for id, m := range labels {
-		cid := C.int(wls.EnumValuesStringEvaluators[id])
+		eid, err := lookupEnum(wls.EnumValuesStringEvaluators, id, "string evaluator id")
+		if err != nil {
+			return "", err
+		}
+		cid := C.int(eid)
 		C.conf_label_present(cid)
 		for k, val := range m {
 			ck := C.CString(k)
@@ -394,15 +462,23 @@ func cEvaluateBuffer(buf []byte, strings map[string]string, labels map[string]ma
 		}
 	}
 	for id, val := range numbers {
-		C.conf_set_number(C.int(wls.EnumValuesNumericEvaluators[id]), C.long(val))
+		eid, err := lookupEnum(wls.EnumValuesNumericEvaluators, id, "numeric evaluator id")
+		if err != nil {
+			return "", err
+		}
+		C.conf_set_number(C.int(eid), C.long(val))
 	}
 	for id, val := range unumbers {
-		C.conf_set_unumber(C.int(wls.EnumValuesNumericEvaluators[id]), C.ulong(val))
+		eid, err := lookupEnum(wls.EnumValuesNumericEvaluators, id, "numeric evaluator id")
+		if err != nil {
+			return "", err
+		}
+		C.conf_set_unumber(C.int(eid), C.ulong(val))
 	}
 
 	var p *C.uint8_t
 	if len(buf) > 0 {
 		p = (*C.uint8_t)(unsafe.Pointer(&buf[0]))
 	}
-	return cResultName(C.conf_eval(p, C.size_t(len(buf))))
+	return cResultName(C.conf_eval(p, C.size_t(len(buf)))), nil
 }

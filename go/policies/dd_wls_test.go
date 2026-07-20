@@ -17,6 +17,13 @@ func mustParse(t *testing.T, raw string) []Policy {
 	return ps
 }
 
+// matches reports whether a single policy's rule evaluates to true for ctx.
+// Combining the outcomes of several matching policies is the consumer's
+// responsibility (see doc.go), so these tests check one policy at a time.
+func matches(p Policy, ctx Context) bool {
+	return Evaluate(p.Rules, ctx) == ResultTrue
+}
+
 func TestParsePodLabelAndActions(t *testing.T) {
 	raw := `{
       "policies": [{
@@ -39,12 +46,14 @@ func TestParsePodLabelAndActions(t *testing.T) {
 		t.Fatalf("unexpected parse: %+v", ps)
 	}
 
-	out, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "db-user"}}})
-	if !ok || !out.Inject || out.TracerVersions["java"] != "latest" {
-		t.Fatalf("db-user pod: %+v ok=%v", out, ok)
+	if !matches(ps[0], Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "db-user"}}}) {
+		t.Fatal("db-user pod should match")
 	}
-	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "other"}}}); ok {
-		t.Fatalf("non-matching pod should not match")
+	if out := ps[0].Outcome; !out.Inject || out.TracerVersions["java"] != "latest" {
+		t.Fatalf("unexpected outcome: %+v", out)
+	}
+	if matches(ps[0], Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "other"}}}) {
+		t.Fatal("non-matching pod should not match")
 	}
 }
 
@@ -58,12 +67,11 @@ func TestParseInjectDeny(t *testing.T) {
       }]
     }`
 	ps := mustParse(t, raw)
-	out, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "legacy"}}})
-	if !ok {
+	if !matches(ps[0], Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "legacy"}}}) {
 		t.Fatalf("policy should match")
 	}
-	if out.Inject {
-		t.Fatalf("matched deny policy must not inject")
+	if out := ps[0].Outcome; !out.InjectSet || out.Inject {
+		t.Fatalf("matched deny policy must carry an explicit no-inject decision: %+v", out)
 	}
 }
 
@@ -91,13 +99,13 @@ func TestParseExistenceAndNot(t *testing.T) {
     }`
 	ps := mustParse(t, raw)
 
-	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"tier": "frontend"}}}); !ok {
+	if !matches(ps[0], Context{Labels: map[string]map[string]string{IDPodLabel: {"tier": "frontend"}}}) {
 		t.Errorf("tier present, deprecated absent should match")
 	}
-	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {}}}); ok {
+	if matches(ps[0], Context{Labels: map[string]map[string]string{IDPodLabel: {}}}) {
 		t.Errorf("tier absent should not match")
 	}
-	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"tier": "x", "deprecated": "true"}}}); ok {
+	if matches(ps[0], Context{Labels: map[string]map[string]string{IDPodLabel: {"tier": "x", "deprecated": "true"}}}) {
 		t.Errorf("deprecated present should not match")
 	}
 }
@@ -112,10 +120,10 @@ func TestParseWildcardPodLabel(t *testing.T) {
       }]
     }`
 	ps := mustParse(t, raw)
-	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "k8s-payments-svc"}}}); !ok {
+	if !matches(ps[0], Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "k8s-payments-svc"}}}) {
 		t.Errorf("wildcard label should match k8s-payments-svc")
 	}
-	if _, ok := Decide(ps, Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "other"}}}); ok {
+	if matches(ps[0], Context{Labels: map[string]map[string]string{IDPodLabel: {"app": "other"}}}) {
 		t.Errorf("wildcard label should not match other")
 	}
 }
@@ -146,13 +154,26 @@ func TestParseNamespaceNameAndDefault(t *testing.T) {
 		t.Fatalf("expected 2 policies, got %d", len(ps))
 	}
 
-	out, ok := Decide(ps, Context{Strings: map[string]string{IDNamespaceName: "billing"}})
-	if !ok || out.TracerVersions["java"] != "latest" {
-		t.Fatalf("billing should hit first policy: %+v ok=%v", out, ok)
+	// billing matches the first (namespace) policy, which enables the java tracer;
+	// it does not match the catch-all's job here — that's the consumer's fold.
+	billing := Context{Strings: map[string]string{IDNamespaceName: "billing"}}
+	if !matches(ps[0], billing) {
+		t.Fatal("billing should match the namespace policy")
 	}
-	out, ok = Decide(ps, Context{Strings: map[string]string{IDNamespaceName: "default"}})
-	if !ok || !out.Inject || len(out.TracerVersions) != 0 {
-		t.Fatalf("default ns should hit catch-all: %+v ok=%v", out, ok)
+	if ps[0].Outcome.TracerVersions["java"] != "latest" {
+		t.Fatalf("namespace policy should enable java=latest: %+v", ps[0].Outcome)
+	}
+
+	// default matches only the catch-all, which injects with no tracer versions.
+	def := Context{Strings: map[string]string{IDNamespaceName: "default"}}
+	if matches(ps[0], def) {
+		t.Fatal("default should not match the namespace policy")
+	}
+	if !matches(ps[1], def) {
+		t.Fatal("default should match the catch-all policy")
+	}
+	if out := ps[1].Outcome; !out.Inject || len(out.TracerVersions) != 0 {
+		t.Fatalf("catch-all should inject with no tracer versions: %+v", out)
 	}
 }
 
@@ -182,21 +203,137 @@ func TestParseUUID(t *testing.T) {
 	}
 }
 
+// TestEnableProfilerDeduped checks that a single policy decodes
+// DD_PROFILING_ENABLED at most once even when it lists ENABLE_PROFILER more than
+// once. Deduping across several matching policies is the consumer's fold and
+// lives outside this engine.
+func TestEnableProfilerDeduped(t *testing.T) {
+	countEnv := func(configs []EnvVar, name string) int {
+		n := 0
+		for _, c := range configs {
+			if c.Name == name {
+				n++
+			}
+		}
+		return n
+	}
+
+	ps := mustParse(t, `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},"actions":[{"action":"ENABLE_PROFILER"},{"action":"ENABLE_PROFILER"}]}]}`)
+	if n := countEnv(ps[0].Outcome.TracerConfigs, "DD_PROFILING_ENABLED"); n != 1 {
+		t.Fatalf("profiler enabled twice in one policy: got %d DD_PROFILING_ENABLED entries, want 1", n)
+	}
+}
+
+// TestDecodeActionsIgnoresUnhandledActionIDs documents that an action the engine
+// does not implement (SET_ENVAR, REEXEC, or a future ActionId) is ignored rather
+// than failing the parse, mirroring the C engine and keeping a newer policy
+// forward-compatible with an older evaluator. Actions the engine does handle in
+// the same policy still apply.
+func TestDecodeActionsIgnoresUnhandledActionIDs(t *testing.T) {
+	// REEXEC exists in the ActionId schema but the engine does not implement it;
+	// it is ignored (forward compatibility) rather than failing the parse, and a
+	// handled action in the same policy still applies.
+	raw := `{
+      "policies": [{
+        "description": "handled + unhandled actions",
+        "rules": {"node_type": "EvaluatorNode", "node": {"eval_type": "StrEvaluator",
+          "eval": {"id": "ALWAYS_TRUE"}}},
+        "actions": [
+          {"action": "INJECT_ALLOW"},
+          {"action": "REEXEC"}
+        ]
+      }]
+    }`
+	ps := mustParse(t, raw)
+	if out := ps[0].Outcome; !out.InjectSet || !out.Inject {
+		t.Fatalf("handled action must still apply alongside an ignored one: %+v", out)
+	}
+}
+
+// TestDecodeSetEnvVar checks SET_ENVAR values are parsed as NAME=value entries
+// into Outcome.TracerConfigs (the same place ENABLE_PROFILER writes env vars),
+// splitting on the first '=' so values may themselves contain '='. Malformed
+// entries are rejected, like ENABLE_SDK.
+func TestDecodeSetEnvVar(t *testing.T) {
+	ps := mustParse(t, `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},"actions":[{"action":"SET_ENVAR","values":["DD_FOO=bar","DD_BAZ=a=b"]}]}]}`)
+	got := map[string]string{}
+	for _, c := range ps[0].Outcome.TracerConfigs {
+		got[c.Name] = c.Value
+	}
+	if got["DD_FOO"] != "bar" || got["DD_BAZ"] != "a=b" {
+		t.Fatalf("SET_ENVAR not parsed into TracerConfigs: %+v", ps[0].Outcome.TracerConfigs)
+	}
+
+	// Missing '=' is rejected.
+	if _, err := ParsePolicies([]byte(`{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},"actions":[{"action":"SET_ENVAR","values":["DD_FOO"]}]}]}`)); err == nil {
+		t.Fatal("expected error for SET_ENVAR value without '='")
+	}
+}
+
+// TestParseAllowsExplicitEmptyStringValue checks that an explicit empty value is
+// legal (distinct from an omitted one, which is rejected): it decodes to a real
+// exact-empty comparison rather than a broad match.
+func TestParseAllowsExplicitEmptyStringValue(t *testing.T) {
+	ps := mustParse(t, `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"NAMESPACE_NAME","cmp":"CMP_EXACT","value":""}}}}]}`)
+	if !matches(ps[0], Context{Strings: map[string]string{IDNamespaceName: ""}}) {
+		t.Error("exact-empty should match an empty namespace name")
+	}
+	if matches(ps[0], Context{Strings: map[string]string{IDNamespaceName: "x"}}) {
+		t.Error("exact-empty should not match a non-empty namespace name")
+	}
+}
+
+// TestParseErrors covers the only cases ParsePolicies still rejects: a document
+// that is not valid JSON, or one carrying a malformed value for an action the
+// engine implements. Unrecognized/malformed *rules* no longer error -- they
+// abstain (see TestUnrecognizedRuleConstructsAbstain).
 func TestParseErrors(t *testing.T) {
 	cases := map[string]string{
-		"bad json":            `{`,
-		"unknown string cmp":  `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"NAMESPACE_NAME","cmp":"CMP_BOGUS","value":"x"}}}}]}`,
-		"numeric missing cmp": `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"NumEvaluator","eval":{}}}}]}`,
-		"unknown numeric cmp": `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"UNumEvaluator","eval":{"id":"JAVA_HEAP","cmp":"CMP_BOGUS","value":1}}}}]}`,
-		"unsupported eval":    `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"BogusEvaluator","eval":{}}}}]}`,
-		"label no equals":     `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"POD_LABEL","cmp":"CMP_EXACT","value":"app"}}}}]}`,
-		"not too many":        `{"policies":[{"rules":{"node_type":"CompositeNode","node":{"op":"BOOL_NOT","children":[{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}}]}}}]}`,
-		"unknown node":        `{"policies":[{"rules":{"node_type":"Mystery","node":{}}}]}`,
+		"bad json":             `{`,
+		"sdk value no equals":  `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},"actions":[{"action":"ENABLE_SDK","values":["java"]}]}]}`,
+		"sdk value empty lang": `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},"actions":[{"action":"ENABLE_SDK","values":["=1.2"]}]}]}`,
 	}
 	for name, raw := range cases {
 		t.Run(name, func(t *testing.T) {
 			if _, err := ParsePolicies([]byte(raw)); err == nil {
 				t.Errorf("expected error for %q", name)
+			}
+		})
+	}
+}
+
+// TestUnrecognizedRuleConstructsAbstain checks that a rule an older agent cannot
+// recognize (a newer schema) or a malformed rule decodes to an ABSTAIN leaf
+// rather than failing the whole document -- mirroring the C engine's total
+// evaluate_rules, so a policy from a newer schema stays evaluatable by an older
+// agent. Rich facts are supplied so a non-abstaining (buggy) leaf would return a
+// definite TRUE/FALSE, making the ABSTAIN assertion meaningful (e.g. a missing
+// value silently treated as "" would match CMP_PREFIX).
+func TestUnrecognizedRuleConstructsAbstain(t *testing.T) {
+	ctx := Context{
+		Strings:  map[string]string{IDNamespaceName: "x"},
+		Numbers:  map[string]int64{"RUNTIME_VERSION_MAJOR": 1},
+		UNumbers: map[string]uint64{"JAVA_HEAP": 1},
+		Labels:   map[string]map[string]string{IDPodLabel: {"app": "x"}},
+	}
+	cases := map[string]string{
+		"unknown node type":    `{"node_type":"Mystery","node":{}}`,
+		"unknown boolean op":   `{"node_type":"CompositeNode","node":{"op":"BOOL_XOR","children":[]}}`,
+		"not wrong arity":      `{"node_type":"CompositeNode","node":{"op":"BOOL_NOT","children":[{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}}]}}`,
+		"unknown eval type":    `{"node_type":"EvaluatorNode","node":{"eval_type":"BogusEvaluator","eval":{}}}`,
+		"unknown string cmp":   `{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"NAMESPACE_NAME","cmp":"CMP_REGEX","value":"x"}}}`,
+		"unknown numeric cmp":  `{"node_type":"EvaluatorNode","node":{"eval_type":"NumEvaluator","eval":{"id":"RUNTIME_VERSION_MAJOR","cmp":"CMP_BOGUS","value":1}}}`,
+		"numeric missing cmp":  `{"node_type":"EvaluatorNode","node":{"eval_type":"NumEvaluator","eval":{}}}`,
+		"string value omitted": `{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"NAMESPACE_NAME","cmp":"CMP_PREFIX"}}}`,
+		"string value null":    `{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"NAMESPACE_NAME","cmp":"CMP_PREFIX","value":null}}}`,
+		"label without equals": `{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"POD_LABEL","cmp":"CMP_EXACT","value":"app"}}}`,
+		"malformed node body":  `{"node_type":"CompositeNode","node":"not-an-object"}`,
+	}
+	for name, rules := range cases {
+		t.Run(name, func(t *testing.T) {
+			ps := mustParse(t, `{"policies":[{"rules":`+rules+`,"actions":[]}]}`)
+			if got := Evaluate(ps[0].Rules, ctx); got != ResultAbstain {
+				t.Errorf("expected ABSTAIN, got %v", got)
 			}
 		})
 	}
