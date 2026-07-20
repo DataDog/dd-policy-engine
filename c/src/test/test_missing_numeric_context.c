@@ -93,7 +93,7 @@ static plcs_evaluation_result observed_result;
 
 static plcs_errors observing_action(
     plcs_evaluation_result result,
-    char *values[],
+    const char *values[],
     size_t value_count,
     const char *description,
     int action_id

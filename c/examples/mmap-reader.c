@@ -24,7 +24,7 @@ typedef struct mmaped_file {
 // Demo action handler for INJECT_DENY action
 plcs_errors ACTION_INJECT_DENY(
     plcs_evaluation_result res,
-    char *values[],
+    const char *values[],
     size_t value_len,
     const char *description,
     int action_id
@@ -42,7 +42,7 @@ plcs_errors ACTION_INJECT_DENY(
 // Demo action handler for INJECT_ALLOW action
 plcs_errors ACTION_INJECT_ALLOW(
     plcs_evaluation_result res,
-    char *values[],
+    const char *values[],
     size_t value_len,
     const char *description,
     int action_id
