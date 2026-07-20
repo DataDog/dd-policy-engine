@@ -255,7 +255,7 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
 }
 
 static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns(Action_vec_t) actions_vec) {
-  plcs_errors res = PLCS_ESUCCESS;
+  plcs_errors first_error = PLCS_ESUCCESS;
 
   // iterate
   size_t len = dd_ns(Action_vec_len)(actions_vec);
@@ -268,7 +268,10 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
     size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
     // something went wrong, we need to bail
     if (values_len >= (size_t)PLCS_ACTION_VALUES_MAX) {
-      res = PLCS_EIX_OVERFLOW;
+      if (first_error == PLCS_ESUCCESS) {
+        first_error = PLCS_EIX_OVERFLOW;
+      }
+      (void)plcs_eval_ctx_record_action_result((plcs_actions)action_id, PLCS_EIX_OVERFLOW, ix);
       break;
     }
     char *values[PLCS_ACTION_VALUES_MAX];
@@ -276,15 +279,17 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
       values[v_ix] = (char *)flatbuffers_string_vec_at(dd_ns(Action_values(action)), v_ix);
     }
     plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
-    if (action_function) {
-      res = action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
-      plcs_eval_ctx_set_action_error(action_id, res);
-    } else {
-      res = PLCS_EACTIONS_EVAL;
+    plcs_errors action_result =
+        action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
+    if (action_result != PLCS_ESUCCESS) {
+      (void)plcs_eval_ctx_record_action_result((plcs_actions)action_id, action_result, ix);
+      if (first_error == PLCS_ESUCCESS) {
+        first_error = action_result;
+      }
     }
   }
 
-  return res;
+  return first_error;
 }
 
 plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {

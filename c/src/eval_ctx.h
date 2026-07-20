@@ -48,8 +48,6 @@ typedef struct unumeric_evaluator_entry {
 typedef struct action_entry {
   /**< Function pointer to the action function */
   plcs_action_function_ptr function_ptr;
-  /**< Error code if the action is not registered or fails !NEEDS */
-  plcs_errors error;
 } action_entry;
 
 /**
@@ -108,6 +106,11 @@ typedef struct plcs_eval_ctx {
   /**< (a simple map action id (enum):func_ptr) */
   action_entry actions[PLCS_ACTIONS__COUNT];
 
+  /**< Failed action callbacks, retained in execution order until consumed. */
+  plcs_action_result *action_results;
+  size_t action_results_len;
+  size_t action_results_capacity;
+
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
 
@@ -120,11 +123,13 @@ typedef struct plcs_eval_ctx {
 void plcs_eval_ctx_set_error(plcs_errors error);
 
 /**
- * @brief Sets an error code for an action
- * @param ix An action ID from plcs_actions enum
- * @param error plcs_errors enum
+ * @brief Records a failed action callback.
+ * @param action An action ID from plcs_actions enum.
+ * @param result The callback error.
+ * @param action_index The action's index in its policy action vector.
+ * @return PLCS_ESUCCESS, or an error if the result could not be recorded.
  */
-void plcs_eval_ctx_set_action_error(plcs_actions ix, plcs_errors error);
+plcs_errors plcs_eval_ctx_record_action_result(plcs_actions action, plcs_errors result, size_t action_index);
 
 /**
  * @brief Sets an error code for a string evaluator

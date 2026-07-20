@@ -12,6 +12,8 @@
 #include "eval_ctx.h"
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 static plcs_eval_ctx ctx;
 static bool plcs_eval_ctx_initialized = false;
@@ -162,11 +164,46 @@ void plcs_eval_ctx_set_error(plcs_errors error) {
   ctx.error = error;
 }
 
-// TODO: consider implementing it as a stack to preserve error history
-void plcs_eval_ctx_set_action_error(plcs_actions ix, plcs_errors error) {
-  if (ix >= 0 && ix < PLCS_ACTIONS__COUNT) {
-    ctx.actions[ix].error = error;
+plcs_errors plcs_eval_ctx_record_action_result(plcs_actions action, plcs_errors result, size_t action_index) {
+  if (action < 0 || action >= PLCS_ACTIONS__COUNT) {
+    return PLCS_EIX_OVERFLOW;
   }
+  if (result == PLCS_ESUCCESS) {
+    return PLCS_ESUCCESS;
+  }
+
+  if (ctx.action_results_len == ctx.action_results_capacity) {
+    size_t capacity = ctx.action_results_capacity ? ctx.action_results_capacity * 2 : PLCS_ACTIONS__COUNT;
+    plcs_action_result *results = realloc(ctx.action_results, capacity * sizeof(*results));
+    if (!results) {
+      ctx.error = PLCS_EACTIONS_EVAL;
+      return PLCS_EACTIONS_EVAL;
+    }
+    ctx.action_results = results;
+    ctx.action_results_capacity = capacity;
+  }
+
+  ctx.action_results[ctx.action_results_len++] = (plcs_action_result){
+      .action = action,
+      .result = result,
+      .action_index = action_index,
+  };
+  return PLCS_ESUCCESS;
+}
+
+size_t plcs_get_action_results(plcs_action_result *results, size_t capacity) {
+  if (!results || capacity == 0) {
+    return ctx.action_results_len;
+  }
+
+  size_t count = capacity < ctx.action_results_len ? capacity : ctx.action_results_len;
+  if (count == 0) {
+    return 0;
+  }
+  memcpy(results, ctx.action_results, count * sizeof(*results));
+  ctx.action_results_len -= count;
+  memmove(ctx.action_results, ctx.action_results + count, ctx.action_results_len * sizeof(*ctx.action_results));
+  return count;
 }
 
 void plcs_eval_ctx_set_str_eval_error(plcs_string_evaluators ix, plcs_errors error) {
@@ -240,8 +277,12 @@ void plcs_eval_ctx_reset(void) {
 
   for (int i = 0; i < PLCS_ACTIONS__COUNT; ++i) {
     ctx.actions[i].function_ptr = NULL;
-    ctx.actions[i].error = PLCS_ESUCCESS;
   }
+
+  free(ctx.action_results);
+  ctx.action_results = NULL;
+  ctx.action_results_len = 0;
+  ctx.action_results_capacity = 0;
 
   ctx.error = PLCS_ESUCCESS;
 }

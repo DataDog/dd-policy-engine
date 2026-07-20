@@ -30,6 +30,15 @@ typedef enum plcs_actions { PLCS_LIST_ACTIONS(ENUM_VAL) PLCS_ACTIONS__COUNT } pl
 #undef ENUM_VAL
 
 /**
+ * @brief The result of a failed action callback.
+ */
+typedef struct plcs_action_result {
+  plcs_actions action;
+  plcs_errors result;
+  size_t action_index;
+} plcs_action_result;
+
+/**
  * @brief represents an action function signature
  *
  */

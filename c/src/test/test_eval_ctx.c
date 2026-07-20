@@ -298,10 +298,9 @@ UTEST(eval_ctx, last_error_set_and_get) {
   ASSERT_EQ(plcs_eval_ctx_peek_last_error(), (plcs_errors)PLCS_ESUCCESS);
 }
 
-UTEST(eval_ctx, set_error_out_of_bound) {
-  plcs_eval_ctx_set_action_error(PLCS_ACTIONS__COUNT, 0);
-  int err = plcs_eval_ctx_get_last_error();
-  ASSERT_EQ(err, PLCS_ESUCCESS);
+UTEST(eval_ctx, record_action_result_out_of_bound) {
+  ASSERT_EQ((int)plcs_eval_ctx_record_action_result(PLCS_ACTIONS__COUNT, PLCS_EACTIONS_EVAL, 0), PLCS_EIX_OVERFLOW);
+  ASSERT_EQ(plcs_get_action_results(NULL, 0), (size_t)0);
 }
 
 /* -------------------------------------------------------------------------- */
