@@ -12,7 +12,6 @@
 #include "eval_ctx.h"
 
 #include <stdbool.h>
-#include <string.h>
 
 static plcs_eval_ctx ctx;
 static bool plcs_eval_ctx_initialized = false;
@@ -93,48 +92,6 @@ plcs_errors plcs_eval_ctx_register_action(plcs_action_function_ptr action, plcs_
 
   ctx.actions[ix].function_ptr = action;
   return PLCS_ESUCCESS;
-}
-
-plcs_errors plcs_eval_ctx_set_policy_id(plcs_uuid id) {
-  ctx.id = id;
-  return PLCS_ESUCCESS;
-}
-
-plcs_errors plcs_eval_ctx_set_policy_version(int64_t version) {
-  ctx.version = version;
-  return PLCS_ESUCCESS;
-}
-
-plcs_errors plcs_eval_ctx_set_policy_description(const char *description) {
-  // Copy into context-owned fixed-size storage: the caller (e.g.
-  // evaluate_policy) may be passing a pointer into a policy buffer that gets
-  // freed/unmapped as soon as evaluation returns, which would otherwise
-  // leave ctx.description dangling.
-  if (!description) {
-    ctx.description[0] = '\0';
-    return PLCS_ESUCCESS;
-  }
-
-  size_t len = strlen(description);
-  if (len > PLCS_POLICY_DESCRIPTION_MAX_LEN) {
-    len = PLCS_POLICY_DESCRIPTION_MAX_LEN;
-  }
-  memcpy(ctx.description, description, len);
-  ctx.description[len] = '\0';
-
-  return PLCS_ESUCCESS;
-}
-
-plcs_uuid plcs_eval_ctx_get_policy_id(void) {
-  return ctx.id;
-}
-
-int64_t plcs_eval_ctx_get_policy_version(void) {
-  return ctx.version;
-}
-
-const char *plcs_eval_ctx_get_policy_description(void) {
-  return ctx.description;
 }
 
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix) {
@@ -263,10 +220,6 @@ plcs_errors plcs_eval_ctx_get_last_error(void) {
 }
 
 void plcs_eval_ctx_reset(void) {
-  ctx.id = (plcs_uuid){0};
-  ctx.version = 0;
-  ctx.description[0] = '\0';
-
   // Reset all evaluators to NULL and parameters to their 'not set' values
   // Initialize all evaluators to NULL
   for (int i = 0; i < PLCS_STR_EVAL__COUNT; ++i) {
@@ -282,7 +235,7 @@ void plcs_eval_ctx_reset(void) {
 
     ctx.unumeric_evaluators[i].error = PLCS_ESUCCESS;
     ctx.unumeric_evaluators[i].function_ptr = NULL;
-    ctx.unumeric_evaluators[i].value = PLCS_NUM_NOT_SET;
+    ctx.unumeric_evaluators[i].value = PLCS_UNUM_NOT_SET;
   }
 
   for (int i = 0; i < PLCS_ACTIONS__COUNT; ++i) {

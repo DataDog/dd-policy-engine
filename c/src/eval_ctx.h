@@ -111,10 +111,6 @@ typedef struct plcs_eval_ctx {
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
 
-  plcs_uuid id;
-  int64_t version;
-  char description[PLCS_POLICY_DESCRIPTION_MAX_LEN + 1];
-
 } plcs_eval_ctx;
 
 /**

@@ -26,31 +26,15 @@
 #include "evaluator_types.h"
 
 #include <limits.h>
-#include <stdint.h>
 
 #define PLCS_STR_NOT_SET NULL
 #define PLCS_NUM_NOT_SET LONG_MAX
 #define PLCS_UNUM_NOT_SET ULONG_MAX
 
 /**
- * @brief Maximum length (excluding the null terminator) of a policy
- * description retained by the eval context. Longer descriptions are
- * truncated when stored via plcs_eval_ctx_set_policy_description.
- */
-#define PLCS_POLICY_DESCRIPTION_MAX_LEN 255
-
-/**
  * @brief opaque struct, defined in src/eval_ctx.h
  */
 typedef struct plcs_eval_ctx plcs_eval_ctx;
-
-/**
- * @brief A 128-bit UUID, represented as two 64-bit halves.
- */
-typedef struct {
-  uint64_t hi;
-  uint64_t lo;
-} plcs_uuid;
 
 /**
  * @brief Registers a new string evaluator.
@@ -128,31 +112,6 @@ plcs_errors plcs_eval_ctx_set_num_eval_param(plcs_numeric_evaluators ix, const l
 plcs_errors plcs_eval_ctx_set_unum_eval_param(plcs_numeric_evaluators ix, const unsigned long value);
 
 /**
- * @brief Sets the id of the policy currently loaded in the context.
- * @param id the policy id as a plcs_uuid.
- * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
- */
-plcs_errors plcs_eval_ctx_set_policy_id(plcs_uuid id);
-
-/**
- * @brief Sets the version of the policy currently loaded in the context.
- * @param version the policy version as an int64_t.
- * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
- */
-plcs_errors plcs_eval_ctx_set_policy_version(int64_t version);
-
-/**
- * @brief Sets the description of the policy currently loaded in the context.
- * The context copies the string into its own fixed-size storage (truncating
- * to PLCS_POLICY_DESCRIPTION_MAX_LEN bytes if needed), so the caller retains
- * ownership of and may free/invalidate `description` immediately after this
- * call returns.
- * @param description a string representing the policy description.
- * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
- */
-plcs_errors plcs_eval_ctx_set_policy_description(const char *description);
-
-/**
  * @brief Get a function pointer for a specific evaluator id.
  * @param id plcs_string_evaluators enum.
  * @return NULL on error (also sets ctx.error) or the function ptr.
@@ -200,27 +159,6 @@ unsigned long plcs_eval_ctx_get_unumeric_param(plcs_numeric_evaluators id);
  * @return NULL on error (also sets ctx.error) or the function ptr.
  */
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix);
-
-/**
- * @brief Get the id of the policy currently loaded in the context.
- * @return the policy id as a plcs_uuid.
- */
-plcs_uuid plcs_eval_ctx_get_policy_id(void);
-
-/**
- * @brief Get the version of the policy currently loaded in the context.
- * @return the policy version as an int64_t.
- */
-int64_t plcs_eval_ctx_get_policy_version(void);
-
-/**
- * @brief Get the description of the policy currently loaded in the context.
- * @return the policy description as a const char*, owned by the context and
- * valid until the next call to plcs_eval_ctx_set_policy_description or
- * plcs_eval_ctx_reset. May be truncated to PLCS_POLICY_DESCRIPTION_MAX_LEN
- * bytes.
- */
-const char *plcs_eval_ctx_get_policy_description(void);
 
 /**
  * @brief An accessor for the last error
