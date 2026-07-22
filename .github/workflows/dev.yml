@@ -1,5 +1,9 @@
 name: Development
-on: [pull_request, workflow_dispatch]
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches: [main]
 
 env: 
   # Override the `DOCKER_IMAGE` variable in Makefile.docker  
@@ -8,14 +12,14 @@ env:
   BUILD_CONTAINER: false
 
 jobs:
-  checks:
+  fmt-check:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     permissions:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - run: make fmt-check
 
   build-libpolicies-linux:
@@ -29,21 +33,24 @@ jobs:
             runner: ubuntu-22.04
           - arch: arm64
             runner: ubuntu-22.04-arm
-    needs: checks
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
-    environment:
-      name: dev-env
     permissions:
       contents: read
       packages: read
+      id-token: write
     env:
       DD_ENV: ci
       DD_SERVICE: dd-policy-engine
       DD_CIVISIBILITY_AGENTLESS_ENABLED: true
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Get Datadog credentials
+        id: dd-sts
+        uses: DataDog/dd-sts-action@2e8187910199bd93129520183c093e19aa585c75 # v1.0.0
+        with:
+          policy: dd-policy-engine-ci-vis
       - name: Build
         run: make docker-run "make -C c test-build"
         env:
@@ -53,9 +60,9 @@ jobs:
         env:
           DOCKER_ENVARS: "-e LSAN_OPTIONS=suppressions=.lsan.supp"
       - name: Report test coverage
-        uses: datadog/junit-upload-github-action@762867566348d59ac9bcf479ebb4ec040db8940a # v2.0.0
+        uses: datadog/junit-upload-github-action@8bd322523583035e871786a19832d75127064227 # v3.5.0
         with:
-          api_key: ${{ secrets.DD_API_KEY_CI_VIS_APP }}
+          api_key: ${{ steps.dd-sts.outputs.api_key }}
           files: c/build/test-report.xml
           service: libpolicies
           tags: test.source.file:test/*.cpp
@@ -71,7 +78,6 @@ jobs:
             runner: ubuntu-22.04
           - arch: arm64
             runner: ubuntu-22.04-arm
-    needs: checks
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     permissions:
@@ -79,13 +85,12 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Build and test Go
         run: make docker-run "make -C go"
 
   # Dedicated job for building dd-compile-policy
   build-dd-compile-policy:
-    needs: checks
     strategy:
       fail-fast: false
       matrix:
@@ -104,11 +109,11 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Build dd-compile-policy
         run: make build-dd-compile-policy
       - name: Export dd-compile-policy
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dd-compile-policy-linux-${{ matrix.arch }}
           path: dd-compile-policy/bin/dd-compile-policy
@@ -119,7 +124,6 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64]
-    needs: checks
     runs-on: windows-2022
     timeout-minutes: 10
     defaults:
@@ -132,7 +136,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
@@ -147,32 +151,34 @@ jobs:
       - name: Build dd-compile-policy
         run: make -C dd-compile-policy build CMAKE_ARCH=${{ matrix.arch }}
       - name: Export dd-compile-policy
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dd-compile-policy-windows-${{ matrix.arch }}
           path: dd-compile-policy/bin/dd-compile-policy.exe
 
   # TODO: add arch and vs versions
   build-libpolicies-windows:
-    needs: checks
     runs-on: windows-2022
     timeout-minutes: 10
     defaults:
       run:
         shell: powershell
-    environment:
-      name: dev-env
     permissions:
       contents: read
       packages: read
+      id-token: write
     env:
       DD_ENV: ci
       DD_SERVICE: dd-policy-engine
-      DD_API_KEY: ${{ secrets.DD_API_KEY_CI_VIS_APP }}
       DD_CIVISIBILITY_AGENTLESS_ENABLED: true
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Get Datadog credentials
+        id: dd-sts
+        uses: DataDog/dd-sts-action@2e8187910199bd93129520183c093e19aa585c75 # v1.0.0
+        with:
+          policy: dd-policy-engine-ci-vis
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
@@ -188,16 +194,21 @@ jobs:
         run: |
           cmake -B build --preset msvc-ci .
           cmake --build build -j
+        env:
+          DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
       - name: Run tests
         run: ctest --test-dir build --output-junit test-report.xml
         timeout-minutes: 2
+        env:
+          DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
       - name: Download datadog-ci
         run: Invoke-WebRequest -Uri "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_win-x64" -OutFile "datadog-ci.exe"
       - name: Report test coverage
         run: ./datadog-ci.exe junit upload build/test-report.xml
+        env:
+          DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
 
   build-go-windows:
-    needs: checks
     runs-on: windows-2022
     timeout-minutes: 10
     defaults:
@@ -207,7 +218,7 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Test Go
         working-directory: go
         run: |
@@ -218,13 +229,17 @@ jobs:
     needs: build-libpolicies-linux
     runs-on: ubuntu-22.04-arm
     timeout-minutes: 10
-    environment:
-      name: dev-env
     permissions:
       contents: read
       packages: read
+      id-token: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Get Datadog credentials
+        id: dd-sts
+        uses: DataDog/dd-sts-action@2e8187910199bd93129520183c093e19aa585c75 # v1.0.0
+        with:
+          policy: dd-policy-engine-ci-vis
       - run: make docker-run "make -C c coverage"
       - name: Upload coverage reports to Datadog
         run: |
@@ -233,4 +248,4 @@ jobs:
           mv c/coverage/coverage.lcov c/coverage/lcov.info
           /tmp/datadog-ci coverage upload c/coverage/lcov.info
         env:
-          DD_API_KEY: ${{ secrets.DD_API_KEY_CI_VIS_APP }}
+          DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
