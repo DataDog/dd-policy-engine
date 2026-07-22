@@ -1122,12 +1122,18 @@ static plcs_errors test_action_capture(
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
   (void)values;
   (void)value_len;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   g_allow_called++;
   g_last_action_res = res;
   return PLCS_ESUCCESS;

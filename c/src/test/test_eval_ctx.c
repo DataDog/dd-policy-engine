@@ -256,7 +256,7 @@ UTEST(eval_ctx, register_and_invoke_action_pointer) {
 
   g_action_called = 0;
   char *vals[] = {(char *)"v1", (char *)"v2"};
-  rc = act(PLCS_EVAL_RESULT_TRUE, vals, 2, "desc", PLCS_ACTION_INJECT_ALLOW);
+  rc = act(PLCS_EVAL_RESULT_TRUE, vals, 2, "desc", PLCS_ACTION_INJECT_ALLOW, (plcs_uuid){0}, 0, NULL);
   ASSERT_EQ(rc, PLCS_ESUCCESS);
   ASSERT_EQ(g_action_called, 1);
 }

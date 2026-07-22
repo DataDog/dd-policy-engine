@@ -301,9 +301,9 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   dd_ns(Action_vec_t) actions = dd_ns(Policy_actions)(policy);
 
   dd_wls_UUID_struct_t raw_policy_id = dd_ns(Policy_id)(policy);
-  plcs_uuid policy_id =
-      raw_policy_id ? (plcs_uuid){.hi = dd_wls_UUID_hi(raw_policy_id), .lo = dd_wls_UUID_lo(raw_policy_id)}
-                     : (plcs_uuid){0};
+  plcs_uuid policy_id = raw_policy_id
+                            ? (plcs_uuid){.hi = dd_wls_UUID_hi(raw_policy_id), .lo = dd_wls_UUID_lo(raw_policy_id)}
+                            : (plcs_uuid){0};
 
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
@@ -312,7 +312,9 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
   // perform actions given evaluation result
-  return perform_actions(eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy));
+  return perform_actions(
+      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy)
+  );
 }
 
 plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
