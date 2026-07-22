@@ -63,11 +63,14 @@ static inline dd_ns(ActionId_enum_t) dd_action_to_wire(enum plcs_actions v) {
 /**
  * @brief Represents an action function signature.
  *
- * @param res        The evaluation result determining action behavior.
- * @param values     Array of string values passed to the action.
- * @param value_len  Length of the `values` array.
- * @param description Optional description of the action.
- * @param action_id  Integer ID of the action.
+ * @param res                 The evaluation result determining action behavior.
+ * @param values              Array of string values passed to the action.
+ * @param value_len           Length of the `values` array.
+ * @param description         Optional description of the action.
+ * @param action_id           Integer ID of the action.
+ * @param policy_id           Policy ID that produced this action.
+ * @param policy_version      Policy version that produced this action.
+ * @param policy_description  Policy description that produced this action.
  *
  * @return A `plcs_errors` status code.
  */
@@ -76,7 +79,10 @@ typedef plcs_errors (*plcs_action_function_ptr)(
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 );
 
 #ifdef __cplusplus

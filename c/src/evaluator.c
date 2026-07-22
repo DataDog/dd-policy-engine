@@ -254,7 +254,13 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
   return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
-static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns(Action_vec_t) actions_vec) {
+static inline plcs_errors perform_actions(
+    plcs_evaluation_result eval_res,
+    dd_ns(Action_vec_t) actions_vec,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
+) {
   plcs_errors res = PLCS_ESUCCESS;
 
   // iterate
@@ -277,7 +283,10 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
     }
     plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
     if (action_function) {
-      res = action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
+      res = action_function(
+          eval_res, values, values_len, dd_ns(Action_description)(action), action_id, policy_id, policy_version,
+          policy_description
+      );
       plcs_eval_ctx_set_action_error(action_id, res);
     } else {
       res = PLCS_EACTIONS_EVAL;
@@ -291,6 +300,11 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract actions
   dd_ns(Action_vec_t) actions = dd_ns(Policy_actions)(policy);
 
+  dd_wls_UUID_struct_t raw_policy_id = dd_ns(Policy_id)(policy);
+  plcs_uuid policy_id =
+      raw_policy_id ? (plcs_uuid){.hi = dd_wls_UUID_hi(raw_policy_id), .lo = dd_wls_UUID_lo(raw_policy_id)}
+                     : (plcs_uuid){0};
+
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
@@ -298,7 +312,7 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
   // perform actions given evaluation result
-  return perform_actions(eval_res, actions);
+  return perform_actions(eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy));
 }
 
 plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {

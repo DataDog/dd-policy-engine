@@ -96,24 +96,41 @@ static plcs_errors test_action_allow(
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
   (void)res;
   (void)values;
   (void)value_len;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   g_allow_called++;
   return PLCS_ESUCCESS;
 }
 
-static plcs_errors
-test_action_deny(plcs_evaluation_result res, char *values[], size_t value_len, const char *description, int action_id) {
+static plcs_errors test_action_deny(
+    plcs_evaluation_result res,
+    char *values[],
+    size_t value_len,
+    const char *description,
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
+) {
   (void)res;
   (void)values;
   (void)value_len;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   g_deny_called++;
   return PLCS_ESUCCESS;
 }

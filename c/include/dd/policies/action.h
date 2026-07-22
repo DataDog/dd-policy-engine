@@ -9,6 +9,7 @@
 
 #include <dd/policies/error_codes.h>
 #include <dd/policies/evaluation_result.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 /**
@@ -30,7 +31,24 @@ typedef enum plcs_actions { PLCS_LIST_ACTIONS(ENUM_VAL) PLCS_ACTIONS__COUNT } pl
 #undef ENUM_VAL
 
 /**
+ * @brief A 128-bit UUID, represented as two 64-bit halves.
+ */
+typedef struct {
+  uint64_t hi;
+  uint64_t lo;
+} plcs_uuid;
+
+/**
  * @brief represents an action function signature
+ *
+ * @param res                 The evaluation result determining action behavior.
+ * @param values              Array of string values passed to the action.
+ * @param value_len           Length of the `values` array.
+ * @param description         The action's own description, as authored in the policy.
+ * @param action_id           Integer ID of the action (a plcs_actions value).
+ * @param policy_id           The id of the policy that produced this action.
+ * @param policy_version      The version of the policy that produced this action.
+ * @param policy_description  The description of the policy that produced this action.
  *
  */
 typedef plcs_errors (*plcs_action_function_ptr)(
@@ -38,7 +56,10 @@ typedef plcs_errors (*plcs_action_function_ptr)(
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 );
 
 const char *plcs_actions_to_string(enum plcs_actions action);
