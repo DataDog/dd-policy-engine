@@ -96,24 +96,41 @@ static plcs_errors test_action_allow(
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
   (void)res;
   (void)values;
   (void)value_len;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   g_allow_called++;
   return PLCS_ESUCCESS;
 }
 
-static plcs_errors
-test_action_deny(plcs_evaluation_result res, char *values[], size_t value_len, const char *description, int action_id) {
+static plcs_errors test_action_deny(
+    plcs_evaluation_result res,
+    char *values[],
+    size_t value_len,
+    const char *description,
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
+) {
   (void)res;
   (void)values;
   (void)value_len;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   g_deny_called++;
   return PLCS_ESUCCESS;
 }
@@ -1099,13 +1116,19 @@ UTEST(evaluator_integration, evaluate_generated_header_if_available) {
  * tests capture that result so they can assert the POD_LABEL leaf drove the whole
  * tree to the expected TRUE/FALSE outcome. */
 static plcs_evaluation_result g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
+static plcs_uuid g_last_policy_id;
+static int64_t g_last_policy_version;
+static const char *g_last_policy_description;
 
 static plcs_errors test_action_capture(
     plcs_evaluation_result res,
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
   (void)values;
   (void)value_len;
@@ -1113,6 +1136,9 @@ static plcs_errors test_action_capture(
   (void)action_id;
   g_allow_called++;
   g_last_action_res = res;
+  g_last_policy_id = policy_id;
+  g_last_policy_version = policy_version;
+  g_last_policy_description = policy_description;
   return PLCS_ESUCCESS;
 }
 
@@ -1151,9 +1177,10 @@ static void build_pod_label_policy_buffer(const char *expected, void **out_buf, 
 
   /* Policy(description, rules, actions, id, version) */
   dd_wls_UUID_t id;
-  dd_wls_UUID_assign(&id, 0, 0);
-  dd_wls_Policy_ref_t policy =
-      dd_wls_Policy_create(&b, flatbuffers_string_create_str(&b, "k8s pod-label policy"), rules, actions, &id, 1);
+  dd_wls_UUID_assign(&id, 0x0102030405060708ULL, 0x1112131415161718ULL);
+  dd_wls_Policy_ref_t policy = dd_wls_Policy_create(
+      &b, flatbuffers_string_create_str(&b, "k8s pod-label policy"), rules, actions, &id, 1234567800
+  );
 
   dd_wls_Policy_vec_start(&b);
   dd_wls_Policy_vec_push(&b, policy);
@@ -1173,6 +1200,9 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   g_allow_called = 0;
   g_deny_called = 0;
   g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
+  g_last_policy_id = (plcs_uuid){0};
+  g_last_policy_version = 0;
+  g_last_policy_description = NULL;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
   ASSERT_EQ(prc, PLCS_ESUCCESS);
@@ -1192,6 +1222,10 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   /* The INJECT_ALLOW action fires and the tree evaluated the matching POD_LABEL to TRUE. */
   ASSERT_EQ(g_allow_called, 1);
   ASSERT_EQ((int)g_last_action_res, (int)PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(g_last_policy_id.hi, (uint64_t)0x0102030405060708ULL);
+  ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
+  ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
+  ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
@@ -1205,6 +1239,9 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   g_allow_called = 0;
   g_deny_called = 0;
   g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
+  g_last_policy_id = (plcs_uuid){0};
+  g_last_policy_version = 0;
+  g_last_policy_description = NULL;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
   ASSERT_EQ(prc, PLCS_ESUCCESS);
@@ -1224,6 +1261,10 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   /* The action still fires, but the tree evaluated the non-matching POD_LABEL to FALSE. */
   ASSERT_EQ(g_allow_called, 1);
   ASSERT_EQ((int)g_last_action_res, (int)PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(g_last_policy_id.hi, (uint64_t)0x0102030405060708ULL);
+  ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
+  ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
+  ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
