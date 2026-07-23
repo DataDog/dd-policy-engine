@@ -1225,7 +1225,6 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   ASSERT_EQ(g_last_policy_id.hi, (uint64_t)0x0102030405060708ULL);
   ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
-  ASSERT_TRUE(g_last_policy_description != NULL);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
 
   flatcc_builder_free(buf);
@@ -1265,7 +1264,6 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   ASSERT_EQ(g_last_policy_id.hi, (uint64_t)0x0102030405060708ULL);
   ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
-  ASSERT_TRUE(g_last_policy_description != NULL);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
 
   flatcc_builder_free(buf);
