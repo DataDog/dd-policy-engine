@@ -1390,8 +1390,7 @@ UTEST(evaluator_integration, matched_rule_joins_and_children_and_takes_first_tru
   /* The AND node contributes both of its children; the OR node contributes only the
    * "javac" branch, since the "java" exact branch evaluated to FALSE. */
   ASSERT_STREQ(
-      g_last_policy_description,
-      "process executable 'javac17' is prefixed with 'javac' AND runtime language is 'java'"
+      g_last_policy_description, "process executable 'javac17' is prefixed with 'javac' AND runtime language is 'java'"
   );
 
   flatcc_builder_free(buf);

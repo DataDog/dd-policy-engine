@@ -127,8 +127,8 @@ static const char *numeric_comparator_label(plcs_numeric_comparator cmp) {
   return label_at(numeric_comparator_labels, PLCS_NUM_CMP__COUNT, (unsigned)cmp);
 }
 
-
-// appends to matched rule with description like "process executable 'python3.11' is prefixed with 'python'", or "runtime language is 'java'" */
+// appends to matched rule with description like "process executable 'python3.11' is prefixed with 'python'", or
+// "runtime language is 'java'" */
 static void matched_rule_describe_string(plcs_matched_rule *rule, dd_ns(StrEvaluator_table_t) eval_str) {
   plcs_string_evaluators eval_id = (plcs_string_evaluators)dd_ns(StrEvaluator_id)(eval_str);
   plcs_string_comparator cmp = (plcs_string_comparator)dd_ns(StrEvaluator_cmp)(eval_str);
@@ -151,7 +151,8 @@ static void matched_rule_describe_string(plcs_matched_rule *rule, dd_ns(StrEvalu
   matched_rule_append(rule, text);
 }
 
-// appends to matched rule with description like "java heap 512 is greater than 256", or "runtime major version is 21" */
+// appends to matched rule with description like "java heap 512 is greater than 256", or "runtime major version is 21"
+// */
 static void matched_rule_describe_numeric(plcs_matched_rule *rule, dd_ns(NumEvaluator_table_t) eval_num) {
   plcs_numeric_evaluators eval_id = (plcs_numeric_evaluators)dd_ns(NumEvaluator_id)(eval_num);
   plcs_numeric_comparator cmp = (plcs_numeric_comparator)dd_ns(NumEvaluator_cmp)(eval_num);
