@@ -1280,15 +1280,7 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
  * generates descriptions from the evaluators instead, so this must never show up. */
 #define UNUSED_AUTHORED_DESCRIPTION "authored description that must be ignored"
 
-/* Serialize a one-policy buffer whose rules are:                                  */
-/*                                                                                 */
-/*   CompositeNode(BOOL_AND)                                                       */
-/*     ├─ CompositeNode(BOOL_OR)                                                   */
-/*     │    ├─ StrEvaluator(PROCESS_EXE, CMP_EXACT,  "java")                       */
-/*     │    └─ StrEvaluator(PROCESS_EXE, CMP_PREFIX, "python")                     */
-/*     └─ StrEvaluator(RUNTIME_LANGUAGE, CMP_EXACT,  "java")                       */
-/*                                                                                 */
-/* Caller owns *out_buf (flatcc_builder_free). */
+// Builds a single StrEvaluator leaf node
 static dd_wls_NodeTypeWrapper_ref_t build_str_leaf(
     flatcc_builder_t *b,
     dd_wls_StringEvaluators_enum_t evaluator,
@@ -1321,6 +1313,15 @@ static dd_wls_NodeTypeWrapper_ref_t build_composite(
   );
 }
 
+/* Serialize a one-policy buffer whose rules are:                                  */
+/*                                                                                 */
+/*   CompositeNode(BOOL_AND)                                                       */
+/*     ├─ CompositeNode(BOOL_OR)                                                   */
+/*     │    ├─ StrEvaluator(PROCESS_EXE, CMP_EXACT,  "java")                       */
+/*     │    └─ StrEvaluator(PROCESS_EXE, CMP_PREFIX, "javac")                      */
+/*     └─ StrEvaluator(RUNTIME_LANGUAGE, CMP_EXACT,  "java")                       */
+/*                                                                                 */
+/* Caller owns *out_buf. */
 static void build_and_of_or_policy_buffer(void **out_buf, size_t *out_sz) {
   flatcc_builder_t b;
   flatcc_builder_init(&b);
