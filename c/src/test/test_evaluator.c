@@ -1445,15 +1445,22 @@ static void build_long_value_policy_buffer(const char *value, void **out_buf, si
 }
 
 UTEST(evaluator_integration, matched_rule_marks_a_truncated_description_with_an_ellipsis) {
-  char long_value[900];
-  memset(long_value, 'x', sizeof(long_value) - 1);
-  long_value[sizeof(long_value) - 1] = '\0';
+  /* A deep executable path, which is the realistic way a description outgrows the buffer.
+   * Only the head needs to be recognizable; the padding just needs to clear the matched-rule
+   * buffer's internal 512-byte cap. */
+  static const char path_head[] = "/opt/datadog/embedded/lib/python3.11/";
+  char long_path[600];
+  size_t head_len = sizeof(path_head) - 1;
+  for (size_t ix = 0; ix < sizeof(long_path) - 1; ++ix) {
+    long_path[ix] = ix < head_len ? path_head[ix] : 'a';
+  }
+  long_path[sizeof(long_path) - 1] = '\0';
 
-  ASSERT_EQ(setup_and_of_or_policy_context(long_value, "java"), PLCS_ESUCCESS);
+  ASSERT_EQ(setup_and_of_or_policy_context(long_path, "python"), PLCS_ESUCCESS);
 
   void *buf = NULL;
   size_t sz = 0;
-  build_long_value_policy_buffer(long_value, &buf, &sz);
+  build_long_value_policy_buffer(long_path, &buf, &sz);
 
   int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
   ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
@@ -1462,9 +1469,12 @@ UTEST(evaluator_integration, matched_rule_marks_a_truncated_description_with_an_
 
   /* The rule matched, so this is a generated description, cut short and marked. */
   size_t described_len = strlen(g_last_policy_description);
-  ASSERT_LT(described_len, strlen(long_value));
+  ASSERT_LT(described_len, strlen(long_path));
   ASSERT_STREQ(g_last_policy_description + described_len - 3, "...");
-  ASSERT_TRUE(strncmp(g_last_policy_description, "process executable is 'xxx", 26) == 0);
+
+  /* the head survived: truncation dropped the tail, not the front */
+  static const char expected_head[] = "process executable is '/opt/datadog/embedded/lib/python3.11/";
+  ASSERT_STRNEQ(g_last_policy_description, expected_head, sizeof(expected_head) - 1);
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
