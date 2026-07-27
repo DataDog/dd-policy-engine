@@ -1118,7 +1118,9 @@ UTEST(evaluator_integration, evaluate_generated_header_if_available) {
 static plcs_evaluation_result g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
 static plcs_uuid g_last_policy_id;
 static int64_t g_last_policy_version;
-static const char *g_last_policy_description;
+// Copy policy_description into a buffer rather than storing the pointer
+static char g_last_policy_description_buf[512];
+static const char *const g_last_policy_description = g_last_policy_description_buf;
 
 static plcs_errors test_action_capture(
     plcs_evaluation_result res,
@@ -1138,7 +1140,7 @@ static plcs_errors test_action_capture(
   g_last_action_res = res;
   g_last_policy_id = policy_id;
   g_last_policy_version = policy_version;
-  g_last_policy_description = policy_description;
+  snprintf(g_last_policy_description_buf, sizeof(g_last_policy_description_buf), "%s", policy_description);
   return PLCS_ESUCCESS;
 }
 
@@ -1202,7 +1204,7 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
   g_last_policy_id = (plcs_uuid){0};
   g_last_policy_version = 0;
-  g_last_policy_description = NULL;
+  g_last_policy_description_buf[0] = 0;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
   ASSERT_EQ(prc, PLCS_ESUCCESS);
@@ -1241,7 +1243,7 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
   g_last_policy_id = (plcs_uuid){0};
   g_last_policy_version = 0;
-  g_last_policy_description = NULL;
+  g_last_policy_description_buf[0] = 0;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
   ASSERT_EQ(prc, PLCS_ESUCCESS);
@@ -1365,7 +1367,7 @@ static int setup_and_of_or_policy_context(const char *process_exe, const char *l
 
   g_allow_called = 0;
   g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
-  g_last_policy_description = NULL;
+  g_last_policy_description_buf[0] = 0;
 
   return plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW) |
          plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_PROCESS_EXE) |
