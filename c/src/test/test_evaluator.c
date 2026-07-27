@@ -80,7 +80,7 @@ extern plcs_evaluation_result DoOr(plcs_evaluation_result a, plcs_evaluation_res
 extern plcs_evaluation_result DoNot(plcs_evaluation_result res);
 extern plcs_evaluation_result
 DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_result a, plcs_evaluation_result b);
-extern plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node);
+extern plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, void *rule);
 
 extern void plcs_eval_ctx_reset(void);
 
@@ -865,7 +865,7 @@ UTEST(evaluator, test_DoOper_basic_operations) {
 
 UTEST(evaluator, test_composite_evaluator_null_input) {
   /* Test with NULL node */
-  int res = composite_evaluator(NULL);
+  int res = composite_evaluator(NULL, 0, NULL);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
@@ -1225,7 +1225,7 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   ASSERT_EQ(g_last_policy_id.hi, (uint64_t)0x0102030405060708ULL);
   ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
-  ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
+  ASSERT_STREQ(g_last_policy_description, "pod label is 'app=nginx'");
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
@@ -1265,6 +1265,204 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
+
+  flatcc_builder_free(buf);
+  plcs_eval_ctx_reset();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Integration tests for the matched rule description                         */
+/* -------------------------------------------------------------------------- */
+
+/* Every node in the fixture below carries this as its authored description. The engine
+ * generates descriptions from the evaluators instead, so this must never show up. */
+#define UNUSED_AUTHORED_DESCRIPTION "authored description that must be ignored"
+
+/* Serialize a one-policy buffer whose rules are:                                  */
+/*                                                                                 */
+/*   CompositeNode(BOOL_AND)                                                       */
+/*     ├─ CompositeNode(BOOL_OR)                                                   */
+/*     │    ├─ StrEvaluator(PROCESS_EXE, CMP_EXACT,  "java")                       */
+/*     │    └─ StrEvaluator(PROCESS_EXE, CMP_PREFIX, "python")                     */
+/*     └─ StrEvaluator(RUNTIME_LANGUAGE, CMP_EXACT,  "java")                       */
+/*                                                                                 */
+/* Caller owns *out_buf (flatcc_builder_free). */
+static dd_wls_NodeTypeWrapper_ref_t build_str_leaf(
+    flatcc_builder_t *b,
+    dd_wls_StringEvaluators_enum_t evaluator,
+    dd_wls_CmpTypeSTR_enum_t cmp,
+    const char *value
+) {
+  dd_wls_StrEvaluator_ref_t str =
+      dd_wls_StrEvaluator_create(b, evaluator, cmp, flatbuffers_string_create_str(b, value));
+  dd_wls_EvaluatorNode_ref_t leaf = dd_wls_EvaluatorNode_create(
+      b, flatbuffers_string_create_str(b, UNUSED_AUTHORED_DESCRIPTION), dd_wls_EvaluatorType_as_StrEvaluator(str)
+  );
+  return dd_wls_NodeTypeWrapper_create(b, dd_wls_NodeType_as_EvaluatorNode(leaf));
+}
+
+static dd_wls_NodeTypeWrapper_ref_t build_composite(
+    flatcc_builder_t *b,
+    dd_wls_BoolOperation_enum_t oper,
+    dd_wls_NodeTypeWrapper_ref_t first,
+    dd_wls_NodeTypeWrapper_ref_t second
+) {
+  flatbuffers_string_ref_t desc = flatbuffers_string_create_str(b, UNUSED_AUTHORED_DESCRIPTION);
+
+  dd_wls_NodeTypeWrapper_vec_start(b);
+  dd_wls_NodeTypeWrapper_vec_push(b, first);
+  dd_wls_NodeTypeWrapper_vec_push(b, second);
+  dd_wls_NodeTypeWrapper_vec_ref_t children = dd_wls_NodeTypeWrapper_vec_end(b);
+
+  return dd_wls_NodeTypeWrapper_create(
+      b, dd_wls_NodeType_as_CompositeNode(dd_wls_CompositeNode_create(b, desc, oper, children))
+  );
+}
+
+static void build_and_of_or_policy_buffer(void **out_buf, size_t *out_sz) {
+  flatcc_builder_t b;
+  flatcc_builder_init(&b);
+
+  dd_wls_NodeTypeWrapper_ref_t or_wrap = build_composite(
+      &b, dd_wls_BoolOperation_BOOL_OR,
+      build_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_EXE, dd_wls_CmpTypeSTR_CMP_EXACT, "java"),
+      build_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_EXE, dd_wls_CmpTypeSTR_CMP_PREFIX, "python")
+  );
+  dd_wls_NodeTypeWrapper_ref_t language_wrap =
+      build_str_leaf(&b, dd_wls_StringEvaluators_RUNTIME_LANGUAGE, dd_wls_CmpTypeSTR_CMP_EXACT, "java");
+
+  dd_wls_NodeTypeWrapper_ref_t rules = build_composite(&b, dd_wls_BoolOperation_BOOL_AND, or_wrap, language_wrap);
+
+  dd_wls_Action_start(&b);
+  dd_wls_Action_action_add(&b, dd_wls_ActionId_INJECT_ALLOW);
+  dd_wls_Action_ref_t action = dd_wls_Action_end(&b);
+  dd_wls_Action_vec_start(&b);
+  dd_wls_Action_vec_push(&b, action);
+  dd_wls_Action_vec_ref_t actions = dd_wls_Action_vec_end(&b);
+
+  dd_wls_UUID_t id;
+  dd_wls_UUID_assign(&id, 0ULL, 0ULL);
+  dd_wls_Policy_ref_t policy =
+      dd_wls_Policy_create(&b, flatbuffers_string_create_str(&b, "java policy"), rules, actions, &id, 1);
+
+  dd_wls_Policy_vec_start(&b);
+  dd_wls_Policy_vec_push(&b, policy);
+  dd_wls_Policies_create_as_root(&b, dd_wls_Policy_vec_end(&b));
+
+  *out_buf = flatcc_builder_finalize_buffer(&b, out_sz);
+  flatcc_builder_clear(&b);
+}
+
+/* Registers the capture action plus the two string evaluators the AND-of-OR policy
+ * needs, and describes the workload it should be evaluated against. Returns
+ * PLCS_ESUCCESS when everything was registered. */
+static int setup_and_of_or_policy_context(const char *process_exe, const char *language) {
+  int rc = plcs_eval_ctx_init();
+  if (rc != PLCS_ESUCCESS && rc != PLCS_EINITIZLIED) {
+    return rc;
+  }
+  plcs_eval_ctx_reset();
+
+  g_allow_called = 0;
+  g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
+  g_last_policy_description = NULL;
+
+  return plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW) |
+         plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_PROCESS_EXE) |
+         plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_RUNTIME_LANGUAGE) |
+         plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_PROCESS_EXE, process_exe) |
+         plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, language);
+}
+
+UTEST(evaluator_integration, matched_rule_joins_and_children_and_takes_first_true_or_child) {
+  ASSERT_EQ(setup_and_of_or_policy_context("python3.11", "java"), PLCS_ESUCCESS);
+
+  void *buf = NULL;
+  size_t sz = 0;
+  build_and_of_or_policy_buffer(&buf, &sz);
+
+  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
+  ASSERT_EQ(g_allow_called, 1);
+  ASSERT_EQ((int)g_last_action_res, (int)PLCS_EVAL_RESULT_TRUE);
+  /* The AND node contributes both of its children; the OR node contributes only the
+   * "python" branch, since the "java" branch evaluated to FALSE. */
+  ASSERT_STREQ(
+      g_last_policy_description,
+      "process executable 'python3.11' is prefixed with 'python' AND runtime language is 'java'"
+  );
+
+  flatcc_builder_free(buf);
+  plcs_eval_ctx_reset();
+}
+
+UTEST(evaluator_integration, matched_rule_falls_back_to_policy_description_when_nothing_matched) {
+  ASSERT_EQ(setup_and_of_or_policy_context("ruby", "java"), PLCS_ESUCCESS);
+
+  void *buf = NULL;
+  size_t sz = 0;
+  build_and_of_or_policy_buffer(&buf, &sz);
+
+  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
+  ASSERT_EQ(g_allow_called, 1);
+  ASSERT_EQ((int)g_last_action_res, (int)PLCS_EVAL_RESULT_FALSE);
+  /* No rule triggered, so there is nothing to describe but the policy itself. */
+  ASSERT_STREQ(g_last_policy_description, "java policy");
+
+  flatcc_builder_free(buf);
+  plcs_eval_ctx_reset();
+}
+
+/* A single condition whose value is longer than the whole description buffer. */
+static void build_long_value_policy_buffer(const char *value, void **out_buf, size_t *out_sz) {
+  flatcc_builder_t b;
+  flatcc_builder_init(&b);
+
+  dd_wls_NodeTypeWrapper_ref_t rules =
+      build_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_EXE, dd_wls_CmpTypeSTR_CMP_EXACT, value);
+
+  dd_wls_Action_start(&b);
+  dd_wls_Action_action_add(&b, dd_wls_ActionId_INJECT_ALLOW);
+  dd_wls_Action_ref_t action = dd_wls_Action_end(&b);
+  dd_wls_Action_vec_start(&b);
+  dd_wls_Action_vec_push(&b, action);
+  dd_wls_Action_vec_ref_t actions = dd_wls_Action_vec_end(&b);
+
+  dd_wls_UUID_t id;
+  dd_wls_UUID_assign(&id, 0ULL, 0ULL);
+  dd_wls_Policy_ref_t policy =
+      dd_wls_Policy_create(&b, flatbuffers_string_create_str(&b, "long value policy"), rules, actions, &id, 1);
+
+  dd_wls_Policy_vec_start(&b);
+  dd_wls_Policy_vec_push(&b, policy);
+  dd_wls_Policies_create_as_root(&b, dd_wls_Policy_vec_end(&b));
+
+  *out_buf = flatcc_builder_finalize_buffer(&b, out_sz);
+  flatcc_builder_clear(&b);
+}
+
+UTEST(evaluator_integration, matched_rule_marks_a_truncated_description_with_an_ellipsis) {
+  char long_value[900];
+  memset(long_value, 'x', sizeof(long_value) - 1);
+  long_value[sizeof(long_value) - 1] = '\0';
+
+  ASSERT_EQ(setup_and_of_or_policy_context(long_value, "java"), PLCS_ESUCCESS);
+
+  void *buf = NULL;
+  size_t sz = 0;
+  build_long_value_policy_buffer(long_value, &buf, &sz);
+
+  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
+  ASSERT_EQ(g_allow_called, 1);
+  ASSERT_EQ((int)g_last_action_res, (int)PLCS_EVAL_RESULT_TRUE);
+
+  /* The rule matched, so this is a generated description, cut short and marked. */
+  size_t described_len = strlen(g_last_policy_description);
+  ASSERT_LT(described_len, strlen(long_value));
+  ASSERT_STREQ(g_last_policy_description + described_len - 3, "...");
+  ASSERT_TRUE(strncmp(g_last_policy_description, "process executable is 'xxx", 26) == 0);
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();

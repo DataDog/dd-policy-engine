@@ -12,6 +12,7 @@
 #include <dd/policies/policies.h>
 
 #include <stdio.h>
+#include <string.h>
 #include "eval_ctx.h"
 #include "policy.h"
 #include "wire/action.h"
@@ -19,8 +20,196 @@
 #include "wire/dd_types.h"
 #include "wire/evaluation_result.h"
 #define PLCS_MAX_EVAL_DEPTH 64
+#define PLCS_MATCHED_RULE_MAX 512
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
+/* Description of the rule that made a policy match, assembled while the tree is
+ * evaluated. Each condition is described from the evaluator itself, so it reports the context value it saw:
+ * "process executable 'python3.11' is prefixed with 'python'".
+ *
+ * A node only describes itself when it evaluates to TRUE, and a composite joins
+ * whatever its children described with its own operator. Since AND is only TRUE when
+ * every child is TRUE, and OR short circuits on the first TRUE child, this yields
+ * "every condition" for AND and "the first matching condition" for OR. */
+typedef struct {
+  char buf[PLCS_MATCHED_RULE_MAX];
+  size_t len;
+} plcs_matched_rule;
+
+/* Scratch space for one formatted condition. Deliberately one byte longer than the rule
+ * buffer, so that a condition too long to format here is also too long for the rule buffer:
+ * matched_rule_append is then guaranteed to notice, which keeps truncation handling in one
+ * place. */
+#define PLCS_CONDITION_MAX (PLCS_MATCHED_RULE_MAX + 1)
+
+// Appends as much of `text` as still fits. A description that does not fit is truncated with "..." at the end
+static void matched_rule_append(plcs_matched_rule *rule, const char *text) {
+  if (!rule || !text) {
+    return;
+  }
+
+  static const char ellipsis[] = "...";
+
+  size_t room = sizeof(rule->buf) - rule->len - 1;
+  size_t len = strlen(text);
+
+  if (len <= room) {
+    memcpy(rule->buf + rule->len, text, len);
+    rule->len += len;
+    rule->buf[rule->len] = '\0';
+    return;
+  }
+
+  memcpy(rule->buf + rule->len, text, room);
+  rule->len += room;
+  rule->buf[rule->len] = '\0';
+
+  size_t marker_len = sizeof(ellipsis) - 1;
+  size_t at = rule->len > marker_len ? rule->len - marker_len : 0;
+  memcpy(rule->buf + at, ellipsis, rule->len - at);
+}
+
+// drops everything appended past `len`; used to undo branches that did not match
+static void matched_rule_truncate(plcs_matched_rule *rule, size_t len) {
+  if (!rule) {
+    return;
+  }
+
+  rule->len = len;
+  rule->buf[len] = '\0';
+}
+
+static size_t matched_rule_len(const plcs_matched_rule *rule) {
+  return rule ? rule->len : 0;
+}
+
+// human readable labels for the evaluators and comparators
+#define PLCS_STR_EVAL_LABEL(ID, IX, LABEL) [PLCS_STR_EVAL_##ID] = LABEL,
+#define PLCS_NUM_EVAL_LABEL(ID, IX, LABEL) [PLCS_NUM_EVAL_##ID] = LABEL,
+#define PLCS_STR_CMP_LABEL(ID, IX, LABEL) [PLCS_STR_CMP_##ID] = LABEL,
+#define PLCS_NUM_CMP_LABEL(ID, IX, LABEL) [PLCS_NUM_CMP_##ID] = LABEL,
+
+static const char *const string_evaluator_labels[PLCS_STR_EVAL__COUNT] = {
+    PLCS_LIST_STRING_EVALUATORS(PLCS_STR_EVAL_LABEL)
+};
+static const char *const numeric_evaluator_labels[PLCS_NUM_EVAL__COUNT] = {
+    PLCS_LIST_NUMERIC_EVALUATORS(PLCS_NUM_EVAL_LABEL)
+};
+static const char *const string_comparator_labels[PLCS_STR_CMP__COUNT] = {
+    PLCS_LIST_STRING_COMPARATORS(PLCS_STR_CMP_LABEL)
+};
+static const char *const numeric_comparator_labels[PLCS_NUM_CMP__COUNT] = {
+    PLCS_LIST_NUMERIC_COMPARATOR(PLCS_NUM_CMP_LABEL)
+};
+
+#undef PLCS_STR_EVAL_LABEL
+#undef PLCS_NUM_EVAL_LABEL
+#undef PLCS_STR_CMP_LABEL
+#undef PLCS_NUM_CMP_LABEL
+
+static const char *label_at(const char *const labels[], size_t count, unsigned id) {
+  const char *label = id < count ? labels[id] : NULL;
+  return label ? label : labels[0];
+}
+
+static const char *string_evaluator_label(plcs_string_evaluators eval_id) {
+  return label_at(string_evaluator_labels, PLCS_STR_EVAL__COUNT, (unsigned)eval_id);
+}
+
+static const char *numeric_evaluator_label(plcs_numeric_evaluators eval_id) {
+  return label_at(numeric_evaluator_labels, PLCS_NUM_EVAL__COUNT, (unsigned)eval_id);
+}
+
+static const char *string_comparator_label(plcs_string_comparator cmp) {
+  return label_at(string_comparator_labels, PLCS_STR_CMP__COUNT, (unsigned)cmp);
+}
+
+static const char *numeric_comparator_label(plcs_numeric_comparator cmp) {
+  return label_at(numeric_comparator_labels, PLCS_NUM_CMP__COUNT, (unsigned)cmp);
+}
+
+
+// appends to matched rule with description like "process executable 'python3.11' is prefixed with 'python'", or "runtime language is 'java'" */
+static void matched_rule_describe_string(plcs_matched_rule *rule, dd_ns(StrEvaluator_table_t) eval_str) {
+  plcs_string_evaluators eval_id = (plcs_string_evaluators)dd_ns(StrEvaluator_id)(eval_str);
+  plcs_string_comparator cmp = (plcs_string_comparator)dd_ns(StrEvaluator_cmp)(eval_str);
+  const char *param = plcs_eval_ctx_get_string_param(eval_id);
+  const char *value = dd_ns(StrEvaluator_value)(eval_str);
+  char text[PLCS_CONDITION_MAX];
+
+  param = param ? param : "";
+  value = value ? value : "";
+
+  if (cmp == PLCS_STR_CMP_EXACT && strcmp(param, value) == 0) {
+    snprintf(text, sizeof(text), "%s is '%s'", string_evaluator_label(eval_id), value);
+  } else {
+    snprintf(
+        text, sizeof(text), "%s '%s' %s '%s'", string_evaluator_label(eval_id), param, string_comparator_label(cmp),
+        value
+    );
+  }
+
+  matched_rule_append(rule, text);
+}
+
+// appends to matched rule with description like "java heap 512 is greater than 256", or "runtime major version is 21" */
+static void matched_rule_describe_numeric(plcs_matched_rule *rule, dd_ns(NumEvaluator_table_t) eval_num) {
+  plcs_numeric_evaluators eval_id = (plcs_numeric_evaluators)dd_ns(NumEvaluator_id)(eval_num);
+  plcs_numeric_comparator cmp = (plcs_numeric_comparator)dd_ns(NumEvaluator_cmp)(eval_num);
+  long param = plcs_eval_ctx_get_numeric_param(eval_id);
+  long value = (long)dd_ns(NumEvaluator_value)(eval_num);
+  char text[PLCS_CONDITION_MAX];
+
+  if (cmp == PLCS_NUM_CMP_EQ && param == value) {
+    snprintf(text, sizeof(text), "%s is %ld", numeric_evaluator_label(eval_id), value);
+  } else {
+    snprintf(
+        text, sizeof(text), "%s %ld %s %ld", numeric_evaluator_label(eval_id), param, numeric_comparator_label(cmp),
+        value
+    );
+  }
+
+  matched_rule_append(rule, text);
+}
+
+static void matched_rule_describe_unumeric(plcs_matched_rule *rule, dd_ns(UNumEvaluator_table_t) eval_unum) {
+  plcs_numeric_evaluators eval_id = (plcs_numeric_evaluators)dd_ns(UNumEvaluator_id)(eval_unum);
+  plcs_numeric_comparator cmp = (plcs_numeric_comparator)dd_ns(UNumEvaluator_cmp)(eval_unum);
+  unsigned long param = plcs_eval_ctx_get_unumeric_param(eval_id);
+  unsigned long value = (unsigned long)dd_ns(UNumEvaluator_value)(eval_unum);
+  char text[PLCS_CONDITION_MAX];
+
+  if (cmp == PLCS_NUM_CMP_EQ && param == value) {
+    snprintf(text, sizeof(text), "%s is %lu", numeric_evaluator_label(eval_id), value);
+  } else {
+    snprintf(
+        text, sizeof(text), "%s %lu %s %lu", numeric_evaluator_label(eval_id), param, numeric_comparator_label(cmp),
+        value
+    );
+  }
+
+  matched_rule_append(rule, text);
+}
+
+/* Describes the condition a leaf node checked, along with the context value it saw. */
+static void matched_rule_describe_node(plcs_matched_rule *rule, dd_ns(EvaluatorNode_table_t) node) {
+  dd_ns(EvaluatorType_union_t) evaluator = dd_ns(EvaluatorNode_eval_union)(node);
+
+  switch (evaluator.type) {
+    case dd_ns(EvaluatorType_StrEvaluator):
+      matched_rule_describe_string(rule, evaluator.value);
+      break;
+
+    case dd_ns(EvaluatorType_NumEvaluator):
+      matched_rule_describe_numeric(rule, evaluator.value);
+      break;
+
+    case dd_ns(EvaluatorType_UNumEvaluator):
+      matched_rule_describe_unumeric(rule, evaluator.value);
+      break;
+  }
+}
+
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, plcs_matched_rule *rule);
 
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
   if (!eval_str) {
@@ -176,7 +365,7 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
-plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
+plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, plcs_matched_rule *rule) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -207,29 +396,56 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
         // log error
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
-      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1));
-      break;
+      dd_ns(NodeTypeWrapper_table_t) negated = dd_ns(NodeTypeWrapper_vec_at)(children, 0);
+      res = DoNot(evaluate_rules(negated, depth + 1, NULL));
+      // the child is what did *not* match, so describe it negated. A negated composite has
+      // no single condition to point at, so it is left to the policy description instead.
+      if (res == PLCS_EVAL_RESULT_TRUE && dd_ns(NodeTypeWrapper_node_type)(negated) == dd_ns(NodeType_EvaluatorNode)) {
+        matched_rule_append(rule, "NOT (");
+        matched_rule_describe_node(rule, dd_ns(NodeTypeWrapper_node)(negated));
+        matched_rule_append(rule, ")");
+      }
+      return res;
   }
+
+  const char *separator = oper == dd_ns(BoolOperation_BOOL_AND) ? " AND " : " OR ";
+  const size_t rule_start = matched_rule_len(rule);
 
   // keep iterating recursively over the tree
   for (size_t ix = 0; ix < children_len; ++ix) {
-    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1));
+    const size_t before_separator = matched_rule_len(rule);
+    if (before_separator > rule_start) {
+      matched_rule_append(rule, separator);
+    }
+    const size_t before_child = matched_rule_len(rule);
+
+    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1, rule));
+
+    // the child had nothing to describe, so drop the separator we added for it
+    if (matched_rule_len(rule) == before_child) {
+      matched_rule_truncate(rule, before_separator);
+    }
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
-      return res;
+      break;
     }
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_AND) && res == PLCS_EVAL_RESULT_FALSE) {
-      return res;
+      break;
     }
+  }
+
+  // this branch did not match, so it is not part of the rule that triggered
+  if (res != PLCS_EVAL_RESULT_TRUE) {
+    matched_rule_truncate(rule, rule_start);
   }
 
   return res;
 }
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, plcs_matched_rule *rule) {
   if (depth > PLCS_MAX_EVAL_DEPTH) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -237,12 +453,16 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
   switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
     case dd_ns(NodeType_EvaluatorNode):
       dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
-      return node_evaluator(evaluator_node);
+      plcs_evaluation_result res = node_evaluator(evaluator_node);
+      if (res == PLCS_EVAL_RESULT_TRUE) {
+        matched_rule_describe_node(rule, evaluator_node);
+      }
+      return res;
       break;
 
     case dd_ns(NodeType_CompositeNode):
       dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-      return composite_evaluator(composite_node, depth);
+      return composite_evaluator(composite_node, depth, rule);
       break;
 
     default:
@@ -309,12 +529,15 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
-  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
+  plcs_matched_rule matched_rule = {.buf = {'\0'}, .len = 0};
+  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0, &matched_rule) : PLCS_EVAL_RESULT_ABSTAIN;
+
+  // description describes the rule that triggered the actions, while falling
+  // back to the policy's own description when nothing matched
+  const char *description = matched_rule.len > 0 ? matched_rule.buf : dd_ns(Policy_description)(policy);
 
   // perform actions given evaluation result
-  return perform_actions(
-      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy)
-  );
+  return perform_actions(eval_res, actions, policy_id, dd_ns(Policy_version)(policy), description);
 }
 
 plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
