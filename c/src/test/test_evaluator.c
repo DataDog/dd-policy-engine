@@ -1328,7 +1328,7 @@ static void build_and_of_or_policy_buffer(void **out_buf, size_t *out_sz) {
   dd_wls_NodeTypeWrapper_ref_t or_wrap = build_composite(
       &b, dd_wls_BoolOperation_BOOL_OR,
       build_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_EXE, dd_wls_CmpTypeSTR_CMP_EXACT, "java"),
-      build_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_EXE, dd_wls_CmpTypeSTR_CMP_PREFIX, "python")
+      build_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_EXE, dd_wls_CmpTypeSTR_CMP_PREFIX, "javac")
   );
   dd_wls_NodeTypeWrapper_ref_t language_wrap =
       build_str_leaf(&b, dd_wls_StringEvaluators_RUNTIME_LANGUAGE, dd_wls_CmpTypeSTR_CMP_EXACT, "java");
@@ -1377,7 +1377,7 @@ static int setup_and_of_or_policy_context(const char *process_exe, const char *l
 }
 
 UTEST(evaluator_integration, matched_rule_joins_and_children_and_takes_first_true_or_child) {
-  ASSERT_EQ(setup_and_of_or_policy_context("python3.11", "java"), PLCS_ESUCCESS);
+  ASSERT_EQ(setup_and_of_or_policy_context("javac17", "java"), PLCS_ESUCCESS);
 
   void *buf = NULL;
   size_t sz = 0;
@@ -1388,10 +1388,10 @@ UTEST(evaluator_integration, matched_rule_joins_and_children_and_takes_first_tru
   ASSERT_EQ(g_allow_called, 1);
   ASSERT_EQ((int)g_last_action_res, (int)PLCS_EVAL_RESULT_TRUE);
   /* The AND node contributes both of its children; the OR node contributes only the
-   * "python" branch, since the "java" branch evaluated to FALSE. */
+   * "javac" branch, since the "java" exact branch evaluated to FALSE. */
   ASSERT_STREQ(
       g_last_policy_description,
-      "process executable 'python3.11' is prefixed with 'python' AND runtime language is 'java'"
+      "process executable 'javac17' is prefixed with 'javac' AND runtime language is 'java'"
   );
 
   flatcc_builder_free(buf);
