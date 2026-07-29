@@ -139,6 +139,8 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Build dd-compile-policy
         run: make build-dd-compile-policy
+      - name: Test dd-compile-policy
+        run: make test-dd-compile-policy
       - name: Export dd-compile-policy
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -177,6 +179,14 @@ jobs:
         run: scoop install main/cmake@4.0.1 main/make@4.4.1
       - name: Build dd-compile-policy
         run: make -C dd-compile-policy build CMAKE_ARCH=${{ matrix.arch }}
+      # Forward compatibility depends on flatbuffers.patch having actually applied,
+      # which the build alone does not prove. Invoke the script directly rather
+      # than via `make test`: MSYS bash rewrites arguments that start with '/', so
+      # a relink through make would mangle cl.exe's /std:c++17 style flags.
+      - name: Test dd-compile-policy
+        shell: bash
+        working-directory: dd-compile-policy
+        run: bash tests/forward_compat_test.sh bin/dd-compile-policy.exe
       - name: Export dd-compile-policy
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

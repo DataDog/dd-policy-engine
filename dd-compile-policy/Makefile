@@ -65,7 +65,7 @@ POLICY_BFBS = schema/policy.bfbs
 POLICY_BFBS_HEADER = src/policy_schema_bfbs.h
 
 STRIP = strip
-.PHONY: all clean flatbuffers strip_binary
+.PHONY: all clean flatbuffers strip_binary test
 
 all: build
 
@@ -88,22 +88,27 @@ else
 	wget -O $@ "https://github.com/google/flatbuffers/archive/refs/tags/v$(FLATBUFFERS_VERSION).tar.gz"
 endif
 
+# Extract and patch FlatBuffers as one step, so the sources are never usable
+# without the patch. $(FLATBUFFERS_PATCH) carries two unrelated changes:
+#   1. musl compatibility, so the Alpine/Linux build works. See
+#      https://github.com/sartura/flatbuffers/commit/92bd62407329caacd66e92e5bfd2949f2f137bfe
+#   2. forward compatibility: an unknown enum value in the input JSON falls back
+#      to 0 (the *_UNKNOWN default) instead of failing the whole parse, so this
+#      compiler can still compile a policy produced against a NEWER schema.
+# Only (1) is musl-specific. (2) is needed on every platform, so this must not be
+# gated on the OS: doing that left the Windows and macOS binaries rejecting
+# unknown enum values outright. tests/forward_compat_test.sh covers it.
+# git apply is not prefixed with '-' on purpose - a patch that stops applying
+# (after a FlatBuffers bump, say) has to fail the build rather than silently
+# yield a binary that is not forward compatible.
 $(FLATBUFFERS_DIR): $(FLATBUFFERS_TARBALL)
 	tar -xzf $<
-
-# Flatbuffers isn't working too well on musl, so we need to patch it.
-# See https://github.com/sartura/flatbuffers/commit/92bd62407329caacd66e92e5bfd2949f2f137bfe
-# Apply musl compatibility patch for Alpine Linux builds
-# Windows and other platforms don't need this patch
-patch_flatbuffers_musl:
-ifeq ($(DETECTED_OS),Linux)
-	@cd ./$(FLATBUFFERS_DIR) && git apply -p0 $(FLATBUFFERS_PATCH) ; cd -
-endif
+	cd $(FLATBUFFERS_DIR) && git apply -p0 --ignore-whitespace $(FLATBUFFERS_PATCH)
 
 # Build FlatBuffers static library for Windows
 # Uses CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded for static linking (/MT)
 ifeq ($(DETECTED_OS),Windows)
-$(BUILD_DIR)/MinSizeRel/flatbuffers.lib: $(FLATBUFFERS_DIR) patch_flatbuffers_musl
+$(BUILD_DIR)/MinSizeRel/flatbuffers.lib: $(FLATBUFFERS_DIR)
 	$(MKDIR) $(BUILD_DIR)
 	cd $(BUILD_DIR) && cmake -A x64 -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DFLATBUFFERS_BUILD_TESTS=OFF -DFLATBUFFERS_BUILD_FLATC=ON -DFLATBUFFERS_BUILD_FLATHASH=OFF ..
 	cd $(BUILD_DIR) && cmake --build . --target flatbuffers --config MinSizeRel
@@ -111,7 +116,7 @@ $(BUILD_DIR)/MinSizeRel/flatbuffers.lib: $(FLATBUFFERS_DIR) patch_flatbuffers_mu
 
 flatbuffers: $(BUILD_DIR)/MinSizeRel/flatbuffers.lib
 else
-$(BUILD_DIR)/libflatbuffers.a: $(FLATBUFFERS_DIR) patch_flatbuffers_musl
+$(BUILD_DIR)/libflatbuffers.a: $(FLATBUFFERS_DIR)
 	$(MKDIR) $(BUILD_DIR)
 ifeq ($(DETECTED_OS),Linux)
 	cd $(BUILD_DIR) && cmake -DCMAKE_CXX_FLAGS="-Os -flto -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fvisibility=hidden -Wno-stringop-overflow" -DCMAKE_BUILD_TYPE=MinSizeRel -DFLATBUFFERS_BUILD_TESTS=OFF -DFLATBUFFERS_BUILD_FLATC=OFF -DFLATBUFFERS_BUILD_FLATHASH=OFF ..
@@ -152,6 +157,10 @@ else
 endif
 endif
 
+
+# Run the compiler's test scripts against the built binary
+test: $(OUT)
+	@bash tests/forward_compat_test.sh $(OUT)
 
 # Verify by unmarshalling compiled policy to JSON
 verify_json:
