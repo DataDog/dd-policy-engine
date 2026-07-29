@@ -171,6 +171,9 @@ static void conf_reset(void) {
   plcs_eval_ctx_register_str_evaluator(conf_label, PLCS_STR_EVAL_POD_LABEL);
   plcs_eval_ctx_register_str_evaluator(conf_label, PLCS_STR_EVAL_POD_ANNOTATION);
   plcs_eval_ctx_register_str_evaluator(conf_label, PLCS_STR_EVAL_CONTAINER_LABEL);
+  // PROCESS_ENVAR is keyed KEY=VALUE too (see policies.IsLabelID); register the
+  // host label evaluator so both engines apply identical env-var semantics.
+  plcs_eval_ctx_register_str_evaluator(conf_label, PLCS_STR_EVAL_PROCESS_ENVAR);
 
   for (int i = 1; i < PLCS_NUM_EVAL__COUNT; ++i) {
     plcs_eval_ctx_register_num_evaluator(conf_num, (plcs_numeric_evaluators)i);

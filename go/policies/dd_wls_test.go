@@ -283,6 +283,94 @@ func TestParseAllowsExplicitEmptyStringValue(t *testing.T) {
 	}
 }
 
+// TestBackwardCompatDeepNestingDoesNotCrash checks that a config far deeper than
+// maxEvalDepth is parsed without overflowing the stack: the decoder caps its
+// recursion at maxEvalDepth and abstains beyond it (the same result eval would
+// give), rather than relying on encoding/json's internal nesting limit.
+func TestBackwardCompatDeepNestingDoesNotCrash(t *testing.T) {
+	nested := func(depth int) string {
+		s := `{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}}`
+		for range depth {
+			s = `{"node_type":"CompositeNode","node":{"op":"BOOL_NOT","children":[` + s + `]}}`
+		}
+		return `{"policies":[{"rules":` + s + `,"actions":[]}]}`
+	}
+	ps := mustParse(t, nested(maxEvalDepth*20))
+	if got := Evaluate(ps[0].Rules, Context{}); got != ResultAbstain {
+		t.Fatalf("deep tree should abstain past the depth limit, got %v", got)
+	}
+}
+
+// TestBackwardCompatIgnoresUnknownFields checks that fields a newer schema may
+// add (at the document, policy, node, evaluator, or action level) are ignored
+// rather than failing the parse, so an older agent keeps working on a newer
+// config.
+func TestBackwardCompatIgnoresUnknownFields(t *testing.T) {
+	raw := `{"new_top":1,"policies":[{"description":"x","new_pol":true,
+	  "rules":{"node_type":"EvaluatorNode","new_node":9,"node":{"eval_type":"StrEvaluator","new_e":2,"eval":{"id":"NAMESPACE_NAME","cmp":"CMP_EXACT","value":"p","new_leaf":5}}},
+	  "actions":[{"action":"INJECT_ALLOW","new_act":7}]}]}`
+	ps := mustParse(t, raw)
+	if got := Evaluate(ps[0].Rules, Context{Strings: map[string]string{IDNamespaceName: "p"}}); got != ResultTrue {
+		t.Fatalf("unknown fields should be ignored; want TRUE, got %v", got)
+	}
+	if !ps[0].Outcome.Inject {
+		t.Fatalf("INJECT_ALLOW should still apply alongside unknown action fields")
+	}
+}
+
+// TestParseProcessEnvVar checks PROCESS_ENVAR is decoded as a keyed KEY=VALUE
+// evaluator (like a label), so several env-var conditions AND'd together -- as
+// the requirements converter's deny rules emit -- resolve against independent
+// keys in Context.Labels. A single plain-string fact could not satisfy two
+// different variables, and callers supplying env vars via Context.Labels would
+// otherwise abstain.
+func TestParseProcessEnvVar(t *testing.T) {
+	// deny.go emits AND(PROCESS_ENVAR "FOO=1", PROCESS_ENVAR "BAR=2").
+	raw := `{"policies":[{"description":"deny FOO=1 and BAR=2","rules":{"node_type":"CompositeNode","node":{"op":"BOOL_AND","children":[
+	  {"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"PROCESS_ENVAR","cmp":"CMP_EXACT","value":"FOO=1"}}},
+	  {"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"PROCESS_ENVAR","cmp":"CMP_EXACT","value":"BAR=2"}}}
+	]}},"actions":[{"action":"INJECT_DENY"}]}]}`
+	ps := mustParse(t, raw)
+
+	both := Context{Labels: map[string]map[string]string{IDProcessEnvVar: {"FOO": "1", "BAR": "2"}}}
+	if got := Evaluate(ps[0].Rules, both); got != ResultTrue {
+		t.Fatalf("both env vars present: want TRUE, got %v", got)
+	}
+	if got := Evaluate(ps[0].Rules, Context{Labels: map[string]map[string]string{IDProcessEnvVar: {"FOO": "1"}}}); got == ResultTrue {
+		t.Fatalf("BAR absent: must not be TRUE, got %v", got)
+	}
+
+	// deny.go's "exists with any non-empty value" form: NAME=*? with CMP_WILDCARD.
+	exists := mustParse(t, `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"PROCESS_ENVAR","cmp":"CMP_WILDCARD","value":"FOO=*?"}}}}]}`)
+	if got := Evaluate(exists[0].Rules, Context{Labels: map[string]map[string]string{IDProcessEnvVar: {"FOO": "bar"}}}); got != ResultTrue {
+		t.Fatalf("FOO set non-empty: want TRUE, got %v", got)
+	}
+	if got := Evaluate(exists[0].Rules, Context{Labels: map[string]map[string]string{IDProcessEnvVar: {"FOO": ""}}}); got == ResultTrue {
+		t.Fatalf("FOO empty: *? requires >=1 char, must not be TRUE, got %v", got)
+	}
+}
+
+// TestParsePoliciesIsolatesBadPolicy checks that a single undecodable policy is
+// skipped rather than dropping the whole document: a newer config with one
+// policy an older agent can't decode must not leave it with zero policies. The
+// good policy still loads, and the error reports the skipped one.
+func TestParsePoliciesIsolatesBadPolicy(t *testing.T) {
+	raw := `{"policies":[
+	  {"description":"bad","rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},"actions":[{"action":"ENABLE_SDK","values":["java"]}]},
+	  {"description":"good","rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},"actions":[{"action":"INJECT_ALLOW"}]}
+	]}`
+	ps, err := ParsePolicies([]byte(raw))
+	if err == nil {
+		t.Fatal("expected a non-nil error reporting the skipped policy")
+	}
+	if len(ps) != 1 || ps[0].Name != "good" {
+		t.Fatalf("expected only the good policy to load, got %+v", ps)
+	}
+	if !ps[0].Outcome.Inject {
+		t.Fatal("the surviving good policy should still apply its INJECT_ALLOW")
+	}
+}
+
 // TestParseErrors covers the only cases ParsePolicies still rejects: a document
 // that is not valid JSON, or one carrying a malformed value for an action the
 // engine implements. Unrecognized/malformed *rules* no longer error -- they

@@ -101,27 +101,38 @@ const (
 	// IDNamespaceName is the workload namespace name (a plain string fact).
 	IDNamespaceName = "NAMESPACE_NAME"
 
-	// Label-type ids: their value follows the "KEY=VALUE" convention and is
-	// resolved against a key->value map in the Context.
+	// Keyed KEY=VALUE ids: their value follows the "KEY=VALUE" convention and is
+	// resolved against a key->value map in the Context (see IsLabelID). This
+	// covers Kubernetes labels/annotations and process environment variables.
 	IDNamespaceLabel = "NAMESPACE_LABEL"
 	IDPodLabel       = "POD_LABEL"
 	IDPodAnnotation  = "POD_ANNOTATION"
 	IDContainerLabel = "CONTAINER_LABEL"
+	// IDProcessEnvVar matches a process environment variable, encoded "NAME=VALUE"
+	// (or "NAME=*?" with CMP_WILDCARD for "set to any non-empty value"). It is
+	// keyed like a label so that several env-var conditions AND'd together (as the
+	// requirements converter's deny rules emit) resolve against independent keys.
+	IDProcessEnvVar = "PROCESS_ENVAR"
 )
 
 // labelIDs is the set of string evaluator ids that carry the "KEY=VALUE"
-// convention and are resolved against a key->value map instead of a plain
-// string. This is the one place the Go engine intentionally improves on the C
-// engine, which holds a single string per evaluator id (no native multi-label
-// lookup); the dynamic-key map is the documented Go enhancement.
+// convention and are resolved against a key->value map (Context.Labels) instead
+// of a single plain string: Kubernetes labels/annotations and process
+// environment variables (PROCESS_ENVAR). This is where the Go engine
+// intentionally improves on the C engine, which holds a single string per
+// evaluator id (no native multi-key lookup); the dynamic-key map lets several
+// conditions on different keys -- e.g. two environment variables AND'd together
+// -- each resolve independently instead of against one shared value.
 var labelIDs = map[string]struct{}{
 	IDNamespaceLabel: {},
 	IDPodLabel:       {},
 	IDPodAnnotation:  {},
 	IDContainerLabel: {},
+	IDProcessEnvVar:  {},
 }
 
-// IsLabelID reports whether id uses the label "KEY=VALUE" convention.
+// IsLabelID reports whether id uses the "KEY=VALUE" keyed convention (a label,
+// annotation, or environment variable) and is resolved against Context.Labels.
 func IsLabelID(id string) bool {
 	_, ok := labelIDs[id]
 	return ok

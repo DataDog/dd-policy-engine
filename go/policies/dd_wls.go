@@ -9,6 +9,7 @@ package policies
 import (
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -46,8 +47,10 @@ const (
 	actionSetEnvVar      = "SET_ENVAR"
 )
 
+// wlsPolicies keeps each policy as a raw message so a single malformed policy
+// can be skipped without failing the whole document (see ParsePolicies).
 type wlsPolicies struct {
-	Policies []wlsPolicy `json:"policies"`
+	Policies []json.RawMessage `json:"policies"`
 }
 
 type wlsPolicy struct {
@@ -113,11 +116,18 @@ type wlsAction struct {
 // Label evaluators encode their key as "key=value" in the StrEvaluator value; a
 // CMP_PREFIX on "key=" (empty value part) is decoded as an existence check.
 //
-// Rule decoding is total (see decodeNodeWrap): an unrecognized or malformed rule
-// construct decodes to an ABSTAIN leaf rather than failing, so a policy produced
-// by a newer schema stays evaluatable by an older agent. ParsePolicies returns
-// an error only for a document that is not valid JSON or that carries a
-// malformed value for an action the engine implements.
+// Decoding is best-effort and isolated per policy, so a newer config never
+// leaves an older agent with no policies at all:
+//   - rule decoding is total (see decodeNodeWrap): an unrecognized or malformed
+//     rule construct decodes to an ABSTAIN leaf rather than failing;
+//   - a policy that still cannot be decoded (a structurally invalid policy
+//     object, or a malformed value for an action the engine implements) is
+//     skipped, not fatal, so the remaining policies still load.
+//
+// The returned slice holds every policy that decoded. The error is non-nil when
+// the document itself is not valid JSON (the slice is then nil) or when one or
+// more individual policies were skipped (the slice still holds the rest); a
+// best-effort caller should use the returned policies regardless of the error.
 func ParsePolicies(raw []byte) ([]Policy, error) {
 	var doc wlsPolicies
 	if err := json.Unmarshal(raw, &doc); err != nil {
@@ -125,20 +135,27 @@ func ParsePolicies(raw []byte) ([]Policy, error) {
 	}
 
 	out := make([]Policy, 0, len(doc.Policies))
-	for i, p := range doc.Policies {
+	var skipped []error
+	for i, rawPolicy := range doc.Policies {
+		var p wlsPolicy
+		if err := json.Unmarshal(rawPolicy, &p); err != nil {
+			skipped = append(skipped, fmt.Errorf("policy[%d]: %w", i, err))
+			continue
+		}
 		outcome, err := decodeActions(p.Actions)
 		if err != nil {
-			return nil, fmt.Errorf("policy[%d] %q: %w", i, p.Description, err)
+			skipped = append(skipped, fmt.Errorf("policy[%d] %q: %w", i, p.Description, err))
+			continue
 		}
 		out = append(out, Policy{
 			Name:    p.Description,
 			ID:      decodeUUID(p.ID),
 			Version: p.Version,
-			Rules:   decodeNodeWrap(p.Rules),
+			Rules:   decodeNodeWrap(p.Rules, 0),
 			Outcome: outcome,
 		})
 	}
-	return out, nil
+	return out, errors.Join(skipped...)
 }
 
 // decodeNodeWrap decodes one rule node. It is total, mirroring the C engine's
@@ -151,14 +168,22 @@ func ParsePolicies(raw []byte) ([]Policy, error) {
 // document. Genuine correctness of a well-formed policy is enforced upstream
 // (the compiler and the cross-engine conformance corpus), not by rejecting at
 // runtime.
-func decodeNodeWrap(w wlsNodeWrap) *Node {
+func decodeNodeWrap(w wlsNodeWrap, depth int) *Node {
+	// Bound decode recursion at the same depth as evaluation (maxEvalDepth). A
+	// node deeper than that abstains at eval time anyway, so capping here changes
+	// no result while keeping a pathologically deep document (a malformed or
+	// hostile config) from overflowing the stack during parsing -- rather than
+	// relying on encoding/json's internal nesting limit to save us.
+	if depth > maxEvalDepth {
+		return AlwaysAbstain()
+	}
 	switch w.NodeType {
 	case nodeComposite:
 		var c wlsComposite
 		if err := json.Unmarshal(w.Node, &c); err != nil {
 			return AlwaysAbstain()
 		}
-		return decodeComposite(c)
+		return decodeComposite(c, depth)
 	case nodeEvaluator:
 		var e wlsEvaluatorNode
 		if err := json.Unmarshal(w.Node, &e); err != nil {
@@ -170,10 +195,10 @@ func decodeNodeWrap(w wlsNodeWrap) *Node {
 	}
 }
 
-func decodeComposite(c wlsComposite) *Node {
+func decodeComposite(c wlsComposite, depth int) *Node {
 	children := make([]*Node, 0, len(c.Children))
 	for _, child := range c.Children {
-		children = append(children, decodeNodeWrap(child))
+		children = append(children, decodeNodeWrap(child, depth+1))
 	}
 	switch c.Op {
 	case opAnd:

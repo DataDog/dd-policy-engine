@@ -9,6 +9,7 @@ package conformance
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/DataDog/dd-policy-engine/go/policies"
@@ -40,7 +41,7 @@ import (
 // policies package's TestWildcardMatch, which mirrors c/src/test/test_evaluator.c
 // directly.
 
-const conformanceCorpusPath = "testdata/vectors.json"
+const conformanceCorpusDir = "testdata"
 
 type conformanceCorpus struct {
 	Vectors []conformanceVector `json:"vectors"`
@@ -170,15 +171,37 @@ func sameStringMap(a, b map[string]string) bool {
 	return true
 }
 
+// loadCorpus reads every *.json file under testdata/ and merges their vectors,
+// so the corpus can be split into focused, readable per-category files instead
+// of one monolith. Vector names must be unique across all files.
 func loadCorpus(t *testing.T) conformanceCorpus {
 	t.Helper()
-	raw, err := os.ReadFile(conformanceCorpusPath)
+	files, err := filepath.Glob(filepath.Join(conformanceCorpusDir, "*.json"))
 	if err != nil {
-		t.Fatalf("read corpus: %v", err)
+		t.Fatalf("glob corpus: %v", err)
 	}
+	if len(files) == 0 {
+		t.Fatalf("no corpus files in %s", conformanceCorpusDir)
+	}
+
 	var corpus conformanceCorpus
-	if err := json.Unmarshal(raw, &corpus); err != nil {
-		t.Fatalf("parse corpus: %v", err)
+	seen := map[string]string{} // vector name -> file it first appeared in
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatalf("read %s: %v", f, err)
+		}
+		var part conformanceCorpus
+		if err := json.Unmarshal(raw, &part); err != nil {
+			t.Fatalf("parse %s: %v", f, err)
+		}
+		for _, v := range part.Vectors {
+			if prev, dup := seen[v.Name]; dup {
+				t.Fatalf("duplicate vector name %q in %s and %s", v.Name, prev, f)
+			}
+			seen[v.Name] = f
+			corpus.Vectors = append(corpus.Vectors, v)
+		}
 	}
 	if len(corpus.Vectors) == 0 {
 		t.Fatal("conformance corpus is empty")

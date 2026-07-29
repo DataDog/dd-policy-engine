@@ -19,10 +19,11 @@ const maxEvalDepth = 64
 // evaluates to ResultAbstain (like the C engine's NULL context), rather than
 // comparing against a zero value.
 //
-// Label-type ids (see IsLabelID) read from Labels (a real key->value map, the
-// Go enhancement over the C single-string-per-id model); all other string ids
-// read from Strings; numeric ids read from Numbers (signed) or UNumbers
-// (unsigned) depending on the evaluator kind.
+// Keyed KEY=VALUE ids -- labels, annotations, and process environment variables
+// (see IsLabelID) -- read from Labels (a real key->value map, the Go enhancement
+// over the C single-string-per-id model); all other string ids read from
+// Strings; numeric ids read from Numbers (signed) or UNumbers (unsigned)
+// depending on the evaluator kind.
 type Context struct {
 	Strings  map[string]string
 	Labels   map[string]map[string]string

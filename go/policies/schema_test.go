@@ -87,6 +87,7 @@ func TestDecoderIdentifiersMatchSchema(t *testing.T) {
 		[]string{
 			IDAlwaysTrue, IDAlwaysFalse, IDAlwaysAbstain,
 			IDNamespaceName, IDNamespaceLabel, IDPodLabel, IDPodAnnotation, IDContainerLabel,
+			IDProcessEnvVar,
 		})
 
 	assertSubset(t, "string comparison",
