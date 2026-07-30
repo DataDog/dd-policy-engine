@@ -12,6 +12,10 @@ FLATBUFFERS_VERSION = 25.9.23
 FLATBUFFERS_TARBALL = flatbuffers-v$(FLATBUFFERS_VERSION).tar.gz
 FLATBUFFERS_DIR = flatbuffers-$(FLATBUFFERS_VERSION)
 FLATBUFFERS_PATCH = ../flatbuffers.patch # relative to FLATBUFFERS_DIR
+FLATBUFFERS_PATCH_FILE = flatbuffers.patch # same file, relative to this Makefile
+# Records that the patch applied. Lives OUTSIDE $(FLATBUFFERS_DIR) on purpose: a
+# stamp inside it would bump the directory's mtime and re-trigger itself forever.
+FLATBUFFERS_PATCH_STAMP = $(FLATBUFFERS_DIR).patched
 
 CXXOPTS_VERSION = 3.2.1
 BUILD_DIR = $(FLATBUFFERS_DIR)/build
@@ -30,6 +34,8 @@ STRIP = strip
 CXX_OUTPUT_ARGS = $(LDFLAGS) -o $@
 MKDIR = mkdir -p
 FLATC = flatc
+# Windows ships Python as `python`; `python3` is not reliably on PATH there.
+PYTHON = python3
 
 # Windows overrides
 ifeq ($(DETECTED_OS),Windows)
@@ -42,6 +48,7 @@ ifeq ($(DETECTED_OS),Windows)
 	CXX_OUTPUT_ARGS = /Fe$@ $(LDFLAGS)
 	MKDIR = powershell -Command "New-Item -ItemType Directory -Force -Path"
 	FLATC = $(BUILD_DIR)/MinSizeRel/flatc.exe
+	PYTHON = python
 endif
 
 
@@ -97,18 +104,33 @@ endif
 #      compiler can still compile a policy produced against a NEWER schema.
 # Only (1) is musl-specific. (2) is needed on every platform, so this must not be
 # gated on the OS: doing that left the Windows and macOS binaries rejecting
-# unknown enum values outright. tests/forward_compat_test.sh covers it.
+# unknown enum values outright. tests/forward_compat_test.py covers it.
 # git apply is not prefixed with '-' on purpose - a patch that stops applying
 # (after a FlatBuffers bump, say) has to fail the build rather than silently
 # yield a binary that is not forward compatible.
-$(FLATBUFFERS_DIR): $(FLATBUFFERS_TARBALL)
-	tar -xzf $<
+# --ignore-whitespace is needed on Windows: the tarball sources are LF, while
+# core.autocrlf=true checks the patch itself out as CRLF, so without it every
+# context line mismatches. It does not weaken the check above - a patch that no
+# longer matches the sources still fails.
+#
+# The build depends on this stamp rather than on $(FLATBUFFERS_DIR), because an
+# extracted directory is not evidence that it was patched. Once anything is
+# created inside it (the cmake build/ tree, say) its mtime overtakes the
+# tarball's, so a directory target would read as up to date forever - upgrading an
+# already-built Windows or macOS checkout would silently keep linking the
+# unpatched library and keep rejecting unknown enum values. Re-extracting inside
+# this recipe also makes it self-healing in both directions: whatever state the
+# tree was left in, tar restores pristine sources before git apply runs, so this
+# never has to guess whether the patch is already applied.
+$(FLATBUFFERS_PATCH_STAMP): $(FLATBUFFERS_TARBALL) $(FLATBUFFERS_PATCH_FILE)
+	tar -xzf $(FLATBUFFERS_TARBALL)
 	cd $(FLATBUFFERS_DIR) && git apply -p0 --ignore-whitespace $(FLATBUFFERS_PATCH)
+	echo patched > $@
 
 # Build FlatBuffers static library for Windows
 # Uses CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded for static linking (/MT)
 ifeq ($(DETECTED_OS),Windows)
-$(BUILD_DIR)/MinSizeRel/flatbuffers.lib: $(FLATBUFFERS_DIR)
+$(BUILD_DIR)/MinSizeRel/flatbuffers.lib: $(FLATBUFFERS_PATCH_STAMP)
 	$(MKDIR) $(BUILD_DIR)
 	cd $(BUILD_DIR) && cmake -A x64 -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DFLATBUFFERS_BUILD_TESTS=OFF -DFLATBUFFERS_BUILD_FLATC=ON -DFLATBUFFERS_BUILD_FLATHASH=OFF ..
 	cd $(BUILD_DIR) && cmake --build . --target flatbuffers --config MinSizeRel
@@ -116,7 +138,7 @@ $(BUILD_DIR)/MinSizeRel/flatbuffers.lib: $(FLATBUFFERS_DIR)
 
 flatbuffers: $(BUILD_DIR)/MinSizeRel/flatbuffers.lib
 else
-$(BUILD_DIR)/libflatbuffers.a: $(FLATBUFFERS_DIR)
+$(BUILD_DIR)/libflatbuffers.a: $(FLATBUFFERS_PATCH_STAMP)
 	$(MKDIR) $(BUILD_DIR)
 ifeq ($(DETECTED_OS),Linux)
 	cd $(BUILD_DIR) && cmake -DCMAKE_CXX_FLAGS="-Os -flto -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fvisibility=hidden -Wno-stringop-overflow" -DCMAKE_BUILD_TYPE=MinSizeRel -DFLATBUFFERS_BUILD_TESTS=OFF -DFLATBUFFERS_BUILD_FLATC=OFF -DFLATBUFFERS_BUILD_FLATHASH=OFF ..
@@ -144,11 +166,16 @@ else
 endif
 
 # Build output binary
-$(OUT): $(SRC) flatbuffers $(CXXOPTS_HEADER)
+# $(SRC) #includes $(POLICY_BFBS_HEADER), so it has to be a prerequisite here and
+# not only of `build`: prerequisites are unordered, so relying on `build` listing
+# both left this racy under -j and broke any target that asked for $(OUT) alone.
+$(OUT): $(SRC) flatbuffers $(CXXOPTS_HEADER) $(POLICY_BFBS_HEADER)
 	$(MKDIR) $(MAKEFILE_DIR)/bin
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $(SRC) $(LIBS) $(CXX_OUTPUT_ARGS)
 
-strip_binary:
+# Prerequisite on $(OUT), not just ordering within `build`: without it -j runs the
+# strip before the link and fails on a missing binary.
+strip_binary: $(OUT)
 ifneq ($(DETECTED_OS),Windows)
 ifeq (, $(shell which $(STRIP)))
 	@echo "strip not found, skipping binary strip"
@@ -158,9 +185,11 @@ endif
 endif
 
 
-# Run the compiler's test scripts against the built binary
-test: $(OUT)
-	@bash tests/forward_compat_test.sh $(OUT)
+# Run the compiler's tests against the built binary.
+# Depends on `build`, not $(OUT), so this works as a standalone command on a clean
+# checkout and exercises the same artifact CI ships.
+test: build
+	@$(PYTHON) tests/forward_compat_test.py $(OUT)
 
 # Verify by unmarshalling compiled policy to JSON
 verify_json:
@@ -173,9 +202,9 @@ endif
 # Clean all build artifacts
 clean:
 ifeq ($(DETECTED_OS),Windows)
-	powershell -Command "Remove-Item -Path '$(FLATBUFFERS_TARBALL)', '$(FLATBUFFERS_DIR)', '$(OUT)', 'bin', 'schema', 'include', '*.bin', '*.json', '$(POLICY_BFBS_HEADER)' -Recurse -Force -ErrorAction SilentlyContinue"
+	powershell -Command "Remove-Item -Path '$(FLATBUFFERS_TARBALL)', '$(FLATBUFFERS_DIR)', '$(FLATBUFFERS_PATCH_STAMP)', '$(OUT)', 'bin', 'schema', 'include', '*.bin', '*.json', '$(POLICY_BFBS_HEADER)' -Recurse -Force -ErrorAction SilentlyContinue"
 else
-	rm -rf $(FLATBUFFERS_TARBALL) $(FLATBUFFERS_DIR) $(OUT) bin schema include *.bin *.json $(POLICY_BFBS_HEADER)
+	rm -rf $(FLATBUFFERS_TARBALL) $(FLATBUFFERS_DIR) $(FLATBUFFERS_PATCH_STAMP) $(OUT) bin schema include *.bin *.json $(POLICY_BFBS_HEADER)
 endif
 
 fmt:
