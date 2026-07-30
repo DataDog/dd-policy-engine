@@ -322,6 +322,65 @@ func TestBackwardCompatIgnoresUnknownFields(t *testing.T) {
 	}
 }
 
+// TestParseCompositeChildrenPresence checks that an explicit "children": null
+// (a dd-wls shape violation) abstains rather than building an empty AND that
+// evaluates TRUE, while an empty array [] and an omitted field keep the identity
+// behavior (empty AND -> TRUE, empty OR -> FALSE), matching C's absent/empty
+// children vector.
+func TestParseCompositeChildrenPresence(t *testing.T) {
+	comp := func(op, children string) string {
+		body := `"op":"` + op + `"`
+		if children != "" {
+			body += `,"children":` + children
+		}
+		return `{"policies":[{"rules":{"node_type":"CompositeNode","node":{` + body + `}}}]}`
+	}
+	// Explicit null -> abstain, not empty-AND TRUE.
+	if got := Evaluate(mustParse(t, comp("BOOL_AND", "null"))[0].Rules, Context{}); got != ResultAbstain {
+		t.Errorf(`AND "children":null: got %v want ResultAbstain`, got)
+	}
+	// Empty array -> identity retained: empty AND is TRUE, empty OR is FALSE.
+	if got := Evaluate(mustParse(t, comp("BOOL_AND", "[]"))[0].Rules, Context{}); got != ResultTrue {
+		t.Errorf(`AND "children":[]: got %v want ResultTrue`, got)
+	}
+	if got := Evaluate(mustParse(t, comp("BOOL_OR", "[]"))[0].Rules, Context{}); got != ResultFalse {
+		t.Errorf(`OR "children":[]: got %v want ResultFalse`, got)
+	}
+	// Omitted children -> same identity as [], matching C's absent vector.
+	if got := Evaluate(mustParse(t, comp("BOOL_AND", ""))[0].Rules, Context{}); got != ResultTrue {
+		t.Errorf(`AND omitted children: got %v want ResultTrue`, got)
+	}
+}
+
+// TestParseNumericValuePresence checks that a numeric value of explicit null (or
+// a non-number) abstains rather than decoding to 0 -- so CMP_EQ can't false-match
+// a zero fact -- while an explicit 0 and an omitted value (the FlatBuffers scalar
+// default 0) are real comparisons. Facts are 0 so a value that wrongly became 0
+// would match, making ABSTAIN a meaningful assertion.
+func TestParseNumericValuePresence(t *testing.T) {
+	rule := func(kind, eval string) string {
+		return `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"` + kind + `","eval":` + eval + `}}}]}`
+	}
+	zeroSigned := Context{Numbers: map[string]int64{"RUNTIME_VERSION_MAJOR": 0}}
+	zeroUnsigned := Context{UNumbers: map[string]uint64{"JAVA_HEAP": 0}}
+
+	// Explicit null -> abstain, signed and unsigned.
+	if got := Evaluate(mustParse(t, rule("NumEvaluator", `{"id":"RUNTIME_VERSION_MAJOR","cmp":"CMP_EQ","value":null}`))[0].Rules, zeroSigned); got != ResultAbstain {
+		t.Errorf("signed value null: got %v want ResultAbstain", got)
+	}
+	if got := Evaluate(mustParse(t, rule("UNumEvaluator", `{"id":"JAVA_HEAP","cmp":"CMP_EQ","value":null}`))[0].Rules, zeroUnsigned); got != ResultAbstain {
+		t.Errorf("unsigned value null: got %v want ResultAbstain", got)
+	}
+	// Explicit 0 -> real comparison (matches the 0 fact).
+	if got := Evaluate(mustParse(t, rule("NumEvaluator", `{"id":"RUNTIME_VERSION_MAJOR","cmp":"CMP_EQ","value":0}`))[0].Rules, zeroSigned); got != ResultTrue {
+		t.Errorf("signed value 0 vs 0 fact: got %v want ResultTrue", got)
+	}
+	// Omitted -> FlatBuffers scalar default 0 -> compares as 0.
+	if got := Evaluate(mustParse(t, rule("NumEvaluator", `{"id":"RUNTIME_VERSION_MAJOR","cmp":"CMP_EQ"}`))[0].Rules, zeroSigned); got != ResultTrue {
+		t.Errorf("omitted value (default 0) vs 0 fact: got %v want ResultTrue", got)
+	}
+}
+
 // TestParseProcessEnvVar checks PROCESS_ENVAR is decoded as a keyed KEY=VALUE
 // evaluator (like a label), so several env-var conditions AND'd together -- as
 // the requirements converter's deny rules emit -- resolve against independent
@@ -382,6 +441,36 @@ func TestDecodeActionsValueCountLimit(t *testing.T) {
 	if out := mustParse(t, doc(254))[0].Outcome; !out.Inject || !out.InjectSet || len(out.TracerConfigs) != 254 {
 		t.Fatalf("254-value action should apply and not block INJECT_ALLOW: inject=%v set=%v configs=%d",
 			out.Inject, out.InjectSet, len(out.TracerConfigs))
+	}
+}
+
+// TestParseProcessArgv checks PROCESS_ARGV (unpositioned) is a multi-valued fact:
+// several argument conditions AND'd together -- as the requirements converter
+// emits for unpositioned patterns -- each match against the whole argv list, so a
+// process with both -a and -b satisfies a policy requiring both. One scalar value
+// could not, and a single condition would depend on which arg was chosen.
+func TestParseProcessArgv(t *testing.T) {
+	raw := `{"policies":[{"description":"deny -a and -b","rules":{"node_type":"CompositeNode","node":{"op":"BOOL_AND","children":[
+	  {"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"PROCESS_ARGV","cmp":"CMP_EXACT","value":"-a"}}},
+	  {"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"PROCESS_ARGV","cmp":"CMP_EXACT","value":"-b"}}}
+	]}},"actions":[{"action":"INJECT_DENY"}]}]}`
+	ps := mustParse(t, raw)
+
+	both := Context{Lists: map[string][]string{IDProcessArgv: {"myapp", "-a", "-b"}}}
+	if got := Evaluate(ps[0].Rules, both); got != ResultTrue {
+		t.Fatalf("argv has both -a and -b: want TRUE, got %v", got)
+	}
+	if got := Evaluate(ps[0].Rules, Context{Lists: map[string][]string{IDProcessArgv: {"myapp", "-a"}}}); got == ResultTrue {
+		t.Fatalf("argv missing -b: must not be TRUE, got %v", got)
+	}
+	// Source unavailable -> abstain.
+	if got := Evaluate(ps[0].Rules, Context{}); got != ResultAbstain {
+		t.Fatalf("argv source unavailable: want ResultAbstain, got %v", got)
+	}
+	// Wildcard matches any element of the list.
+	wild := mustParse(t, `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"PROCESS_ARGV","cmp":"CMP_WILDCARD","value":"--config=*"}}}}]}`)
+	if got := Evaluate(wild[0].Rules, Context{Lists: map[string][]string{IDProcessArgv: {"app", "--config=/etc/x"}}}); got != ResultTrue {
+		t.Fatalf("wildcard argv match: want TRUE, got %v", got)
 	}
 }
 

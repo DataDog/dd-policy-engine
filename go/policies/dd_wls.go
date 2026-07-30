@@ -80,9 +80,12 @@ type wlsNodeWrap struct {
 }
 
 type wlsComposite struct {
-	Description string        `json:"description"`
-	Op          string        `json:"op"`
-	Children    []wlsNodeWrap `json:"children"`
+	Description string `json:"description"`
+	Op          string `json:"op"`
+	// Children is a raw message so an explicit "children": null (a dd-wls shape
+	// violation) is distinguishable from an omitted field and an empty array [],
+	// which decode to the same nil slice with encoding/json. See decodeComposite.
+	Children json.RawMessage `json:"children"`
 }
 
 type wlsEvaluatorNode struct {
@@ -100,16 +103,20 @@ type wlsStrEval struct {
 	Value *string `json:"value"`
 }
 
+// Value is a raw message (not int64/uint64) so an explicit JSON null is
+// distinguishable from both an omitted value and a real 0: null decodes to "" =
+// 0 with encoding/json, which would let CMP_EQ false-match a zero fact. See
+// numValue.
 type wlsNumEval struct {
-	ID    string `json:"id"`
-	Cmp   string `json:"cmp"`
-	Value int64  `json:"value"`
+	ID    string          `json:"id"`
+	Cmp   string          `json:"cmp"`
+	Value json.RawMessage `json:"value"`
 }
 
 type wlsUNumEval struct {
-	ID    string `json:"id"`
-	Cmp   string `json:"cmp"`
-	Value uint64 `json:"value"`
+	ID    string          `json:"id"`
+	Cmp   string          `json:"cmp"`
+	Value json.RawMessage `json:"value"`
 }
 
 type wlsAction struct {
@@ -202,9 +209,22 @@ func decodeNodeWrap(w wlsNodeWrap, depth int) *Node {
 }
 
 func decodeComposite(c wlsComposite, depth int) *Node {
-	children := make([]*Node, 0, len(c.Children))
-	for _, child := range c.Children {
-		children = append(children, decodeNodeWrap(child, depth+1))
+	// An explicit "children": null violates the dd-wls shape (children is an
+	// array), so it is malformed -> abstain. An omitted field and an empty array
+	// [] both mean "no children" and keep the identity behavior (empty AND -> TRUE,
+	// empty OR -> FALSE), matching the C engine's treatment of an absent or empty
+	// children vector. The pointer distinguishes explicit null (nil) from [] and a
+	// populated array (both non-nil).
+	var children []*Node
+	if len(c.Children) > 0 {
+		var raw *[]wlsNodeWrap
+		if err := json.Unmarshal(c.Children, &raw); err != nil || raw == nil {
+			return AlwaysAbstain() // malformed array or explicit null
+		}
+		children = make([]*Node, 0, len(*raw))
+		for _, child := range *raw {
+			children = append(children, decodeNodeWrap(child, depth+1))
+		}
 	}
 	switch c.Op {
 	case opAnd:
@@ -245,7 +265,11 @@ func decodeEvaluatorNode(e wlsEvaluatorNode) *Node {
 		if !ok {
 			return AlwaysAbstain()
 		}
-		return NumericLeaf(ne.ID, cmp, ne.Value)
+		value, ok := numValue[int64](ne.Value)
+		if !ok {
+			return AlwaysAbstain()
+		}
+		return NumericLeaf(ne.ID, cmp, value)
 	case evalUNumeric:
 		var ue wlsUNumEval
 		if err := json.Unmarshal(e.Eval, &ue); err != nil {
@@ -255,7 +279,11 @@ func decodeEvaluatorNode(e wlsEvaluatorNode) *Node {
 		if !ok {
 			return AlwaysAbstain()
 		}
-		return UNumericLeaf(ue.ID, cmp, ue.Value)
+		value, ok := numValue[uint64](ue.Value)
+		if !ok {
+			return AlwaysAbstain()
+		}
+		return UNumericLeaf(ue.ID, cmp, value)
 	default:
 		return AlwaysAbstain()
 	}
@@ -315,6 +343,25 @@ func decodeStrCmp(cmp string) (StringCmp, bool) {
 	default:
 		return CmpExact, false
 	}
+}
+
+// numValue decodes a numeric evaluator's value field. It distinguishes the three
+// JSON states a plain int64/uint64 would collapse to 0:
+//   - omitted -> the FlatBuffers scalar default 0, ok (a valid "compare against 0",
+//     since default-omitting JSON serializes value 0 as an absent field);
+//   - explicit null (or any non-number) -> ok=false, so the leaf abstains rather
+//     than false-matching a zero fact -- honoring the decoder's abstain-on-malformed
+//     contract;
+//   - a number -> its value, ok.
+func numValue[T int64 | uint64](raw json.RawMessage) (T, bool) {
+	if len(raw) == 0 {
+		return 0, true // omitted: FlatBuffers scalar default
+	}
+	var p *T
+	if err := json.Unmarshal(raw, &p); err != nil || p == nil {
+		return 0, false // explicit null or a malformed number: abstain
+	}
+	return *p, true
 }
 
 func decodeNumCmp(cmp string) (NumericCmp, bool) {

@@ -41,12 +41,17 @@ const (
 //
 // Keyed KEY=VALUE ids -- labels, annotations, and process environment variables
 // (see IsLabelID) -- read from Labels (a real key->value map, the Go enhancement
-// over the C single-string-per-id model); all other string ids read from
-// Strings; numeric ids read from Numbers (signed) or UNumbers (unsigned)
-// depending on the evaluator kind.
+// over the C single-string-per-id model); list ids -- unpositioned PROCESS_ARGV
+// (see IsListID) -- read from Lists and match if any element matches; all other
+// string ids read from Strings; numeric ids read from Numbers (signed) or
+// UNumbers (unsigned) depending on the evaluator kind.
 type Context struct {
 	Strings map[string]string
 	Labels  map[string]map[string]string
+	// Lists holds multi-valued string facts (e.g. an unpositioned PROCESS_ARGV's
+	// full argv). A list evaluator is true when any element matches; a missing
+	// entry is an unavailable source (ABSTAIN), a present-but-empty list is FALSE.
+	Lists map[string][]string
 	// Numbers and UNumbers hold signed/unsigned numeric facts. math.MaxInt64 and
 	// math.MaxUint64 are reserved: they are the C engine's not-set sentinels, so a
 	// fact equal to one evaluates to ResultAbstain (as if absent), never compared.
@@ -191,6 +196,21 @@ func (e *Evaluator) evalString(ctx Context) Result {
 		}
 		v, present := labels[e.Key]
 		return labelResult(e.StrCmp, e.StrValue, v, present)
+	}
+	if IsListID(e.ID) {
+		values, ok := ctx.Lists[e.ID]
+		if !ok {
+			// The list source itself is unavailable in this environment.
+			return ResultAbstain
+		}
+		// A list evaluator matches when any element matches (e.g. an unpositioned
+		// argument pattern against the full argv); present but no match is false.
+		for _, v := range values {
+			if compareString(e.StrCmp, e.StrValue, v) {
+				return ResultTrue
+			}
+		}
+		return ResultFalse
 	}
 	v, ok := ctx.Strings[e.ID]
 	if !ok {

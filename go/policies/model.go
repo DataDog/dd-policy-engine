@@ -113,6 +113,14 @@ const (
 	// keyed like a label so that several env-var conditions AND'd together (as the
 	// requirements converter's deny rules emit) resolve against independent keys.
 	IDProcessEnvVar = "PROCESS_ENVAR"
+
+	// IDProcessArgv matches an unpositioned process argument: it resolves against
+	// the workload's whole argv list (Context.Lists) and is true when any element
+	// matches, so several argument conditions AND'd together (as the requirements
+	// converter emits for unpositioned patterns) can each be satisfied by a
+	// different argv element. The positioned PROCESS_ARGV_0..N ids are ordinary
+	// single-string facts and read from Strings.
+	IDProcessArgv = "PROCESS_ARGV"
 )
 
 // labelIDs is the set of string evaluator ids that carry the "KEY=VALUE"
@@ -135,6 +143,22 @@ var labelIDs = map[string]struct{}{
 // annotation, or environment variable) and is resolved against Context.Labels.
 func IsLabelID(id string) bool {
 	_, ok := labelIDs[id]
+	return ok
+}
+
+// listIDs is the set of string evaluator ids resolved against a list of values
+// (Context.Lists) with "matches if any element matches" semantics, rather than a
+// single string. Currently just PROCESS_ARGV (unpositioned argv): a policy can
+// AND several such leaves to require multiple arguments, which is impossible
+// against one scalar value.
+var listIDs = map[string]struct{}{
+	IDProcessArgv: {},
+}
+
+// IsListID reports whether id resolves against a list of values (Context.Lists)
+// with any-element-matches semantics.
+func IsListID(id string) bool {
+	_, ok := listIDs[id]
 	return ok
 }
 
