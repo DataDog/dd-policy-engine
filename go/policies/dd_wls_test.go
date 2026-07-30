@@ -6,7 +6,11 @@
 
 package policies
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func mustParse(t *testing.T, raw string) []Policy {
 	t.Helper()
@@ -347,6 +351,37 @@ func TestParseProcessEnvVar(t *testing.T) {
 	}
 	if got := Evaluate(exists[0].Rules, Context{Labels: map[string]map[string]string{IDProcessEnvVar: {"FOO": ""}}}); got == ResultTrue {
 		t.Fatalf("FOO empty: *? requires >=1 char, must not be TRUE, got %v", got)
+	}
+}
+
+// TestDecodeActionsValueCountLimit checks the per-action value-count cap: an
+// action the engine handles with actionValuesMax (255) or more values aborts the
+// policy's remaining actions -- and is not itself applied -- mirroring C's
+// perform_actions. A 254-value action is under the limit and applies normally.
+func TestDecodeActionsValueCountLimit(t *testing.T) {
+	envValues := func(n int) string {
+		parts := make([]string, n)
+		for i := range parts {
+			parts[i] = fmt.Sprintf("%q", fmt.Sprintf("K%d=v", i))
+		}
+		return strings.Join(parts, ",")
+	}
+	doc := func(nValues int) string {
+		return `{"policies":[{"rules":{"node_type":"EvaluatorNode","node":{"eval_type":"StrEvaluator","eval":{"id":"ALWAYS_TRUE"}}},"actions":[` +
+			`{"action":"SET_ENVAR","values":[` + envValues(nValues) + `]},` +
+			`{"action":"INJECT_ALLOW"}]}]}`
+	}
+
+	// 255 values: SET_ENVAR is over the limit, so it and the following INJECT_ALLOW
+	// are both dropped -- exactly what the C engine does.
+	if out := mustParse(t, doc(255))[0].Outcome; out.InjectSet || len(out.TracerConfigs) != 0 {
+		t.Fatalf("255-value action must abort remaining actions (nothing applied): %+v", out)
+	}
+
+	// 254 values: under the limit, so SET_ENVAR applies and INJECT_ALLOW is reached.
+	if out := mustParse(t, doc(254))[0].Outcome; !out.Inject || !out.InjectSet || len(out.TracerConfigs) != 254 {
+		t.Fatalf("254-value action should apply and not block INJECT_ALLOW: inject=%v set=%v configs=%d",
+			out.Inject, out.InjectSet, len(out.TracerConfigs))
 	}
 }
 

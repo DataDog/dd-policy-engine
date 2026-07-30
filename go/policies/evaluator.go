@@ -16,12 +16,18 @@ import (
 // ResultAbstain instead of recursing further.
 const maxEvalDepth = 64
 
-// numNotSet and unumNotSet mirror the C engine's PLCS_NUM_NOT_SET (LONG_MAX) and
-// PLCS_UNUM_NOT_SET (ULONG_MAX): its eval context stores these as the "unset"
-// sentinel, so evaluate_numeric/evaluate_unumeric return ABSTAIN for a fact
-// equal to one instead of comparing it. Reserving the same values here keeps
-// boundary-valued contexts identical to C (a fact of exactly MaxInt64/MaxUint64
-// is treated as unavailable, not compared).
+// numNotSet and unumNotSet are the reserved "not set" sentinels: a fact equal to
+// one is treated as unavailable (ABSTAIN), never compared. They are fixed to the
+// 64-bit maxima to match the FlatBuffers wire value width (NumEvaluator.value is
+// `long` and UNumEvaluator.value is `ulong`, both 64-bit) and the C engine's
+// PLCS_NUM_NOT_SET / PLCS_UNUM_NOT_SET.
+//
+// This is a fixed-width 64-bit contract. It matches the C engine exactly on LP64
+// platforms (Linux), where C's long/unsigned long are 64-bit so LONG_MAX/ULONG_MAX
+// equal these. On LLP64 (MSVC/Windows) C's long is 32-bit, so its sentinels become
+// MaxInt32/MaxUint32 and it truncates 64-bit values; C parity there requires the C
+// engine to use fixed-width int64_t/uint64_t. Go's facts are int64/uint64 on every
+// platform, so the sentinels are deliberately NOT target-specific.
 const (
 	numNotSet  int64  = math.MaxInt64
 	unumNotSet uint64 = math.MaxUint64

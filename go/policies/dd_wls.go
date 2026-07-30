@@ -47,6 +47,12 @@ const (
 	actionSetEnvVar      = "SET_ENVAR"
 )
 
+// actionValuesMax mirrors PLCS_ACTION_VALUES_MAX (ActionMax_ACTION_VALUES_MAX =
+// 255). An action the engine handles that carries this many values or more
+// aborts the policy's remaining actions, matching perform_actions in
+// c/src/evaluator.c.
+const actionValuesMax = 255
+
 // wlsPolicies keeps each policy as a raw message so a single malformed policy
 // can be skipped without failing the whole document (see ParsePolicies).
 type wlsPolicies struct {
@@ -343,14 +349,31 @@ func decodeUUID(id *wlsUUID) string {
 func decodeActions(actions []wlsAction) (Outcome, error) {
 	out := Outcome{}
 	for _, a := range actions {
+		// Mirror perform_actions in c/src/evaluator.c: for an action the engine
+		// handles, a value count of actionValuesMax (255) or more aborts the
+		// policy's remaining actions -- and the over-limit action itself is not
+		// applied. Return the Outcome accumulated from earlier actions (no error,
+		// so the policy is still evaluated) so both engines produce the same
+		// outcome. Unhandled actions (the default case) are ignored and never
+		// trigger this, matching C's `continue` before its count check.
+		tooMany := len(a.Values) >= actionValuesMax
 		switch a.Action {
 		case actionInjectAllow:
+			if tooMany {
+				return out, nil
+			}
 			out.Inject = true
 			out.InjectSet = true
 		case actionInjectDeny:
+			if tooMany {
+				return out, nil
+			}
 			out.Inject = false
 			out.InjectSet = true
 		case actionEnableSDK:
+			if tooMany {
+				return out, nil
+			}
 			for _, v := range a.Values {
 				lang, version, found := strings.Cut(v, "=")
 				if !found || lang == "" {
@@ -362,8 +385,14 @@ func decodeActions(actions []wlsAction) (Outcome, error) {
 				out.TracerVersions[lang] = version
 			}
 		case actionEnableProfiler:
+			if tooMany {
+				return out, nil
+			}
 			out.TracerConfigs = upsertEnvVar(out.TracerConfigs, "DD_PROFILING_ENABLED", "true")
 		case actionSetEnvVar:
+			if tooMany {
+				return out, nil
+			}
 			for _, v := range a.Values {
 				name, value, found := strings.Cut(v, "=")
 				if !found || name == "" {
