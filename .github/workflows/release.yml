@@ -69,6 +69,11 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Build dd-compile-policy
         run: make build-dd-compile-policy
+      # Gate packaging on the forward-compat checks: whether flatbuffers.patch
+      # applied is a property of the build environment, not of the source, so the
+      # artifact that ships has to be the one that was tested.
+      - name: Test dd-compile-policy
+        run: make test-dd-compile-policy
       - name: Package dd-compile-policy
         run: tar -czf dd-compile-policy-linux-${{ matrix.arch }}.tar.gz -C dd-compile-policy/bin dd-compile-policy
       - name: Upload test artifacts
@@ -106,6 +111,8 @@ jobs:
         run: scoop install main/cmake@4.0.1 main/make@4.4.1
       - name: Build dd-compile-policy
         run: make -C dd-compile-policy build CMAKE_ARCH=${{ matrix.arch }}
+      - name: Test dd-compile-policy
+        run: make -C dd-compile-policy test CMAKE_ARCH=${{ matrix.arch }}
       - name: Package dd-compile-policy
         run: Compress-Archive -Path ./dd-compile-policy/bin/dd-compile-policy.exe -DestinationPath dd-compile-policy-windows-${{ matrix.arch }}.zip
       - name: Upload dd-compile-policy
