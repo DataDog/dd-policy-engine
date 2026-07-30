@@ -6,7 +6,10 @@
 
 package policies
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestTriStateTruthTables(t *testing.T) {
 	all := []Result{ResultFalse, ResultTrue, ResultAbstain}
@@ -271,6 +274,31 @@ func TestEvaluateNumeric(t *testing.T) {
 	// A signed evaluator does not read the unsigned registry and vice versa.
 	if got := Evaluate(NumericLeaf("JAVA_HEAP", NumEq, 1024), uCtx); got != ResultAbstain {
 		t.Errorf("signed evaluator reading unsigned-only fact = %v want ResultAbstain", got)
+	}
+}
+
+// TestNumericSentinelAbstains checks that a fact equal to the C engine's not-set
+// sentinel (math.MaxInt64 / math.MaxUint64) abstains rather than being compared,
+// matching evaluate_numeric/evaluate_unumeric (PLCS_NUM_NOT_SET/PLCS_UNUM_NOT_SET).
+// The comparisons below would be TRUE if the sentinel were compared, so ABSTAIN
+// proves the sentinel short-circuits.
+func TestNumericSentinelAbstains(t *testing.T) {
+	if got := Evaluate(NumericLeaf("RUNTIME_VERSION_MAJOR", NumLt, 0),
+		Context{Numbers: map[string]int64{"RUNTIME_VERSION_MAJOR": math.MaxInt64}}); got != ResultAbstain {
+		t.Errorf("signed sentinel fact: got %v want ResultAbstain", got)
+	}
+	if got := Evaluate(UNumericLeaf("JAVA_HEAP", NumLt, 0),
+		Context{UNumbers: map[string]uint64{"JAVA_HEAP": math.MaxUint64}}); got != ResultAbstain {
+		t.Errorf("unsigned sentinel fact: got %v want ResultAbstain", got)
+	}
+	// One below the sentinel is an ordinary, compared value.
+	if got := Evaluate(NumericLeaf("RUNTIME_VERSION_MAJOR", NumLt, 0),
+		Context{Numbers: map[string]int64{"RUNTIME_VERSION_MAJOR": math.MaxInt64 - 1}}); got != ResultTrue {
+		t.Errorf("near-sentinel signed fact: got %v want ResultTrue", got)
+	}
+	if got := Evaluate(UNumericLeaf("JAVA_HEAP", NumLt, 0),
+		Context{UNumbers: map[string]uint64{"JAVA_HEAP": math.MaxUint64 - 1}}); got != ResultTrue {
+		t.Errorf("near-sentinel unsigned fact: got %v want ResultTrue", got)
 	}
 }
 

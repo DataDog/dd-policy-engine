@@ -6,12 +6,26 @@
 
 package policies
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 // maxEvalDepth bounds the rule-tree recursion, mirroring PLCS_MAX_EVAL_DEPTH in
 // the C engine (c/src/evaluator.c). A node deeper than this evaluates to
 // ResultAbstain instead of recursing further.
 const maxEvalDepth = 64
+
+// numNotSet and unumNotSet mirror the C engine's PLCS_NUM_NOT_SET (LONG_MAX) and
+// PLCS_UNUM_NOT_SET (ULONG_MAX): its eval context stores these as the "unset"
+// sentinel, so evaluate_numeric/evaluate_unumeric return ABSTAIN for a fact
+// equal to one instead of comparing it. Reserving the same values here keeps
+// boundary-valued contexts identical to C (a fact of exactly MaxInt64/MaxUint64
+// is treated as unavailable, not compared).
+const (
+	numNotSet  int64  = math.MaxInt64
+	unumNotSet uint64 = math.MaxUint64
+)
 
 // Context carries the workload facts a policy is evaluated against, keyed by
 // evaluator id. It mirrors the C engine's per-id value registry: a fact that is
@@ -25,8 +39,11 @@ const maxEvalDepth = 64
 // Strings; numeric ids read from Numbers (signed) or UNumbers (unsigned)
 // depending on the evaluator kind.
 type Context struct {
-	Strings  map[string]string
-	Labels   map[string]map[string]string
+	Strings map[string]string
+	Labels  map[string]map[string]string
+	// Numbers and UNumbers hold signed/unsigned numeric facts. math.MaxInt64 and
+	// math.MaxUint64 are reserved: they are the C engine's not-set sentinels, so a
+	// fact equal to one evaluates to ResultAbstain (as if absent), never compared.
 	Numbers  map[string]int64
 	UNumbers map[string]uint64
 }
@@ -133,13 +150,16 @@ func (e *Evaluator) eval(ctx Context) Result {
 		return e.evalString(ctx)
 	case EvalNumeric:
 		v, ok := ctx.Numbers[e.ID]
-		if !ok {
+		if !ok || v == numNotSet {
+			// Absent, or equal to the C engine's PLCS_NUM_NOT_SET sentinel, which
+			// the C engine treats as unset -> ABSTAIN rather than comparing.
 			return ResultAbstain
 		}
 		return compareNumeric(e.NumCmp, e.NumValue, v)
 	case EvalUNumeric:
 		v, ok := ctx.UNumbers[e.ID]
-		if !ok {
+		if !ok || v == unumNotSet {
+			// Absent, or equal to the C engine's PLCS_UNUM_NOT_SET sentinel.
 			return ResultAbstain
 		}
 		return compareNumeric(e.NumCmp, e.UNumValue, v)

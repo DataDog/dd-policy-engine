@@ -116,6 +116,46 @@
         }
       },
       "expect": "FALSE"
+    },
+    {
+      "name": "numeric_sentinel_not_set_abstains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "NumEvaluator",
+          "eval": {
+            "id": "RUNTIME_VERSION_MAJOR",
+            "cmp": "CMP_LT",
+            "value": 0
+          }
+        }
+      },
+      "facts": {
+        "numbers": {
+          "RUNTIME_VERSION_MAJOR": 9223372036854775807
+        }
+      },
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "unumeric_sentinel_not_set_abstains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "UNumEvaluator",
+          "eval": {
+            "id": "JAVA_HEAP",
+            "cmp": "CMP_LT",
+            "value": 0
+          }
+        }
+      },
+      "facts": {
+        "unumbers": {
+          "JAVA_HEAP": 18446744073709551615
+        }
+      },
+      "expect": "ABSTAIN"
     }
   ]
 }
