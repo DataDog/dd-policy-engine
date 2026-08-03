@@ -268,7 +268,7 @@ static inline plcs_errors perform_actions(
   for (size_t ix = 0; ix < len; ++ix) {
     dd_ns(Action_table_t) action = dd_ns(Action_vec_at)(actions_vec, ix);
     int action_id = dd_ns(Action_action)(action);
-    if (action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
+    if (action_id < 0 || action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
       continue;
     }
     size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
@@ -325,18 +325,14 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
   }
 
   size_t policies_count = dd_ns(Policy_vec_len)(policies);
-  plcs_errors total_errors = 0;
+  plcs_errors total_errors = PLCS_ESUCCESS;
   for (size_t ix = 0; ix < policies_count; ++ix) {
     dd_ns(Policy_table_t) policy = dd_ns(Policy_vec_at)(policies, ix);
     if (!policy) {
       // not necessarily an error, could be empty policy
       continue;
     }
-    plcs_errors res = evaluate_policy(policy);
-    // success is 0, errors are > 0, if total_errors is > 0, it means there was
-    // an error
-    // TODO: track these errors using an errono style map in the eval_ctx
-    total_errors += res;
+    total_errors += evaluate_policy(policy);
   }
 
   return total_errors;
