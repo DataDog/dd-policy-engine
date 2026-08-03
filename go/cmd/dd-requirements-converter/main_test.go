@@ -207,6 +207,30 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 			),
 		},
 		{
+			// JSON: {"arch": "x64", "supported": true, "min": "2.17.3"}
+			// Policy: DENY at 2.17.2, but not at 2.17.3 itself.
+			name:      "supported at patch boundary - deny if version < min",
+			inputJSON: `{"arch": "x64", "supported": true, "min": "2.17.3"}`,
+			flavor:    "glibc",
+			expectNil: false,
+			expectedRoot: andNode(
+				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "x86_64"),
+				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "glibc"),
+				orNode( // version < 2.17.3
+					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_GT, 2),
+					andNode( // major == 2 AND minor < 17
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_GT, 17),
+					),
+					andNode( // major == 2 AND minor == 17 AND patch < 3
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_EQ, 17),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_GT, 3),
+					),
+				),
+			),
+		},
+		{
 			// JSON: {"arch": "arm64", "supported": false}
 			// Policy: DENY if arch=aarch64 AND flavor=musl (entirely unsupported)
 			name:      "unsupported with no version - deny all matching arch+flavor",
@@ -238,6 +262,31 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 			expectedRoot: andNode(
 				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "arm"),
 				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "musl"),
+			),
+		},
+		{
+			// JSON: {"arch": "x64", "supported": false, "min": "2.30"}
+			// Policy: DENY if arch=x86_64 AND flavor=glibc AND version >= 2.30
+			// No patch in the requirement → the threshold defaults to patch 0.
+			name:      "unsupported with version - deny if version >= min",
+			inputJSON: `{"arch": "x64", "supported": false, "min": "2.30"}`,
+			flavor:    "glibc",
+			expectNil: false,
+			expectedRoot: andNode(
+				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "x86_64"),
+				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "glibc"),
+				orNode( // version >= 2.30
+					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_LT, 2),
+					andNode( // major == 2 AND minor > 30
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LT, 30),
+					),
+					andNode( // major == 2 AND minor == 30 AND patch >= 0
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_EQ, 30),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_LTE, 0),
+					),
+				),
 			),
 		},
 		{
