@@ -40,8 +40,14 @@ plcs_errors ACTION_INJECT_DENY(
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   printf(
       "Action: DENY [%s][%s][%s]\n", description, (char *)plcs_actions_to_string(action_id),
       plcs_evaluation_result_to_string(res)
@@ -73,8 +79,14 @@ plcs_errors ACTION_INJECT_ALLOW(
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   printf(
       "Action: ALLOW [%s][%s][%s]\n", description, plcs_actions_to_string(action_id),
       plcs_evaluation_result_to_string(res)

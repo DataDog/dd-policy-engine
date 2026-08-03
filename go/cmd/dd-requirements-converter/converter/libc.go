@@ -3,7 +3,8 @@ package converter
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
+	"strings"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
@@ -30,17 +31,39 @@ func (rv *RequiredVersion) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if versionStr == "" {
-		return nil
-	}
-
+	versionStr = strings.TrimSpace(versionStr)
 	v, err := version.NewVersion(versionStr)
 	if err != nil {
 		return err
 	}
+	if !hasMajorMinor(versionStr) {
+		return fmt.Errorf("invalid libc version %q: expected at least major.minor", versionStr)
+	}
 
 	*rv = RequiredVersion{Version: *v}
 	return nil
+}
+
+func hasMajorMinor(versionStr string) bool {
+	versionStr = strings.TrimPrefix(strings.TrimPrefix(versionStr, "v"), "V")
+	position := 0
+	for component := 0; component < 2; component++ {
+		start := position
+		for position < len(versionStr) && versionStr[position] >= '0' && versionStr[position] <= '9' {
+			position++
+		}
+		if position == start {
+			return false
+		}
+		if component == 1 {
+			return true
+		}
+		if position >= len(versionStr) || versionStr[position] != '.' {
+			return false
+		}
+		position++
+	}
+	return false
 }
 
 // ConvertToWLS converts a JSONlibc requirement to a WLS DENY policy.
@@ -73,10 +96,6 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 
 	if l.RequiredMinVersion != nil {
 		segments := l.RequiredMinVersion.Segments()
-
-		if len(segments) < 2 {
-			log.Fatalf("Invalid version: %v", l.RequiredMinVersion)
-		}
 
 		major := segments[0]
 		minor := segments[1]

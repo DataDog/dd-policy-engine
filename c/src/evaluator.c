@@ -53,6 +53,10 @@ plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, co
 
   const long param = plcs_eval_ctx_get_numeric_param(eval_id);
 
+  if (param == PLCS_NUM_NOT_SET) {
+    return PLCS_EVAL_RESULT_ABSTAIN;
+  }
+
   plcs_numeric_evaluator_function_ptr eval = plcs_eval_ctx_get_numeric_evaluator(eval_id);
   if (!eval) {
     eval = plcs_default_numeric_evaluator;
@@ -74,6 +78,10 @@ plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum,
   plcs_numeric_evaluators eval_id = dd_ns(UNumEvaluator_id)(eval_unum);
 
   const unsigned long param = plcs_eval_ctx_get_unumeric_param(eval_id);
+
+  if (param == PLCS_UNUM_NOT_SET) {
+    return PLCS_EVAL_RESULT_ABSTAIN;
+  }
 
   plcs_unumeric_evaluator_function_ptr eval = plcs_eval_ctx_get_unumeric_evaluator(eval_id);
   if (!eval) {
@@ -246,7 +254,13 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
   return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
-static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns(Action_vec_t) actions_vec) {
+static inline plcs_errors perform_actions(
+    plcs_evaluation_result eval_res,
+    dd_ns(Action_vec_t) actions_vec,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
+) {
   plcs_errors res = PLCS_ESUCCESS;
 
   // iterate
@@ -254,7 +268,7 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
   for (size_t ix = 0; ix < len; ++ix) {
     dd_ns(Action_table_t) action = dd_ns(Action_vec_at)(actions_vec, ix);
     int action_id = dd_ns(Action_action)(action);
-    if (action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
+    if (action_id < 0 || action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
       continue;
     }
     size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
@@ -269,7 +283,10 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
     }
     plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
     if (action_function) {
-      res = action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
+      res = action_function(
+          eval_res, values, values_len, dd_ns(Action_description)(action), action_id, policy_id, policy_version,
+          policy_description
+      );
       plcs_eval_ctx_set_action_error(action_id, res);
     } else {
       res = PLCS_EACTIONS_EVAL;
@@ -283,6 +300,11 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract actions
   dd_ns(Action_vec_t) actions = dd_ns(Policy_actions)(policy);
 
+  dd_wls_UUID_struct_t raw_policy_id = dd_ns(Policy_id)(policy);
+  plcs_uuid policy_id = raw_policy_id
+                            ? (plcs_uuid){.hi = dd_wls_UUID_hi(raw_policy_id), .lo = dd_wls_UUID_lo(raw_policy_id)}
+                            : (plcs_uuid){0};
+
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
@@ -290,7 +312,9 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
   // perform actions given evaluation result
-  return perform_actions(eval_res, actions);
+  return perform_actions(
+      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy)
+  );
 }
 
 plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
@@ -301,18 +325,14 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
   }
 
   size_t policies_count = dd_ns(Policy_vec_len)(policies);
-  plcs_errors total_errors = 0;
+  plcs_errors total_errors = PLCS_ESUCCESS;
   for (size_t ix = 0; ix < policies_count; ++ix) {
     dd_ns(Policy_table_t) policy = dd_ns(Policy_vec_at)(policies, ix);
     if (!policy) {
       // not necessarily an error, could be empty policy
       continue;
     }
-    plcs_errors res = evaluate_policy(policy);
-    // success is 0, errors are > 0, if total_errors is > 0, it means there was
-    // an error
-    // TODO: track these errors using an errono style map in the eval_ctx
-    total_errors += res;
+    total_errors += evaluate_policy(policy);
   }
 
   return total_errors;

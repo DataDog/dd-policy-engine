@@ -96,24 +96,41 @@ static plcs_errors test_action_allow(
     char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
   (void)res;
   (void)values;
   (void)value_len;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   g_allow_called++;
   return PLCS_ESUCCESS;
 }
 
-static plcs_errors
-test_action_deny(plcs_evaluation_result res, char *values[], size_t value_len, const char *description, int action_id) {
+static plcs_errors test_action_deny(
+    plcs_evaluation_result res,
+    char *values[],
+    size_t value_len,
+    const char *description,
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
+) {
   (void)res;
   (void)values;
   (void)value_len;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   g_deny_called++;
   return PLCS_ESUCCESS;
 }
@@ -138,6 +155,15 @@ UTEST(evaluator, enum_mappings_return_strings) {
   ASSERT_TRUE(plcs_evaluation_result_to_string(PLCS_EVAL_RESULT_TRUE) != NULL);
   ASSERT_TRUE(plcs_actions_to_string(PLCS_ACTION_INJECT_DENY) != NULL);
   ASSERT_TRUE(plcs_actions_to_string(PLCS_ACTION_SET_ENVAR) != NULL);
+}
+
+UTEST(evaluator, enum_mappings_return_strings_for_k8s_evaluators) {
+  /* Kubernetes SSI targeting evaluators (NAMESPACE_NAME, NAMESPACE_LABEL, POD_LABEL,
+   * POD_ANNOTATION) must resolve to stable names, same as any other string evaluator. */
+  ASSERT_TRUE(plcs_string_evaluators_to_string(PLCS_STR_EVAL_NAMESPACE_NAME) != NULL);
+  ASSERT_TRUE(plcs_string_evaluators_to_string(PLCS_STR_EVAL_NAMESPACE_LABEL) != NULL);
+  ASSERT_TRUE(plcs_string_evaluators_to_string(PLCS_STR_EVAL_POD_LABEL) != NULL);
+  ASSERT_TRUE(plcs_string_evaluators_to_string(PLCS_STR_EVAL_POD_ANNOTATION) != NULL);
 }
 
 UTEST(evaluator, test_string_evaluator) {
@@ -500,6 +526,70 @@ UTEST(evaluator, test_evaluate_string_basic_functionality) {
   flatcc_builder_reset(&b);
 }
 
+UTEST(evaluator, test_evaluate_string_pod_label_key_value_match) {
+  /* POD_LABEL follows the "KEY=VALUE" convention: the caller-supplied fact is the
+   * whole "key=value" string, matched with CMP_EXACT against the policy's expected value. */
+  int rc = plcs_eval_ctx_init();
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+
+  rc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_POD_LABEL, "app=nginx");
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+
+  rc = plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_POD_LABEL);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+
+  flatcc_builder_t b;
+  size_t sz;
+  flatcc_builder_init(&b);
+
+  dd_wls_StrEvaluator_create_as_root(
+      &b, dd_wls_StringEvaluators_POD_LABEL, dd_wls_CmpTypeSTR_CMP_EXACT, flatbuffers_string_create_str(&b, "app=nginx")
+  );
+
+  void *buf = flatcc_builder_finalize_buffer(&b, &sz);
+  ASSERT_TRUE(dd_wls_StrEvaluator_verify_as_root(buf, sz) == 0);
+  dd_wls_StrEvaluator_table_t eval = dd_wls_StrEvaluator_as_root(buf);
+
+  int res = evaluate_string(eval, "d");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+
+  flatcc_builder_free(buf);
+  flatcc_builder_reset(&b);
+  plcs_eval_ctx_reset();
+}
+
+UTEST(evaluator, test_evaluate_string_namespace_label_existence_check) {
+  /* "KEY=" with CMP_PREFIX expresses an existence check for the label, regardless of value. */
+  int rc = plcs_eval_ctx_init();
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+
+  rc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_NAMESPACE_LABEL, "team=platform");
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+
+  rc = plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_NAMESPACE_LABEL);
+  ASSERT_EQ(rc, PLCS_ESUCCESS);
+
+  flatcc_builder_t b;
+  size_t sz;
+  flatcc_builder_init(&b);
+
+  dd_wls_StrEvaluator_create_as_root(
+      &b, dd_wls_StringEvaluators_NAMESPACE_LABEL, dd_wls_CmpTypeSTR_CMP_PREFIX,
+      flatbuffers_string_create_str(&b, "team=")
+  );
+
+  void *buf = flatcc_builder_finalize_buffer(&b, &sz);
+  ASSERT_TRUE(dd_wls_StrEvaluator_verify_as_root(buf, sz) == 0);
+  dd_wls_StrEvaluator_table_t eval = dd_wls_StrEvaluator_as_root(buf);
+
+  int res = evaluate_string(eval, "d");
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
+
+  flatcc_builder_free(buf);
+  flatcc_builder_reset(&b);
+  plcs_eval_ctx_reset();
+}
+
 /* -------------------------------------------------------------------------- */
 /* Tests for evaluate_numeric                                                  */
 /* -------------------------------------------------------------------------- */
@@ -534,7 +624,7 @@ UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
   plcs_eval_ctx_reset();
   res = evaluate_numeric(eval, "d");
   // shouldn't be any value
-  ASSERT_EQ(res, PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   flatcc_builder_free(buf);
   flatcc_builder_reset(&b);
 }
@@ -1002,4 +1092,180 @@ UTEST(evaluator_integration, evaluate_generated_header_if_available) {
   /* No generated header available; this test is a stub. */
   ASSERT_TRUE(1);
 #endif
+}
+
+/* -------------------------------------------------------------------------- */
+/* End-to-end: a full Kubernetes SSI policy through plcs_evaluate_buffer.      */
+/*                                                                            */
+/* Builds a complete Policies buffer entirely in C (no Go-generated header):  */
+/*                                                                            */
+/*   Policy                                                                    */
+/*     rules:   CompositeNode(BOOL_AND)                                        */
+/*                └─ EvaluatorNode                                             */
+/*                     └─ StrEvaluator(POD_LABEL, CMP_EXACT, "app=nginx")      */
+/*     actions: [INJECT_ALLOW]                                                 */
+/*                                                                            */
+/* then drives it through the public plcs_evaluate_buffer() entry point and    */
+/* asserts the registered INJECT_ALLOW callback fires iff the POD_LABEL fact   */
+/* matches. This exercises the whole decode -> tree-walk -> action path for a  */
+/* K8s targeting evaluator, not just the leaf evaluator in isolation.          */
+/* -------------------------------------------------------------------------- */
+
+/* The C engine invokes a policy's actions unconditionally and hands the tri-state
+ * evaluation result to the callback, which decides what to do with it. These e2e
+ * tests capture that result so they can assert the POD_LABEL leaf drove the whole
+ * tree to the expected TRUE/FALSE outcome. */
+static plcs_evaluation_result g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
+static plcs_uuid g_last_policy_id;
+static int64_t g_last_policy_version;
+static const char *g_last_policy_description;
+
+static plcs_errors test_action_capture(
+    plcs_evaluation_result res,
+    char *values[],
+    size_t value_len,
+    const char *description,
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
+) {
+  (void)values;
+  (void)value_len;
+  (void)description;
+  (void)action_id;
+  g_allow_called++;
+  g_last_action_res = res;
+  g_last_policy_id = policy_id;
+  g_last_policy_version = policy_version;
+  g_last_policy_description = policy_description;
+  return PLCS_ESUCCESS;
+}
+
+/* Serialize a one-policy buffer whose single rule matches POD_LABEL == expected
+ * with CMP_EXACT and fires INJECT_ALLOW. Caller owns *out_buf (flatcc_builder_free). */
+static void build_pod_label_policy_buffer(const char *expected, void **out_buf, size_t *out_sz) {
+  flatcc_builder_t b;
+  flatcc_builder_init(&b);
+
+  /* leaf: StrEvaluator(POD_LABEL, CMP_EXACT, expected) */
+  dd_wls_StrEvaluator_ref_t str = dd_wls_StrEvaluator_create(
+      &b, dd_wls_StringEvaluators_POD_LABEL, dd_wls_CmpTypeSTR_CMP_EXACT, flatbuffers_string_create_str(&b, expected)
+  );
+  dd_wls_EvaluatorNode_ref_t leaf = dd_wls_EvaluatorNode_create(
+      &b, flatbuffers_string_create_str(&b, "pod label leaf"), dd_wls_EvaluatorType_as_StrEvaluator(str)
+  );
+  dd_wls_NodeTypeWrapper_ref_t leaf_wrap = dd_wls_NodeTypeWrapper_create(&b, dd_wls_NodeType_as_EvaluatorNode(leaf));
+
+  /* rules: CompositeNode(BOOL_AND, children=[leaf_wrap]) */
+  dd_wls_NodeTypeWrapper_vec_start(&b);
+  dd_wls_NodeTypeWrapper_vec_push(&b, leaf_wrap);
+  dd_wls_NodeTypeWrapper_vec_ref_t children = dd_wls_NodeTypeWrapper_vec_end(&b);
+
+  dd_wls_CompositeNode_ref_t comp = dd_wls_CompositeNode_create(
+      &b, flatbuffers_string_create_str(&b, "root"), dd_wls_BoolOperation_BOOL_AND, children
+  );
+  dd_wls_NodeTypeWrapper_ref_t rules = dd_wls_NodeTypeWrapper_create(&b, dd_wls_NodeType_as_CompositeNode(comp));
+
+  /* actions: [INJECT_ALLOW] (only the action id is set; description/values omitted) */
+  dd_wls_Action_start(&b);
+  dd_wls_Action_action_add(&b, dd_wls_ActionId_INJECT_ALLOW);
+  dd_wls_Action_ref_t action = dd_wls_Action_end(&b);
+  dd_wls_Action_vec_start(&b);
+  dd_wls_Action_vec_push(&b, action);
+  dd_wls_Action_vec_ref_t actions = dd_wls_Action_vec_end(&b);
+
+  /* Policy(description, rules, actions, id, version) */
+  dd_wls_UUID_t id;
+  dd_wls_UUID_assign(&id, 0x0102030405060708ULL, 0x1112131415161718ULL);
+  dd_wls_Policy_ref_t policy = dd_wls_Policy_create(
+      &b, flatbuffers_string_create_str(&b, "k8s pod-label policy"), rules, actions, &id, 1234567800
+  );
+
+  dd_wls_Policy_vec_start(&b);
+  dd_wls_Policy_vec_push(&b, policy);
+  dd_wls_Policy_vec_ref_t policies = dd_wls_Policy_vec_end(&b);
+
+  dd_wls_Policies_create_as_root(&b, policies);
+
+  *out_buf = flatcc_builder_finalize_buffer(&b, out_sz);
+  flatcc_builder_clear(&b);
+}
+
+UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
+  int rc = plcs_eval_ctx_init();
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+  plcs_eval_ctx_reset();
+
+  g_allow_called = 0;
+  g_deny_called = 0;
+  g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
+  g_last_policy_id = (plcs_uuid){0};
+  g_last_policy_version = 0;
+  g_last_policy_description = NULL;
+
+  int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+  prc = plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_POD_LABEL);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  /* The workload carries pod label app=nginx -> policy matches -> result is TRUE. */
+  prc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_POD_LABEL, "app=nginx");
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  void *buf = NULL;
+  size_t sz = 0;
+  build_pod_label_policy_buffer("app=nginx", &buf, &sz);
+
+  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
+  /* The INJECT_ALLOW action fires and the tree evaluated the matching POD_LABEL to TRUE. */
+  ASSERT_EQ(g_allow_called, 1);
+  ASSERT_EQ((int)g_last_action_res, (int)PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(g_last_policy_id.hi, (uint64_t)0x0102030405060708ULL);
+  ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
+  ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
+  ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
+
+  flatcc_builder_free(buf);
+  plcs_eval_ctx_reset();
+}
+
+UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
+  int rc = plcs_eval_ctx_init();
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+  plcs_eval_ctx_reset();
+
+  g_allow_called = 0;
+  g_deny_called = 0;
+  g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
+  g_last_policy_id = (plcs_uuid){0};
+  g_last_policy_version = 0;
+  g_last_policy_description = NULL;
+
+  int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+  prc = plcs_eval_ctx_register_str_evaluator(plcs_default_string_evaluator, PLCS_STR_EVAL_POD_LABEL);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  /* The workload carries a different pod label -> the rule evaluates to FALSE. */
+  prc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_POD_LABEL, "app=redis");
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  void *buf = NULL;
+  size_t sz = 0;
+  build_pod_label_policy_buffer("app=nginx", &buf, &sz);
+
+  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
+  /* The action still fires, but the tree evaluated the non-matching POD_LABEL to FALSE. */
+  ASSERT_EQ(g_allow_called, 1);
+  ASSERT_EQ((int)g_last_action_res, (int)PLCS_EVAL_RESULT_FALSE);
+  ASSERT_EQ(g_last_policy_id.hi, (uint64_t)0x0102030405060708ULL);
+  ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
+  ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
+  ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
+
+  flatcc_builder_free(buf);
+  plcs_eval_ctx_reset();
 }

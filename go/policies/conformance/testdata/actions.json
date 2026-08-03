@@ -1,0 +1,148 @@
+{
+  "_comment": "Action decoding into an Outcome (inject decision, tracer versions, env-var configs). The expect_outcome assertions are Go-only; the cross-engine harness checks the tri-state expect.",
+  "vectors": [
+    {
+      "name": "action_set_envar",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "ALWAYS_TRUE"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "TRUE",
+      "actions": [
+        {
+          "action": "SET_ENVAR",
+          "values": [
+            "DD_FOO=bar",
+            "DD_OPTS=a=b"
+          ]
+        }
+      ],
+      "expect_outcome": {
+        "tracer_configs": {
+          "DD_FOO": "bar",
+          "DD_OPTS": "a=b"
+        }
+      }
+    },
+    {
+      "name": "action_inject_allow_and_enable_sdk",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "ALWAYS_TRUE"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "TRUE",
+      "actions": [
+        {
+          "action": "INJECT_ALLOW"
+        },
+        {
+          "action": "ENABLE_SDK",
+          "values": [
+            "java=latest",
+            "python=1.2"
+          ]
+        }
+      ],
+      "expect_outcome": {
+        "inject": true,
+        "inject_set": true,
+        "tracer_versions": {
+          "java": "latest",
+          "python": "1.2"
+        }
+      }
+    },
+    {
+      "name": "action_inject_deny",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "ALWAYS_TRUE"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "TRUE",
+      "actions": [
+        {
+          "action": "INJECT_DENY"
+        }
+      ],
+      "expect_outcome": {
+        "inject": false,
+        "inject_set": true
+      }
+    },
+    {
+      "name": "action_enable_profiler_and_set_envar",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "ALWAYS_TRUE"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "TRUE",
+      "actions": [
+        {
+          "action": "ENABLE_PROFILER"
+        },
+        {
+          "action": "SET_ENVAR",
+          "values": [
+            "DD_LOG_LEVEL=debug"
+          ]
+        }
+      ],
+      "expect_outcome": {
+        "tracer_configs": {
+          "DD_PROFILING_ENABLED": "true",
+          "DD_LOG_LEVEL": "debug"
+        }
+      }
+    },
+    {
+      "name": "action_unhandled_ignored",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "ALWAYS_TRUE"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "TRUE",
+      "actions": [
+        {
+          "action": "INJECT_ALLOW"
+        },
+        {
+          "action": "REEXEC"
+        }
+      ],
+      "expect_outcome": {
+        "inject": true,
+        "inject_set": true
+      }
+    }
+  ]
+}
