@@ -67,9 +67,9 @@ plcs_errors ACTION_INJECT_DENY(
 ) {
   (void)policy_id;
   (void)policy_version;
-  (void)policy_description;
   printf("Action: DENY\n");
   printf("Description: '%s' (id: %d)\n", description, action_id);
+  printf("Matched rule: '%s'\n", policy_description);
   printf("Result: %s\n", res == PLCS_EVAL_RESULT_FALSE ? "false" : res == PLCS_EVAL_RESULT_TRUE ? "true" : "dont-care");
 
   for (size_t ix = 0; ix < value_len; ++ix) {
@@ -91,9 +91,9 @@ plcs_errors ACTION_INJECT_ALLOW(
 ) {
   (void)policy_id;
   (void)policy_version;
-  (void)policy_description;
   printf("Action: ALLOW\n");
   printf("Description: '%s' (id: %d)\n", description, action_id);
+  printf("Matched rule: '%s'\n", policy_description);
   printf("Result: %s\n", res == PLCS_EVAL_RESULT_FALSE ? "false" : res == PLCS_EVAL_RESULT_TRUE ? "true" : "dont-care");
 
   for (size_t ix = 0; ix < value_len; ++ix) {
