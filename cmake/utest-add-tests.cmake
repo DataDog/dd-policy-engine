@@ -34,18 +34,21 @@ function(utest_discover_tests_impl)
     message(FATAL_ERROR "Specified test executable '${_TEST_EXECUTABLE}' does not exist")
   endif()
 
+  message(STATUS "Discovering tests from ${_TEST_EXECUTABLE}")
   execute_process(
-    COMMAND ${CMAKE_COMMAND} -E echo "Discovering tests for ${target}..."
     COMMAND "${_TEST_EXECUTABLE}" --list-tests
     OUTPUT_VARIABLE listing_output
+    ERROR_VARIABLE listing_error
     RESULT_VARIABLE result
+    TIMEOUT 30
   )
 
-  if(NOT ${result} EQUAL 0)
+  if(NOT result STREQUAL "0")
     message(FATAL_ERROR
       "Error listing tests from executable '${_TEST_EXECUTABLE}':\n"
       "  Result: ${result}\n"
       "  Output: ${listing_output}\n"
+      "  Error: ${listing_error}\n"
     )
   endif()
 

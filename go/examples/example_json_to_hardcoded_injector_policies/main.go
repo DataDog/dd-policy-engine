@@ -38,7 +38,12 @@ func generateCHeader(varName string, data []byte) string {
 	var sb strings.Builder
 	sb.WriteString("#pragma once\n\n")
 	sb.WriteString("#include <stdint.h>\n\n")
-	sb.WriteString(fmt.Sprintf("const uint8_t %s[] = {\n", varName))
+	sb.WriteString("#ifdef __cplusplus\n")
+	sb.WriteString("#define DD_POLICY_ALIGNAS(bytes) alignas(bytes)\n")
+	sb.WriteString("#else\n")
+	sb.WriteString("#define DD_POLICY_ALIGNAS(bytes) _Alignas(bytes)\n")
+	sb.WriteString("#endif\n\n")
+	sb.WriteString(fmt.Sprintf("DD_POLICY_ALIGNAS(8) const uint8_t %s[] = {\n", varName))
 
 	for i, b := range data {
 		if i%12 == 0 {
@@ -59,6 +64,7 @@ func generateCHeader(varName string, data []byte) string {
 
 	sb.WriteString("};\n")
 	sb.WriteString(fmt.Sprintf("const unsigned int %s_len = %d;\n", varName, len(data)))
+	sb.WriteString("\n#undef DD_POLICY_ALIGNAS\n")
 	return sb.String()
 }
 
