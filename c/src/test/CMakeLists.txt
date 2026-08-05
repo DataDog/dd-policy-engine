@@ -49,6 +49,7 @@ target_sources(dd-policy-engine.unit-tests
     ${CMAKE_CURRENT_SOURCE_DIR}/test_invalid_action_isolation.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_missing_numeric_context.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_value_sets.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_dangling_str_repro.c
 )
 
 target_include_directories(dd-policy-engine.unit-tests
