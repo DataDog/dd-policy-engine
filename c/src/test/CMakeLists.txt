@@ -45,6 +45,7 @@ target_sources(dd-policy-engine.unit-tests
     ${CMAKE_CURRENT_SOURCE_DIR}/test_eval_ctx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_evaluator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_main.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_policy_evaluation.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_policy_reader.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_invalid_action_isolation.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_missing_numeric_context.c
