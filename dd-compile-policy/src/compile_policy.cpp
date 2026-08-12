@@ -17,8 +17,13 @@
 // string/numeric evaluators. The datadog-apm-inject package updates on a
 // separate cadence and can drop a newer schema at this fixed path to unblock
 // new evaluators without an Agent/compiler version bump.
+#if defined(_WIN32)
+constexpr char kInjectorSchemaPath[] =
+    "C:\\ProgramData\\Datadog\\Installer\\packages\\datadog-apm-inject\\stable\\dll\\policy.bfbs";
+#else
 constexpr char kInjectorSchemaPath[] =
     "/opt/datadog-packages/datadog-apm-inject/stable/inject/policy.bfbs";
+#endif
 
 int main(int argc, char *argv[]) {
   std::string json_str;
