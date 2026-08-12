@@ -19,7 +19,8 @@
 // new evaluators without an Agent/compiler version bump.
 #if defined(_WIN32)
 constexpr char kInjectorSchemaPath[] =
-    "C:\\ProgramData\\Datadog\\Installer\\packages\\datadog-apm-inject\\stable\\dll\\policy.bfbs";
+    "C:\\ProgramData\\Datadog\\Installer\\packages\\datadog-apm-"
+    "inject\\stable\\dll\\policy.bfbs";
 #else
 constexpr char kInjectorSchemaPath[] =
     "/opt/datadog-packages/datadog-apm-inject/stable/inject/policy.bfbs";
@@ -111,7 +112,7 @@ int main(int argc, char *argv[]) {
     schema_bytes = reinterpret_cast<const uint8_t *>(schema_file_buf.data());
     schema_len = schema_file_buf.size();
   } else if (flatbuffers::LoadFile(kInjectorSchemaPath, true,
-                                    &schema_file_buf)) {
+                                   &schema_file_buf)) {
     schema_bytes = reinterpret_cast<const uint8_t *>(schema_file_buf.data());
     schema_len = schema_file_buf.size();
   }
