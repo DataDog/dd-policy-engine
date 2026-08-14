@@ -111,16 +111,16 @@ int main(int argc, char *argv[]) {
     }
     schema_bytes = reinterpret_cast<const uint8_t *>(schema_file_buf.data());
     schema_len = schema_file_buf.size();
-    std::cerr << "using schema from --schema-file: " << schema_path
+    std::cout << "using schema from --schema-file: " << schema_path
                << std::endl;
   } else if (flatbuffers::LoadFile(kInjectorSchemaPath, true,
                                    &schema_file_buf)) {
     schema_bytes = reinterpret_cast<const uint8_t *>(schema_file_buf.data());
     schema_len = schema_file_buf.size();
-    std::cerr << "using schema from injector path: " << kInjectorSchemaPath
+    std::cout << "using schema from injector path: " << kInjectorSchemaPath
                << std::endl;
   } else {
-    std::cerr << "using built-in schema" << std::endl;
+    std::cout << "using built-in schema" << std::endl;
   }
 
   if (!parser.Deserialize(schema_bytes, schema_len)) {
