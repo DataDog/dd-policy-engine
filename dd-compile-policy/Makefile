@@ -190,6 +190,7 @@ endif
 # checkout and exercises the same artifact CI ships.
 test: build
 	@$(PYTHON) tests/forward_compat_test.py $(OUT)
+	@$(PYTHON) tests/injector_schema_fallback_test.py $(OUT)
 
 # Verify by unmarshalling compiled policy to JSON
 verify_json:
