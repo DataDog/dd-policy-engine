@@ -22,6 +22,28 @@
 
 plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
 
+/**
+ * The leaf conditions that evaluated TRUE for the policy currently being
+ * evaluated. Reset per policy by evaluate_policy and handed to that policy's
+ * actions.
+ */
+static plcs_matched_rule g_matched_rules[PLCS_MATCHED_RULES_MAX];
+static size_t g_matched_rules_len;
+
+static void reset_matched_rules(void) {
+  g_matched_rules_len = 0;
+}
+
+static plcs_matched_rule *next_matched_rule(void) {
+  if (g_matched_rules_len >= PLCS_MATCHED_RULES_MAX) {
+    return NULL;
+  }
+
+  plcs_matched_rule *rule = &g_matched_rules[g_matched_rules_len++];
+  *rule = (plcs_matched_rule){0};
+  return rule;
+}
+
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
   if (!eval_str) {
     return PLCS_EVAL_RESULT_ABSTAIN;
@@ -38,7 +60,22 @@ plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, con
 
   // parameter could potentially be NULL, so we check if there was an explicit error
   if (plcs_eval_ctx_peek_last_error() == PLCS_ESUCCESS) {
-    return eval(dd_ns(StrEvaluator_value)(eval_str), dd_ns(StrEvaluator_cmp)(eval_str), param, description, eval_id);
+    const char *value = dd_ns(StrEvaluator_value)(eval_str);
+    dd_ns(CmpTypeSTR_enum_t) cmp = dd_ns(StrEvaluator_cmp)(eval_str);
+
+    plcs_evaluation_result res = eval(value, cmp, param, description, eval_id);
+    if (res == PLCS_EVAL_RESULT_TRUE) {
+      plcs_matched_rule *rule = next_matched_rule();
+      if (rule) {
+        rule->kind = PLCS_RULE_VALUE_STR;
+        rule->evaluator_id = eval_id;
+        rule->comparator = cmp;
+        rule->policy_value.str = value;
+        rule->process_value.str = param;
+      }
+    }
+
+    return res;
   }
 
   return PLCS_EVAL_RESULT_ABSTAIN;
@@ -64,7 +101,22 @@ plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, co
 
   // parameter could potentially be NULL, so we check if there was an explicit error
   if (plcs_eval_ctx_peek_last_error() == PLCS_ESUCCESS) {
-    return eval(dd_ns(NumEvaluator_value)(eval_num), dd_ns(NumEvaluator_cmp)(eval_num), param, description, eval_id);
+    const long value = dd_ns(NumEvaluator_value)(eval_num);
+    dd_ns(CmpTypeNUM_enum_t) cmp = dd_ns(NumEvaluator_cmp)(eval_num);
+
+    plcs_evaluation_result res = eval(value, cmp, param, description, eval_id);
+    if (res == PLCS_EVAL_RESULT_TRUE) {
+      plcs_matched_rule *rule = next_matched_rule();
+      if (rule) {
+        rule->kind = PLCS_RULE_VALUE_NUM;
+        rule->evaluator_id = eval_id;
+        rule->comparator = cmp;
+        rule->policy_value.num = value;
+        rule->process_value.num = param;
+      }
+    }
+
+    return res;
   }
 
   return PLCS_EVAL_RESULT_ABSTAIN;
@@ -90,9 +142,22 @@ plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum,
 
   // parameter could potentially be NULL, so we check if there was an explicit error
   if (plcs_eval_ctx_peek_last_error() == PLCS_ESUCCESS) {
-    return eval(
-        dd_ns(UNumEvaluator_value)(eval_unum), dd_ns(UNumEvaluator_cmp)(eval_unum), param, description, eval_id
-    );
+    const unsigned long value = dd_ns(UNumEvaluator_value)(eval_unum);
+    dd_ns(CmpTypeNUM_enum_t) cmp = dd_ns(UNumEvaluator_cmp)(eval_unum);
+
+    plcs_evaluation_result res = eval(value, cmp, param, description, eval_id);
+    if (res == PLCS_EVAL_RESULT_TRUE) {
+      plcs_matched_rule *rule = next_matched_rule();
+      if (rule) {
+        rule->kind = PLCS_RULE_VALUE_UNUM;
+        rule->evaluator_id = eval_id;
+        rule->comparator = cmp;
+        rule->policy_value.unum = value;
+        rule->process_value.unum = param;
+      }
+    }
+
+    return res;
   }
 
   return PLCS_EVAL_RESULT_ABSTAIN;
@@ -254,12 +319,35 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
   return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
+/**
+ * @brief The description of a policy's root rule node, whichever node kind it is.
+ */
+static const char *rules_description(dd_ns(NodeTypeWrapper_table_t) node) {
+  if (!node) {
+    return NULL;
+  }
+
+  switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
+    case dd_ns(NodeType_EvaluatorNode):
+      dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
+      return dd_ns(EvaluatorNode_description)(evaluator_node);
+
+    case dd_ns(NodeType_CompositeNode):
+      dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
+      return dd_ns(CompositeNode_description)(composite_node);
+
+    default:
+      return NULL;
+  }
+}
+
 static inline plcs_errors perform_actions(
     plcs_evaluation_result eval_res,
     dd_ns(Action_vec_t) actions_vec,
     plcs_uuid policy_id,
     int64_t policy_version,
-    const char *policy_description
+    const char *policy_description,
+    const char *rule_description
 ) {
   plcs_errors res = PLCS_ESUCCESS;
 
@@ -285,7 +373,7 @@ static inline plcs_errors perform_actions(
     if (action_function) {
       res = action_function(
           eval_res, values, values_len, dd_ns(Action_description)(action), action_id, policy_id, policy_version,
-          policy_description
+          policy_description, rule_description, g_matched_rules, g_matched_rules_len
       );
       plcs_eval_ctx_set_action_error(action_id, res);
     } else {
@@ -308,12 +396,16 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
+  // the matched leaves are reported per policy, so start from a clean slate
+  reset_matched_rules();
+
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
   // perform actions given evaluation result
   return perform_actions(
-      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy)
+      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy),
+      rules_description(rules)
   );
 }
 
