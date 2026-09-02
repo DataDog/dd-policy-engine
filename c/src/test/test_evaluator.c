@@ -99,7 +99,10 @@ static plcs_errors test_action_allow(
     int action_id,
     plcs_uuid policy_id,
     int64_t policy_version,
-    const char *policy_description
+    const char *policy_description,
+    const char *rule_description,
+    const plcs_matched_rule *matched_rules,
+    size_t matched_rules_len
 ) {
   (void)res;
   (void)values;
@@ -109,6 +112,9 @@ static plcs_errors test_action_allow(
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
+  (void)rule_description;
+  (void)matched_rules;
+  (void)matched_rules_len;
   g_allow_called++;
   return PLCS_ESUCCESS;
 }
@@ -121,7 +127,10 @@ static plcs_errors test_action_deny(
     int action_id,
     plcs_uuid policy_id,
     int64_t policy_version,
-    const char *policy_description
+    const char *policy_description,
+    const char *rule_description,
+    const plcs_matched_rule *matched_rules,
+    size_t matched_rules_len
 ) {
   (void)res;
   (void)values;
@@ -131,6 +140,9 @@ static plcs_errors test_action_deny(
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
+  (void)rule_description;
+  (void)matched_rules;
+  (void)matched_rules_len;
   g_deny_called++;
   return PLCS_ESUCCESS;
 }
@@ -1119,6 +1131,9 @@ static plcs_evaluation_result g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
 static plcs_uuid g_last_policy_id;
 static int64_t g_last_policy_version;
 static const char *g_last_policy_description;
+static const char *g_last_rule_description;
+static plcs_matched_rule g_last_matched_rules[PLCS_MATCHED_RULES_MAX];
+static size_t g_last_matched_rules_len;
 
 static plcs_errors test_action_capture(
     plcs_evaluation_result res,
@@ -1128,7 +1143,10 @@ static plcs_errors test_action_capture(
     int action_id,
     plcs_uuid policy_id,
     int64_t policy_version,
-    const char *policy_description
+    const char *policy_description,
+    const char *rule_description,
+    const plcs_matched_rule *matched_rules,
+    size_t matched_rules_len
 ) {
   (void)values;
   (void)value_len;
@@ -1139,6 +1157,13 @@ static plcs_errors test_action_capture(
   g_last_policy_id = policy_id;
   g_last_policy_version = policy_version;
   g_last_policy_description = policy_description;
+  g_last_rule_description = rule_description;
+  /* The matched rules borrow the policy buffer, which outlives the assertions
+   * below, so a shallow copy is enough to inspect them after the call. */
+  g_last_matched_rules_len = matched_rules_len;
+  for (size_t ix = 0; ix < matched_rules_len; ++ix) {
+    g_last_matched_rules[ix] = matched_rules[ix];
+  }
   return PLCS_ESUCCESS;
 }
 
@@ -1203,6 +1228,8 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   g_last_policy_id = (plcs_uuid){0};
   g_last_policy_version = 0;
   g_last_policy_description = NULL;
+  g_last_rule_description = NULL;
+  g_last_matched_rules_len = 0;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
   ASSERT_EQ(prc, PLCS_ESUCCESS);
@@ -1226,6 +1253,14 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
+  /* The matching leaf is reported with the root rule's description. */
+  ASSERT_STREQ(g_last_rule_description, "root");
+  ASSERT_EQ(g_last_matched_rules_len, (size_t)1);
+  ASSERT_EQ((int)g_last_matched_rules[0].kind, (int)PLCS_RULE_VALUE_STR);
+  ASSERT_EQ(g_last_matched_rules[0].evaluator_id, (int)PLCS_STR_EVAL_POD_LABEL);
+  ASSERT_EQ(g_last_matched_rules[0].comparator, (int)PLCS_STR_CMP_EXACT);
+  ASSERT_STREQ(g_last_matched_rules[0].policy_value.str, "app=nginx");
+  ASSERT_STREQ(g_last_matched_rules[0].process_value.str, "app=nginx");
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
@@ -1242,6 +1277,8 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   g_last_policy_id = (plcs_uuid){0};
   g_last_policy_version = 0;
   g_last_policy_description = NULL;
+  g_last_rule_description = NULL;
+  g_last_matched_rules_len = 0;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
   ASSERT_EQ(prc, PLCS_ESUCCESS);
@@ -1265,6 +1302,9 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
+  /* Nothing matched, so no leaf conditions are reported. */
+  ASSERT_STREQ(g_last_rule_description, "root");
+  ASSERT_EQ(g_last_matched_rules_len, (size_t)0);
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
