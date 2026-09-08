@@ -81,7 +81,6 @@ static plcs_errors dummy_action(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const char *rule_description,
     const plcs_matched_rule *matched_rules,
     size_t matched_rules_len
 ) {
@@ -93,7 +92,6 @@ static plcs_errors dummy_action(
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
-  (void)rule_description;
   (void)matched_rules;
   (void)matched_rules_len;
   g_action_called++;
@@ -262,7 +260,7 @@ UTEST(eval_ctx, register_and_invoke_action_pointer) {
 
   g_action_called = 0;
   char *vals[] = {(char *)"v1", (char *)"v2"};
-  rc = act(PLCS_EVAL_RESULT_TRUE, vals, 2, "desc", PLCS_ACTION_INJECT_ALLOW, (plcs_uuid){0}, 0, NULL, NULL, NULL, 0);
+  rc = act(PLCS_EVAL_RESULT_TRUE, vals, 2, "desc", PLCS_ACTION_INJECT_ALLOW, (plcs_uuid){0}, 0, NULL, NULL, 0);
   ASSERT_EQ(rc, PLCS_ESUCCESS);
   ASSERT_EQ(g_action_called, 1);
 }

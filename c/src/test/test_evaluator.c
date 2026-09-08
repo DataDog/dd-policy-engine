@@ -100,7 +100,6 @@ static plcs_errors test_action_allow(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const char *rule_description,
     const plcs_matched_rule *matched_rules,
     size_t matched_rules_len
 ) {
@@ -112,7 +111,6 @@ static plcs_errors test_action_allow(
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
-  (void)rule_description;
   (void)matched_rules;
   (void)matched_rules_len;
   g_allow_called++;
@@ -128,7 +126,6 @@ static plcs_errors test_action_deny(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const char *rule_description,
     const plcs_matched_rule *matched_rules,
     size_t matched_rules_len
 ) {
@@ -140,7 +137,6 @@ static plcs_errors test_action_deny(
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
-  (void)rule_description;
   (void)matched_rules;
   (void)matched_rules_len;
   g_deny_called++;
@@ -1131,7 +1127,6 @@ static plcs_evaluation_result g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
 static plcs_uuid g_last_policy_id;
 static int64_t g_last_policy_version;
 static const char *g_last_policy_description;
-static const char *g_last_rule_description;
 static plcs_matched_rule g_last_matched_rules[PLCS_MATCHED_RULES_MAX];
 static size_t g_last_matched_rules_len;
 
@@ -1144,7 +1139,6 @@ static plcs_errors test_action_capture(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const char *rule_description,
     const plcs_matched_rule *matched_rules,
     size_t matched_rules_len
 ) {
@@ -1157,7 +1151,6 @@ static plcs_errors test_action_capture(
   g_last_policy_id = policy_id;
   g_last_policy_version = policy_version;
   g_last_policy_description = policy_description;
-  g_last_rule_description = rule_description;
   /* The matched rules borrow the policy buffer, which outlives the assertions
    * below, so a shallow copy is enough to inspect them after the call. */
   g_last_matched_rules_len = matched_rules_len;
@@ -1228,7 +1221,6 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   g_last_policy_id = (plcs_uuid){0};
   g_last_policy_version = 0;
   g_last_policy_description = NULL;
-  g_last_rule_description = NULL;
   g_last_matched_rules_len = 0;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
@@ -1253,8 +1245,6 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
-  /* The matching leaf is reported with the root rule's description. */
-  ASSERT_STREQ(g_last_rule_description, "root");
   ASSERT_EQ(g_last_matched_rules_len, (size_t)1);
   ASSERT_EQ((int)g_last_matched_rules[0].kind, (int)PLCS_RULE_VALUE_STR);
   ASSERT_EQ(g_last_matched_rules[0].evaluator_id, (int)PLCS_STR_EVAL_POD_LABEL);
@@ -1277,7 +1267,6 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   g_last_policy_id = (plcs_uuid){0};
   g_last_policy_version = 0;
   g_last_policy_description = NULL;
-  g_last_rule_description = NULL;
   g_last_matched_rules_len = 0;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
@@ -1303,8 +1292,485 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
   /* Nothing matched, so no leaf conditions are reported. */
-  ASSERT_STREQ(g_last_rule_description, "root");
   ASSERT_EQ(g_last_matched_rules_len, (size_t)0);
+
+  flatcc_builder_free(buf);
+  plcs_eval_ctx_reset();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Matched-rule reporting against the shape of a real RC org-wide WLS policy.  */
+/*                                                                            */
+/* Mirrors rc-orgwide-wls-policy.bin as decoded by the debugger:              */
+/*                                                                            */
+/*   policy[0] 'Workload Selection Policy / default'                          */
+/*   └── (!!)                                                                 */
+/*       └── [str][CMP_CONTAINS][RUNTIME_LANGUAGE][catch-all][value: '']       */
+/*       actions: [INJECT_ALLOW 'default']                                    */
+/*                                                                            */
+/*   policy[1] 'Exclude Language equals python or jvm AND ...'                 */
+/*   └── (&&)                                                                 */
+/*       ├── (||) [lang == 'python'], [lang == 'jvm']                          */
+/*       ├── (||) [os == 'windows'], [os == 'linux']                           */
+/*       └── [exe prefix 'asdb']                                              */
+/*       actions: [INJECT_DENY]                                               */
+/*                                                                            */
+/* Both policies are evaluated from one buffer, so this also covers the        */
+/* per-policy reset of the matched-rule list.                                 */
+/* -------------------------------------------------------------------------- */
+
+typedef struct rc_capture {
+  int called;
+  plcs_evaluation_result res;
+  const char *policy_description;
+  size_t matched_len;
+  plcs_matched_rule matched[PLCS_MATCHED_RULES_MAX];
+} rc_capture;
+
+static rc_capture g_rc_allow;
+static rc_capture g_rc_deny;
+
+static void rc_capture_action(
+    rc_capture *into,
+    plcs_evaluation_result res,
+    const char *policy_description,
+    const plcs_matched_rule *matched_rules,
+    size_t matched_rules_len
+) {
+  into->called++;
+  into->res = res;
+  into->policy_description = policy_description;
+  into->matched_len = matched_rules_len;
+  for (size_t ix = 0; ix < matched_rules_len; ++ix) {
+    into->matched[ix] = matched_rules[ix];
+  }
+}
+
+#define RC_CAPTURE_ACTION(name, target)                                                            \
+  static plcs_errors name(                                                                         \
+      plcs_evaluation_result res,                                                                  \
+      char *values[],                                                                              \
+      size_t value_len,                                                                            \
+      const char *description,                                                                     \
+      int action_id,                                                                               \
+      plcs_uuid policy_id,                                                                         \
+      int64_t policy_version,                                                                      \
+      const char *policy_description,                                                              \
+      const plcs_matched_rule *matched_rules,                                                      \
+      size_t matched_rules_len                                                                     \
+  ) {                                                                                              \
+    (void)values;                                                                                  \
+    (void)value_len;                                                                               \
+    (void)description;                                                                             \
+    (void)action_id;                                                                               \
+    (void)policy_id;                                                                               \
+    (void)policy_version;                                                                          \
+    rc_capture_action((target), res, policy_description, matched_rules, matched_rules_len);        \
+    return PLCS_ESUCCESS;                                                                          \
+  }
+
+RC_CAPTURE_ACTION(rc_action_allow, &g_rc_allow)
+RC_CAPTURE_ACTION(rc_action_deny, &g_rc_deny)
+
+/* One EvaluatorNode leaf, wrapped for use as a composite child.
+ *
+ * The generated `_create` helpers cannot express an absent optional string: a 0
+ * ref makes `<field>_add` fail, which aborts `_create`'s `||` chain and leaves
+ * the table open on the builder. Nodes without a description - which is how RC
+ * emits them - therefore have to be built with start/add/end. */
+static dd_wls_NodeTypeWrapper_ref_t rc_str_leaf(
+    flatcc_builder_t *b,
+    dd_wls_StringEvaluators_enum_t id,
+    dd_wls_CmpTypeSTR_enum_t cmp,
+    const char *value,
+    const char *description
+) {
+  dd_wls_StrEvaluator_ref_t str =
+      dd_wls_StrEvaluator_create(b, id, cmp, flatbuffers_string_create_str(b, value));
+  flatbuffers_string_ref_t desc = description ? flatbuffers_string_create_str(b, description) : 0;
+
+  dd_wls_EvaluatorNode_start(b);
+  if (desc) {
+    dd_wls_EvaluatorNode_description_add(b, desc);
+  }
+  dd_wls_EvaluatorNode_eval_add(b, dd_wls_EvaluatorType_as_StrEvaluator(str));
+  dd_wls_EvaluatorNode_ref_t leaf = dd_wls_EvaluatorNode_end(b);
+
+  return dd_wls_NodeTypeWrapper_create(b, dd_wls_NodeType_as_EvaluatorNode(leaf));
+}
+
+/* A CompositeNode over `children`, wrapped for use as a child itself. */
+static dd_wls_NodeTypeWrapper_ref_t rc_composite(
+    flatcc_builder_t *b,
+    dd_wls_BoolOperation_enum_t op,
+    const char *description,
+    const dd_wls_NodeTypeWrapper_ref_t *children,
+    size_t children_len
+) {
+  dd_wls_NodeTypeWrapper_vec_start(b);
+  for (size_t ix = 0; ix < children_len; ++ix) {
+    dd_wls_NodeTypeWrapper_vec_push(b, children[ix]);
+  }
+  dd_wls_NodeTypeWrapper_vec_ref_t vec = dd_wls_NodeTypeWrapper_vec_end(b);
+  flatbuffers_string_ref_t desc = description ? flatbuffers_string_create_str(b, description) : 0;
+
+  dd_wls_CompositeNode_start(b);
+  if (desc) {
+    dd_wls_CompositeNode_description_add(b, desc);
+  }
+  dd_wls_CompositeNode_op_add(b, op);
+  dd_wls_CompositeNode_children_add(b, vec);
+  dd_wls_CompositeNode_ref_t comp = dd_wls_CompositeNode_end(b);
+
+  return dd_wls_NodeTypeWrapper_create(b, dd_wls_NodeType_as_CompositeNode(comp));
+}
+
+/* A Policy with `id` and `version` left absent, as the RC-produced buffer has
+ * them (dd_wls_Policy_create cannot express that: it always writes the id
+ * struct, and dereferences the pointer to do so). */
+static dd_wls_Policy_ref_t rc_policy(
+    flatcc_builder_t *b,
+    const char *description,
+    dd_wls_NodeTypeWrapper_ref_t rules,
+    dd_wls_Action_vec_ref_t actions
+) {
+  /* Every child object has to be finished before the table is opened. */
+  flatbuffers_string_ref_t desc = flatbuffers_string_create_str(b, description);
+
+  dd_wls_Policy_start(b);
+  dd_wls_Policy_description_add(b, desc);
+  dd_wls_Policy_rules_add(b, rules);
+  dd_wls_Policy_actions_add(b, actions);
+  return dd_wls_Policy_end(b);
+}
+
+static dd_wls_Action_vec_ref_t rc_single_action(
+    flatcc_builder_t *b, dd_wls_ActionId_enum_t id, const char *description
+) {
+  flatbuffers_string_ref_t desc = description ? flatbuffers_string_create_str(b, description) : 0;
+
+  dd_wls_Action_start(b);
+  dd_wls_Action_action_add(b, id);
+  if (desc) {
+    dd_wls_Action_description_add(b, desc);
+  }
+  dd_wls_Action_ref_t action = dd_wls_Action_end(b);
+
+  dd_wls_Action_vec_start(b);
+  dd_wls_Action_vec_push(b, action);
+  return dd_wls_Action_vec_end(b);
+}
+
+/* Caller owns *out_buf (flatcc_builder_free). */
+static void build_rc_orgwide_policy_buffer(void **out_buf, size_t *out_sz) {
+  static const char *kExcludeRule =
+      "Language equals python or jvm AND Operating System equals windows or linux AND Executable "
+      "prefix asdb";
+  static const char *kExcludePolicy =
+      "Exclude Language equals python or jvm AND Operating System equals windows or linux AND "
+      "Executable prefix asdb";
+
+  flatcc_builder_t b;
+  flatcc_builder_init(&b);
+
+  /* policy[0]: NOT(RUNTIME_LANGUAGE contains '') -> the catch-all allow. */
+  dd_wls_NodeTypeWrapper_ref_t catch_all = rc_str_leaf(
+      &b, dd_wls_StringEvaluators_RUNTIME_LANGUAGE, dd_wls_CmpTypeSTR_CMP_CONTAINS, "", "catch-all"
+  );
+  dd_wls_NodeTypeWrapper_ref_t default_rules =
+      rc_composite(&b, dd_wls_BoolOperation_BOOL_NOT, NULL, &catch_all, 1);
+  dd_wls_Policy_ref_t default_policy = rc_policy(
+      &b, "Workload Selection Policy / default", default_rules,
+      rc_single_action(&b, dd_wls_ActionId_INJECT_ALLOW, "default")
+  );
+
+  /* policy[1]: the exclude rule, denying injection. */
+  dd_wls_NodeTypeWrapper_ref_t langs[] = {
+      rc_str_leaf(&b, dd_wls_StringEvaluators_RUNTIME_LANGUAGE, dd_wls_CmpTypeSTR_CMP_EXACT, "python", NULL),
+      rc_str_leaf(&b, dd_wls_StringEvaluators_RUNTIME_LANGUAGE, dd_wls_CmpTypeSTR_CMP_EXACT, "jvm", NULL),
+  };
+  dd_wls_NodeTypeWrapper_ref_t oses[] = {
+      rc_str_leaf(&b, dd_wls_StringEvaluators_OS, dd_wls_CmpTypeSTR_CMP_EXACT, "windows", NULL),
+      rc_str_leaf(&b, dd_wls_StringEvaluators_OS, dd_wls_CmpTypeSTR_CMP_EXACT, "linux", NULL),
+  };
+  dd_wls_NodeTypeWrapper_ref_t children[] = {
+      rc_composite(&b, dd_wls_BoolOperation_BOOL_OR, NULL, langs, 2),
+      rc_composite(&b, dd_wls_BoolOperation_BOOL_OR, NULL, oses, 2),
+      rc_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_EXE, dd_wls_CmpTypeSTR_CMP_PREFIX, "asdb", NULL),
+  };
+  dd_wls_NodeTypeWrapper_ref_t exclude_rules =
+      rc_composite(&b, dd_wls_BoolOperation_BOOL_AND, kExcludeRule, children, 3);
+  dd_wls_Policy_ref_t exclude_policy = rc_policy(
+      &b, kExcludePolicy, exclude_rules, rc_single_action(&b, dd_wls_ActionId_INJECT_DENY, NULL)
+  );
+
+  dd_wls_Policy_vec_start(&b);
+  dd_wls_Policy_vec_push(&b, default_policy);
+  dd_wls_Policy_vec_push(&b, exclude_policy);
+  dd_wls_Policy_vec_ref_t policies = dd_wls_Policy_vec_end(&b);
+
+  dd_wls_Policies_create_as_root(&b, policies);
+
+  *out_buf = flatcc_builder_finalize_buffer(&b, out_sz);
+  flatcc_builder_clear(&b);
+}
+
+UTEST(evaluator_integration, rc_orgwide_policy_reports_only_the_conditions_that_matched) {
+  int rc = plcs_eval_ctx_init();
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+  plcs_eval_ctx_reset();
+
+  g_rc_allow = (rc_capture){0};
+  g_rc_deny = (rc_capture){0};
+
+  int prc = plcs_eval_ctx_register_action(rc_action_allow, PLCS_ACTION_INJECT_ALLOW);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+  prc = plcs_eval_ctx_register_action(rc_action_deny, PLCS_ACTION_INJECT_DENY);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  /* A Python process on Linux at /usr/bin/asdb-server: one branch of each OR
+   * matches, and so does the executable prefix, so the deny policy is TRUE. */
+  prc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_RUNTIME_LANGUAGE, "python");
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+  prc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_OS, "linux");
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+  prc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_PROCESS_EXE, "asdb-server");
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  void *buf = NULL;
+  size_t sz = 0;
+  build_rc_orgwide_policy_buffer(&buf, &sz);
+
+  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
+
+  /* --- the deny policy: three of the five leaves matched -------------------- */
+  ASSERT_EQ(g_rc_deny.called, 1);
+  ASSERT_EQ((int)g_rc_deny.res, (int)PLCS_EVAL_RESULT_TRUE);
+  ASSERT_STREQ(
+      g_rc_deny.policy_description,
+      "Exclude Language equals python or jvm AND Operating System equals windows or linux AND "
+      "Executable prefix asdb"
+  );
+  /* Only the OR branches that were TRUE are reported: 'jvm' and 'windows' are
+   * absent even though they are part of the rule. */
+  ASSERT_EQ(g_rc_deny.matched_len, (size_t)3);
+
+  ASSERT_EQ((int)g_rc_deny.matched[0].kind, (int)PLCS_RULE_VALUE_STR);
+  ASSERT_EQ(g_rc_deny.matched[0].evaluator_id, (int)PLCS_STR_EVAL_RUNTIME_LANGUAGE);
+  ASSERT_EQ(g_rc_deny.matched[0].comparator, (int)PLCS_STR_CMP_EXACT);
+  ASSERT_STREQ(g_rc_deny.matched[0].policy_value.str, "python");
+  ASSERT_STREQ(g_rc_deny.matched[0].process_value.str, "python");
+
+  ASSERT_EQ(g_rc_deny.matched[1].evaluator_id, (int)PLCS_STR_EVAL_OS);
+  ASSERT_EQ(g_rc_deny.matched[1].comparator, (int)PLCS_STR_CMP_EXACT);
+  ASSERT_STREQ(g_rc_deny.matched[1].policy_value.str, "linux");
+  ASSERT_STREQ(g_rc_deny.matched[1].process_value.str, "linux");
+
+  /* The prefix comparator is where policy_value and process_value differ. */
+  ASSERT_EQ(g_rc_deny.matched[2].evaluator_id, (int)PLCS_STR_EVAL_PROCESS_EXE);
+  ASSERT_EQ(g_rc_deny.matched[2].comparator, (int)PLCS_STR_CMP_PREFIX);
+  ASSERT_STREQ(g_rc_deny.matched[2].policy_value.str, "asdb");
+  ASSERT_STREQ(g_rc_deny.matched[2].process_value.str, "asdb-server");
+
+  /* --- the catch-all allow policy ------------------------------------------ */
+  /* Its leaf ('contains ""') is TRUE, but the NOT above it inverts that to FALSE,
+   * so the leaf did not justify the result and is not reported. */
+  ASSERT_EQ(g_rc_allow.called, 1);
+  ASSERT_EQ((int)g_rc_allow.res, (int)PLCS_EVAL_RESULT_FALSE);
+  ASSERT_STREQ(g_rc_allow.policy_description, "Workload Selection Policy / default");
+  ASSERT_EQ(g_rc_allow.matched_len, (size_t)0);
+
+  /* Nothing below this policy's root is described, so each condition falls back to
+   * naming the root rather than reporting the condition as unnamed. */
+  for (size_t ix = 0; ix < g_rc_deny.matched_len; ++ix) {
+    ASSERT_STREQ(
+        g_rc_deny.matched[ix].matched_rule_description,
+        "Language equals python or jvm AND Operating System equals windows or linux AND Executable "
+        "prefix asdb"
+    );
+  }
+
+  /* The list is reset between policies: the deny policy's three entries did not
+   * leak into the allow policy's report, and vice versa. */
+
+  flatcc_builder_free(buf);
+  plcs_eval_ctx_reset();
+}
+
+/* -------------------------------------------------------------------------- */
+/* A failed branch must not report the conditions it did satisfy.              */
+/*                                                                            */
+/* Mirrors the shape of the java requirements.bin, which is one policy whose    */
+/* root is an OR over per-rule ANDs, every branch starting with the same        */
+/* executable-match leaf:                                                     */
+/*                                                                            */
+/*   (||)                                                                     */
+/*    ├── (&&) [exe wildcard-matches java] AND [argv == '-version']            */
+/*    ├── (&&) [exe wildcard-matches java] AND [argv == '--version']           */
+/*    └── (&&) [exe wildcard-matches java] AND [argv == 'transport.Client']    */
+/*                                                                            */
+/* Running transport.Client satisfies the exe leaf in all three branches, but   */
+/* only the third AND evaluates TRUE, so only its two conditions are reported. */
+/* -------------------------------------------------------------------------- */
+
+/* Caller owns *out_buf (flatcc_builder_free). */
+static void build_or_of_ands_policy_buffer(void **out_buf, size_t *out_sz) {
+  static const char *kArgvs[] = {"-version", "--version", "org.apache.cassandra.transport.Client"};
+  /* Each branch names its own rule, as dd-requirements-converter does. */
+  static const char *kRuleNames[] = {
+      "Instrumentation rule excludes java -version command",
+      "Instrumentation rule excludes java --version command",
+      "Instrumentation rule excludes Apache Cassandra debug-cql",
+  };
+
+  flatcc_builder_t b;
+  flatcc_builder_init(&b);
+
+  dd_wls_NodeTypeWrapper_ref_t branches[3];
+  for (size_t ix = 0; ix < 3; ++ix) {
+    dd_wls_NodeTypeWrapper_ref_t pair[] = {
+        rc_str_leaf(
+            &b, dd_wls_StringEvaluators_PROCESS_EXE_FULL_PATH, dd_wls_CmpTypeSTR_CMP_WILDCARD,
+            "**/java", NULL
+        ),
+        rc_str_leaf(
+            &b, dd_wls_StringEvaluators_PROCESS_ARGV, dd_wls_CmpTypeSTR_CMP_EXACT, kArgvs[ix], NULL
+        ),
+    };
+    branches[ix] = rc_composite(&b, dd_wls_BoolOperation_BOOL_AND, kRuleNames[ix], pair, 2);
+  }
+
+  dd_wls_NodeTypeWrapper_ref_t rules =
+      rc_composite(&b, dd_wls_BoolOperation_BOOL_OR, "requirements", branches, 3);
+
+  dd_wls_Policy_ref_t policy = rc_policy(
+      &b, "All requirements", rules, rc_single_action(&b, dd_wls_ActionId_INJECT_DENY, NULL)
+  );
+
+  dd_wls_Policy_vec_start(&b);
+  dd_wls_Policy_vec_push(&b, policy);
+  dd_wls_Policy_vec_ref_t policies = dd_wls_Policy_vec_end(&b);
+
+  dd_wls_Policies_create_as_root(&b, policies);
+
+  *out_buf = flatcc_builder_finalize_buffer(&b, out_sz);
+  flatcc_builder_clear(&b);
+}
+
+UTEST(evaluator_integration, failed_branches_do_not_report_the_conditions_they_satisfied) {
+  int rc = plcs_eval_ctx_init();
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+  plcs_eval_ctx_reset();
+
+  g_rc_deny = (rc_capture){0};
+
+  int prc = plcs_eval_ctx_register_action(rc_action_deny, PLCS_ACTION_INJECT_DENY);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  prc = plcs_eval_ctx_set_str_eval_param(
+      PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH, "/usr/lib/jvm/java-21-openjdk-arm64/bin/java"
+  );
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+  prc = plcs_eval_ctx_set_str_eval_param(
+      PLCS_STR_EVAL_PROCESS_ARGV, "org.apache.cassandra.transport.Client"
+  );
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  void *buf = NULL;
+  size_t sz = 0;
+  build_or_of_ands_policy_buffer(&buf, &sz);
+
+  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
+
+  ASSERT_EQ(g_rc_deny.called, 1);
+  ASSERT_EQ((int)g_rc_deny.res, (int)PLCS_EVAL_RESULT_TRUE);
+
+  /* Two, not four: the '-version' and '--version' branches each satisfied the
+   * executable leaf, but their ANDs evaluated FALSE and report nothing. */
+  ASSERT_EQ(g_rc_deny.matched_len, (size_t)2);
+
+  ASSERT_EQ(g_rc_deny.matched[0].evaluator_id, (int)PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH);
+  ASSERT_EQ(g_rc_deny.matched[0].comparator, (int)PLCS_STR_CMP_WILDCARD);
+  ASSERT_STREQ(g_rc_deny.matched[0].policy_value.str, "**/java");
+  ASSERT_STREQ(
+      g_rc_deny.matched[0].process_value.str, "/usr/lib/jvm/java-21-openjdk-arm64/bin/java"
+  );
+
+  ASSERT_EQ(g_rc_deny.matched[1].evaluator_id, (int)PLCS_STR_EVAL_PROCESS_ARGV);
+  ASSERT_EQ(g_rc_deny.matched[1].comparator, (int)PLCS_STR_CMP_EXACT);
+  ASSERT_STREQ(g_rc_deny.matched[1].policy_value.str, "org.apache.cassandra.transport.Client");
+
+  /* Both conditions name the branch they came from, not the policy - which is what
+   * identifies one rule inside a bundle like a converted requirements.bin. */
+  ASSERT_STREQ(
+      g_rc_deny.matched[0].matched_rule_description,
+      "Instrumentation rule excludes Apache Cassandra debug-cql"
+  );
+  ASSERT_STREQ(
+      g_rc_deny.matched[1].matched_rule_description,
+      "Instrumentation rule excludes Apache Cassandra debug-cql"
+  );
+
+  flatcc_builder_free(buf);
+  plcs_eval_ctx_reset();
+}
+
+/* -------------------------------------------------------------------------- */
+/* A policy whose root is a bare leaf still names its matched condition.       */
+/*                                                                            */
+/* This is the shape dd-requirements-converter emits for a single-condition    */
+/* rule: the rule is one comparison, so there is no composite anywhere and the  */
+/* leaf itself carries the rule's name.                                       */
+/* -------------------------------------------------------------------------- */
+
+UTEST(evaluator_integration, leaf_rooted_policy_names_its_matched_condition) {
+  static const char *kRule = "Exclude Apache Cassandra debug-cql";
+
+  int rc = plcs_eval_ctx_init();
+  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
+  plcs_eval_ctx_reset();
+
+  g_rc_deny = (rc_capture){0};
+
+  int prc = plcs_eval_ctx_register_action(rc_action_deny, PLCS_ACTION_INJECT_DENY);
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+  prc = plcs_eval_ctx_set_str_eval_param(
+      PLCS_STR_EVAL_PROCESS_ARGV, "org.apache.cassandra.transport.Client"
+  );
+  ASSERT_EQ(prc, PLCS_ESUCCESS);
+
+  flatcc_builder_t b;
+  flatcc_builder_init(&b);
+
+  /* The policy's rules are the leaf itself - no composite wraps it. */
+  dd_wls_NodeTypeWrapper_ref_t rules = rc_str_leaf(
+      &b, dd_wls_StringEvaluators_PROCESS_ARGV, dd_wls_CmpTypeSTR_CMP_EXACT,
+      "org.apache.cassandra.transport.Client", kRule
+  );
+  dd_wls_Policy_ref_t policy =
+      rc_policy(&b, kRule, rules, rc_single_action(&b, dd_wls_ActionId_INJECT_DENY, NULL));
+
+  dd_wls_Policy_vec_start(&b);
+  dd_wls_Policy_vec_push(&b, policy);
+  dd_wls_Policy_vec_ref_t policies = dd_wls_Policy_vec_end(&b);
+  dd_wls_Policies_create_as_root(&b, policies);
+
+  size_t sz = 0;
+  void *buf = flatcc_builder_finalize_buffer(&b, &sz);
+  flatcc_builder_clear(&b);
+
+  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
+  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
+
+  ASSERT_EQ(g_rc_deny.called, 1);
+  ASSERT_EQ((int)g_rc_deny.res, (int)PLCS_EVAL_RESULT_TRUE);
+  ASSERT_EQ(g_rc_deny.matched_len, (size_t)1);
+
+  /* The rule name comes from the root even though the root is a leaf, so the
+   * condition is not reported as unnamed. */
+  ASSERT_STREQ(g_rc_deny.matched[0].matched_rule_description, kRule);
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();

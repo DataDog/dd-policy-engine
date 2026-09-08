@@ -21,17 +21,34 @@
 #define PLCS_MAX_EVAL_DEPTH 64
 
 plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
+static const char *rules_description(dd_ns(NodeTypeWrapper_table_t) node);
 
 /**
- * The leaf conditions that evaluated TRUE for the policy currently being
- * evaluated. Reset per policy by evaluate_policy and handed to that policy's
- * actions.
+ * The leaf conditions that justify the current policy's result: those that
+ * evaluated TRUE inside a subtree that also evaluated TRUE. Reset per policy by
+ * evaluate_policy and handed to that policy's actions.
+ *
+ * A leaf appends itself as soon as it is TRUE, and evaluate_rules drops whatever
+ * a subtree appended when that subtree does not evaluate TRUE - so a condition
+ * satisfied inside a branch that ultimately failed is not reported.
  */
 static plcs_matched_rule g_matched_rules[PLCS_MATCHED_RULES_MAX];
 static size_t g_matched_rules_len;
 
 static void reset_matched_rules(void) {
   g_matched_rules_len = 0;
+}
+
+/**
+ * @brief Discards the matched rules appended since `mark`.
+ *
+ * Note that a truncation can lose matches that the PLCS_MATCHED_RULES_MAX cap
+ * already dropped, so a truncated list stays a subset of the real one.
+ */
+static void rollback_matched_rules(size_t mark) {
+  if (mark < g_matched_rules_len) {
+    g_matched_rules_len = mark;
+  }
 }
 
 static plcs_matched_rule *next_matched_rule(void) {
@@ -71,7 +88,11 @@ plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, con
         rule->evaluator_id = eval_id;
         rule->comparator = cmp;
         rule->policy_value.str = value;
-        rule->process_value.str = param;
+        // Re-read rather than reuse `param`: an evaluator that scans a collection (e.g.
+        // one matching any argv element) doesn't know which specific value matched until
+        // it finds one, and reports it back by updating its own context entry before
+        // returning TRUE.
+        rule->process_value.str = plcs_eval_ctx_get_string_param(eval_id);
       }
     }
 
@@ -294,11 +315,36 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
   return res;
 }
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
-  if (depth > PLCS_MAX_EVAL_DEPTH) {
-    return PLCS_EVAL_RESULT_ABSTAIN;
+/**
+ * @brief A composite node's description, or NULL for any other node.
+ *
+ * Used below the root, where leaves are excluded on purpose: their descriptions
+ * restate the condition, which the action already receives as the evaluator,
+ * comparator and values, so letting one stand in as a rule name would report noise
+ * where a policy names its own rule.
+ */
+static const char *composite_description(dd_ns(NodeTypeWrapper_table_t) node) {
+  if (!node || dd_ns(NodeTypeWrapper_node_type)(node) != dd_ns(NodeType_CompositeNode)) {
+    return NULL;
   }
 
+  dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
+  const char *description = dd_ns(CompositeNode_description)(composite_node);
+  return (description && *description) ? description : NULL;
+}
+
+/**
+ * @brief The root's description, whichever node kind the root is.
+ *
+ * A single-condition policy has a leaf for a root, and that leaf is then the whole
+ * rule rather than one condition of it, so its description does name the rule.
+ */
+static const char *root_description(dd_ns(NodeTypeWrapper_table_t) node) {
+  const char *description = rules_description(node);
+  return (description && *description) ? description : NULL;
+}
+
+static plcs_evaluation_result evaluate_node(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
   switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
     case dd_ns(NodeType_EvaluatorNode):
       dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
@@ -317,6 +363,41 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
 
   // log error
   return PLCS_EVAL_RESULT_ABSTAIN;
+}
+
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+  if (depth > PLCS_MAX_EVAL_DEPTH) {
+    return PLCS_EVAL_RESULT_ABSTAIN;
+  }
+
+  // Applied at every node, this is what keeps the reported rules to the ones that
+  // justify the result: an AND that fails discards the conditions its earlier
+  // children satisfied, an OR keeps only the branch that succeeded, and a NOT
+  // discards the child it inverted.
+  size_t mark = g_matched_rules_len;
+
+  plcs_evaluation_result res = evaluate_node(node, depth);
+  if (res != PLCS_EVAL_RESULT_TRUE) {
+    rollback_matched_rules(mark);
+    return res;
+  }
+
+  // Name the rule each surviving condition belongs to, preferring the most specific
+  // name available. Unwinding overwrites what inner nodes set, so among the nodes
+  // below the root the outermost wins - a rule's own node rather than a grouping
+  // node inside it. The root only fills in what is still unnamed, so a policy that
+  // bundles rules reports the rule while a policy that is itself one rule reports
+  // itself instead of leaving the condition unnamed.
+  const char *description = depth > 0 ? composite_description(node) : root_description(node);
+  if (description) {
+    for (size_t ix = mark; ix < g_matched_rules_len; ++ix) {
+      if (depth > 0 || !g_matched_rules[ix].matched_rule_description) {
+        g_matched_rules[ix].matched_rule_description = description;
+      }
+    }
+  }
+
+  return res;
 }
 
 /**
@@ -346,8 +427,7 @@ static inline plcs_errors perform_actions(
     dd_ns(Action_vec_t) actions_vec,
     plcs_uuid policy_id,
     int64_t policy_version,
-    const char *policy_description,
-    const char *rule_description
+    const char *policy_description
 ) {
   plcs_errors res = PLCS_ESUCCESS;
 
@@ -373,7 +453,7 @@ static inline plcs_errors perform_actions(
     if (action_function) {
       res = action_function(
           eval_res, values, values_len, dd_ns(Action_description)(action), action_id, policy_id, policy_version,
-          policy_description, rule_description, g_matched_rules, g_matched_rules_len
+          policy_description, g_matched_rules, g_matched_rules_len
       );
       plcs_eval_ctx_set_action_error(action_id, res);
     } else {
@@ -402,14 +482,23 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
   plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
 
+  // every leaf matched above belongs to this policy, which today is itself the rule
+  // (see plcs_matched_rule.rule_id), so stamp them all with its id and version
+  int64_t policy_version = dd_ns(Policy_version)(policy);
+  for (size_t ix = 0; ix < g_matched_rules_len; ++ix) {
+    g_matched_rules[ix].rule_id = policy_id;
+    g_matched_rules[ix].rule_version = policy_version;
+  }
+
   // perform actions given evaluation result
   return perform_actions(
-      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy),
-      rules_description(rules)
+      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy)
   );
 }
 
-plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
+plcs_errors plcs_evaluate_buffer_early_exit(
+    const uint8_t *buffer, size_t size, plcs_evaluate_stop_fn should_stop
+) {
   dd_ns(Policy_vec_t) policies = plcs_get_policies(buffer, size);
   if (!policies) {
     // not necessarily an error, could be empty policies
@@ -425,9 +514,16 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
       continue;
     }
     total_errors += evaluate_policy(policy);
+    if (should_stop && should_stop()) {
+      break;
+    }
   }
 
   return total_errors;
+}
+
+plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
+  return plcs_evaluate_buffer_early_exit(buffer, size, NULL);
 }
 
 const char *plcs_string_evaluators_to_string(enum plcs_string_evaluators v) {
