@@ -25,14 +25,14 @@ plcs_errors ACTION_INJECT_DENY(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const plcs_matched_rule *matched_rules,
-    size_t matched_rules_len
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 ) {
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
-  (void)matched_rules;
-  (void)matched_rules_len;
+  (void)matched_conditions;
+  (void)matched_conditions_len;
   printf("Action: DENY\n");
   printf("Description: '%s' (id: %d)\n", description, action_id);
   printf("Result: %s\n", res == PLCS_EVAL_RESULT_FALSE ? "false" : res == PLCS_EVAL_RESULT_TRUE ? "true" : "dont-care");
@@ -53,14 +53,14 @@ plcs_errors ACTION_INJECT_ALLOW(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const plcs_matched_rule *matched_rules,
-    size_t matched_rules_len
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 ) {
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
-  (void)matched_rules;
-  (void)matched_rules_len;
+  (void)matched_conditions;
+  (void)matched_conditions_len;
   printf("Action: ALLOW\n");
   printf("Description: '%s' (id: %d)\n", description, action_id);
   printf("Result: %s\n", res == PLCS_EVAL_RESULT_FALSE ? "false" : res == PLCS_EVAL_RESULT_TRUE ? "true" : "dont-care");

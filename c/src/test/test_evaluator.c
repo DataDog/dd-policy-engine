@@ -100,8 +100,8 @@ static plcs_errors test_action_allow(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const plcs_matched_rule *matched_rules,
-    size_t matched_rules_len
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 ) {
   (void)res;
   (void)values;
@@ -111,8 +111,8 @@ static plcs_errors test_action_allow(
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
-  (void)matched_rules;
-  (void)matched_rules_len;
+  (void)matched_conditions;
+  (void)matched_conditions_len;
   g_allow_called++;
   return PLCS_ESUCCESS;
 }
@@ -126,8 +126,8 @@ static plcs_errors test_action_deny(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const plcs_matched_rule *matched_rules,
-    size_t matched_rules_len
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 ) {
   (void)res;
   (void)values;
@@ -137,8 +137,8 @@ static plcs_errors test_action_deny(
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
-  (void)matched_rules;
-  (void)matched_rules_len;
+  (void)matched_conditions;
+  (void)matched_conditions_len;
   g_deny_called++;
   return PLCS_ESUCCESS;
 }
@@ -1127,8 +1127,8 @@ static plcs_evaluation_result g_last_action_res = PLCS_EVAL_RESULT_ABSTAIN;
 static plcs_uuid g_last_policy_id;
 static int64_t g_last_policy_version;
 static const char *g_last_policy_description;
-static plcs_matched_rule g_last_matched_rules[PLCS_MATCHED_RULES_MAX];
-static size_t g_last_matched_rules_len;
+static plcs_matched_condition g_last_matched_conditions[PLCS_MATCHED_CONDITIONS_MAX];
+static size_t g_last_matched_conditions_len;
 
 static plcs_errors test_action_capture(
     plcs_evaluation_result res,
@@ -1139,8 +1139,8 @@ static plcs_errors test_action_capture(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const plcs_matched_rule *matched_rules,
-    size_t matched_rules_len
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 ) {
   (void)values;
   (void)value_len;
@@ -1153,9 +1153,9 @@ static plcs_errors test_action_capture(
   g_last_policy_description = policy_description;
   /* The matched rules borrow the policy buffer, which outlives the assertions
    * below, so a shallow copy is enough to inspect them after the call. */
-  g_last_matched_rules_len = matched_rules_len;
-  for (size_t ix = 0; ix < matched_rules_len; ++ix) {
-    g_last_matched_rules[ix] = matched_rules[ix];
+  g_last_matched_conditions_len = matched_conditions_len;
+  for (size_t ix = 0; ix < matched_conditions_len; ++ix) {
+    g_last_matched_conditions[ix] = matched_conditions[ix];
   }
   return PLCS_ESUCCESS;
 }
@@ -1221,7 +1221,7 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   g_last_policy_id = (plcs_uuid){0};
   g_last_policy_version = 0;
   g_last_policy_description = NULL;
-  g_last_matched_rules_len = 0;
+  g_last_matched_conditions_len = 0;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
   ASSERT_EQ(prc, PLCS_ESUCCESS);
@@ -1245,12 +1245,12 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_match) {
   ASSERT_EQ(g_last_policy_id.lo, (uint64_t)0x1112131415161718ULL);
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
-  ASSERT_EQ(g_last_matched_rules_len, (size_t)1);
-  ASSERT_EQ((int)g_last_matched_rules[0].kind, (int)PLCS_RULE_VALUE_STR);
-  ASSERT_EQ(g_last_matched_rules[0].evaluator_id, (int)PLCS_STR_EVAL_POD_LABEL);
-  ASSERT_EQ(g_last_matched_rules[0].comparator, (int)PLCS_STR_CMP_EXACT);
-  ASSERT_STREQ(g_last_matched_rules[0].policy_value.str, "app=nginx");
-  ASSERT_STREQ(g_last_matched_rules[0].process_value.str, "app=nginx");
+  ASSERT_EQ(g_last_matched_conditions_len, (size_t)1);
+  ASSERT_EQ((int)g_last_matched_conditions[0].kind, (int)PLCS_CONDITION_VALUE_STR);
+  ASSERT_EQ(g_last_matched_conditions[0].evaluator_id, (int)PLCS_STR_EVAL_POD_LABEL);
+  ASSERT_EQ(g_last_matched_conditions[0].comparator, (int)PLCS_STR_CMP_EXACT);
+  ASSERT_STREQ(g_last_matched_conditions[0].policy_value.str, "app=nginx");
+  ASSERT_STREQ(g_last_matched_conditions[0].process_value.str, "app=nginx");
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
@@ -1267,7 +1267,7 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   g_last_policy_id = (plcs_uuid){0};
   g_last_policy_version = 0;
   g_last_policy_description = NULL;
-  g_last_matched_rules_len = 0;
+  g_last_matched_conditions_len = 0;
 
   int prc = plcs_eval_ctx_register_action(test_action_capture, PLCS_ACTION_INJECT_ALLOW);
   ASSERT_EQ(prc, PLCS_ESUCCESS);
@@ -1292,7 +1292,7 @@ UTEST(evaluator_integration, evaluate_pod_label_policy_end_to_end_no_match) {
   ASSERT_EQ(g_last_policy_version, (int64_t)1234567800);
   ASSERT_STREQ(g_last_policy_description, "k8s pod-label policy");
   /* Nothing matched, so no leaf conditions are reported. */
-  ASSERT_EQ(g_last_matched_rules_len, (size_t)0);
+  ASSERT_EQ(g_last_matched_conditions_len, (size_t)0);
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
@@ -1324,7 +1324,7 @@ typedef struct rc_capture {
   plcs_evaluation_result res;
   const char *policy_description;
   size_t matched_len;
-  plcs_matched_rule matched[PLCS_MATCHED_RULES_MAX];
+  plcs_matched_condition matched[PLCS_MATCHED_CONDITIONS_MAX];
 } rc_capture;
 
 static rc_capture g_rc_allow;
@@ -1334,15 +1334,15 @@ static void rc_capture_action(
     rc_capture *into,
     plcs_evaluation_result res,
     const char *policy_description,
-    const plcs_matched_rule *matched_rules,
-    size_t matched_rules_len
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 ) {
   into->called++;
   into->res = res;
   into->policy_description = policy_description;
-  into->matched_len = matched_rules_len;
-  for (size_t ix = 0; ix < matched_rules_len; ++ix) {
-    into->matched[ix] = matched_rules[ix];
+  into->matched_len = matched_conditions_len;
+  for (size_t ix = 0; ix < matched_conditions_len; ++ix) {
+    into->matched[ix] = matched_conditions[ix];
   }
 }
 
@@ -1356,8 +1356,8 @@ static void rc_capture_action(
       plcs_uuid policy_id,                                                                         \
       int64_t policy_version,                                                                      \
       const char *policy_description,                                                              \
-      const plcs_matched_rule *matched_rules,                                                      \
-      size_t matched_rules_len                                                                     \
+      const plcs_matched_condition *matched_conditions,                                                      \
+      size_t matched_conditions_len                                                                     \
   ) {                                                                                              \
     (void)values;                                                                                  \
     (void)value_len;                                                                               \
@@ -1365,7 +1365,7 @@ static void rc_capture_action(
     (void)action_id;                                                                               \
     (void)policy_id;                                                                               \
     (void)policy_version;                                                                          \
-    rc_capture_action((target), res, policy_description, matched_rules, matched_rules_len);        \
+    rc_capture_action((target), res, policy_description, matched_conditions, matched_conditions_len);        \
     return PLCS_ESUCCESS;                                                                          \
   }
 
@@ -1556,7 +1556,7 @@ UTEST(evaluator_integration, rc_orgwide_policy_reports_only_the_conditions_that_
    * absent even though they are part of the rule. */
   ASSERT_EQ(g_rc_deny.matched_len, (size_t)3);
 
-  ASSERT_EQ((int)g_rc_deny.matched[0].kind, (int)PLCS_RULE_VALUE_STR);
+  ASSERT_EQ((int)g_rc_deny.matched[0].kind, (int)PLCS_CONDITION_VALUE_STR);
   ASSERT_EQ(g_rc_deny.matched[0].evaluator_id, (int)PLCS_STR_EVAL_RUNTIME_LANGUAGE);
   ASSERT_EQ(g_rc_deny.matched[0].comparator, (int)PLCS_STR_CMP_EXACT);
   ASSERT_STREQ(g_rc_deny.matched[0].policy_value.str, "python");
@@ -1585,7 +1585,7 @@ UTEST(evaluator_integration, rc_orgwide_policy_reports_only_the_conditions_that_
    * naming the root rather than reporting the condition as unnamed. */
   for (size_t ix = 0; ix < g_rc_deny.matched_len; ++ix) {
     ASSERT_STREQ(
-        g_rc_deny.matched[ix].matched_rule_description,
+        g_rc_deny.matched[ix].rule_description,
         "Language equals python or jvm AND Operating System equals windows or linux AND Executable "
         "prefix asdb"
     );
@@ -1705,11 +1705,11 @@ UTEST(evaluator_integration, failed_branches_do_not_report_the_conditions_they_s
   /* Both conditions name the branch they came from, not the policy - which is what
    * identifies one rule inside a bundle like a converted requirements.bin. */
   ASSERT_STREQ(
-      g_rc_deny.matched[0].matched_rule_description,
+      g_rc_deny.matched[0].rule_description,
       "Instrumentation rule excludes Apache Cassandra debug-cql"
   );
   ASSERT_STREQ(
-      g_rc_deny.matched[1].matched_rule_description,
+      g_rc_deny.matched[1].rule_description,
       "Instrumentation rule excludes Apache Cassandra debug-cql"
   );
 
@@ -1770,7 +1770,7 @@ UTEST(evaluator_integration, leaf_rooted_policy_names_its_matched_condition) {
 
   /* The rule name comes from the root even though the root is a leaf, so the
    * condition is not reported as unnamed. */
-  ASSERT_STREQ(g_rc_deny.matched[0].matched_rule_description, kRule);
+  ASSERT_STREQ(g_rc_deny.matched[0].rule_description, kRule);
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();

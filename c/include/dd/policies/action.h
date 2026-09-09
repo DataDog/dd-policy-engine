@@ -46,19 +46,19 @@ typedef struct {
  * are dropped rather than reported, so an action must treat the reported list as
  * potentially truncated.
  */
-#define PLCS_MATCHED_RULES_MAX 64
+#define PLCS_MATCHED_CONDITIONS_MAX 64
 
 /**
- * @brief Selects the active member of the value unions in plcs_matched_rule.
+ * @brief Selects the active member of the value unions in plcs_matched_condition.
  */
-typedef enum plcs_rule_value_kind {
+typedef enum plcs_condition_value_kind {
   /** The leaf is a string evaluator: read `str`. */
-  PLCS_RULE_VALUE_STR = 0,
+  PLCS_CONDITION_VALUE_STR = 0,
   /** The leaf is a signed numeric evaluator: read `num`. */
-  PLCS_RULE_VALUE_NUM,
+  PLCS_CONDITION_VALUE_NUM,
   /** The leaf is an unsigned numeric evaluator: read `unum`. */
-  PLCS_RULE_VALUE_UNUM,
-} plcs_rule_value_kind;
+  PLCS_CONDITION_VALUE_UNUM,
+} plcs_condition_value_kind;
 
 /**
  * @brief A single leaf condition that justifies a policy's TRUE result.
@@ -71,7 +71,7 @@ typedef enum plcs_rule_value_kind {
  * context. They are only valid for the duration of the action call - copy anything
  * that must outlive it.
  */
-typedef struct plcs_matched_rule {
+typedef struct plcs_matched_condition {
   /**
    * The description of the rule this condition belongs to: the outermost described
    * composite below the policy's root that evaluated TRUE, or the root itself when
@@ -81,7 +81,7 @@ typedef struct plcs_matched_rule {
    * policy that is itself one rule it falls back to the root. NULL only when no node
    * above the condition is described.
    */
-  const char *matched_rule_description;
+  const char *rule_description;
   /**
    * The id of the rule this condition belongs to. Today every RC-generated policy
    * corresponds to exactly one Instrumentation Rule, so this is the owning policy's
@@ -94,11 +94,11 @@ typedef struct plcs_matched_rule {
    */
   int64_t rule_version;
   /** Which member of `policy_value` and `process_value` is set. */
-  plcs_rule_value_kind kind;
-  /** A plcs_string_evaluators value when `kind` is PLCS_RULE_VALUE_STR, a
+  plcs_condition_value_kind kind;
+  /** A plcs_string_evaluators value when `kind` is PLCS_CONDITION_VALUE_STR, a
    * plcs_numeric_evaluators value otherwise. */
   int evaluator_id;
-  /** A plcs_string_comparator value when `kind` is PLCS_RULE_VALUE_STR, a
+  /** A plcs_string_comparator value when `kind` is PLCS_CONDITION_VALUE_STR, a
    * plcs_numeric_comparator value otherwise. */
   int comparator;
   /** The value the policy compared against. */
@@ -113,7 +113,7 @@ typedef struct plcs_matched_rule {
     long num;
     unsigned long unum;
   } process_value;
-} plcs_matched_rule;
+} plcs_matched_condition;
 
 /**
  * @brief represents an action function signature
@@ -126,14 +126,14 @@ typedef struct plcs_matched_rule {
  * @param policy_id           The id of the policy that produced this action.
  * @param policy_version      The version of the policy that produced this action.
  * @param policy_description  The description of the policy that produced this action.
- * @param matched_rules       The leaf conditions that justify the policy's result, in
+ * @param matched_conditions       The leaf conditions that justify the policy's result, in
  *                            evaluation order. Only conditions inside a subtree that
  *                            evaluated TRUE are reported, so a condition satisfied in
  *                            a branch that ultimately failed is absent, and a policy
  *                            that did not evaluate TRUE reports none at all.
  *                            Borrowed, and only valid for this call.
- * @param matched_rules_len   Length of the `matched_rules` array, capped at
- *                            PLCS_MATCHED_RULES_MAX.
+ * @param matched_conditions_len   Length of the `matched_conditions` array, capped at
+ *                            PLCS_MATCHED_CONDITIONS_MAX.
  *
  */
 typedef plcs_errors (*plcs_action_function_ptr)(
@@ -145,8 +145,8 @@ typedef plcs_errors (*plcs_action_function_ptr)(
     plcs_uuid policy_id,
     int64_t policy_version,
     const char *policy_description,
-    const plcs_matched_rule *matched_rules,
-    size_t matched_rules_len
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 );
 
 const char *plcs_actions_to_string(enum plcs_actions action);
