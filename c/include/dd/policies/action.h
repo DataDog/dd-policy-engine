@@ -63,25 +63,11 @@ typedef enum plcs_condition_value_kind {
 /**
  * @brief A single leaf condition that justifies a policy's TRUE result.
  *
- * @note Leaf nodes carry no useful description of their own in practice (policy
- * generation leaves them unset), so the human-readable text for a decision comes
- * from the action and policy descriptions instead.
- *
  * @note All pointers borrow memory owned by the policy buffer and the evaluation
  * context. They are only valid for the duration of the action call - copy anything
  * that must outlive it.
  */
 typedef struct plcs_matched_condition {
-  /**
-   * The description of the rule this condition belongs to: the outermost described
-   * composite below the policy's root that evaluated TRUE, or the root itself when
-   * nothing below it is described.
-   *
-   * For a policy that bundles several rules this names the individual rule; for a
-   * policy that is itself one rule it falls back to the root. NULL only when no node
-   * above the condition is described.
-   */
-  const char *rule_description;
   /**
    * The id of the rule this condition belongs to. Today every RC-generated policy
    * corresponds to exactly one Instrumentation Rule, so this is the owning policy's
@@ -126,14 +112,14 @@ typedef struct plcs_matched_condition {
  * @param policy_id           The id of the policy that produced this action.
  * @param policy_version      The version of the policy that produced this action.
  * @param policy_description  The description of the policy that produced this action.
- * @param matched_conditions       The leaf conditions that justify the policy's result, in
- *                            evaluation order. Only conditions inside a subtree that
- *                            evaluated TRUE are reported, so a condition satisfied in
- *                            a branch that ultimately failed is absent, and a policy
- *                            that did not evaluate TRUE reports none at all.
- *                            Borrowed, and only valid for this call.
- * @param matched_conditions_len   Length of the `matched_conditions` array, capped at
- *                            PLCS_MATCHED_CONDITIONS_MAX.
+ * @param matched_conditions      The leaf conditions that justify the policy's result, in
+ *                                evaluation order. Only conditions inside a subtree that
+ *                                evaluated TRUE are reported, so a condition satisfied in
+ *                                a branch that ultimately failed is absent, and a policy
+ *                                that did not evaluate TRUE reports none at all.
+ *                                Borrowed, and only valid for this call.
+ * @param matched_conditions_len  Length of the `matched_conditions` array, capped at
+ *                                PLCS_MATCHED_CONDITIONS_MAX.
  *
  */
 typedef plcs_errors (*plcs_action_function_ptr)(

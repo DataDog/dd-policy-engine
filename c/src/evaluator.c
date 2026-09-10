@@ -21,7 +21,6 @@
 #define PLCS_MAX_EVAL_DEPTH 64
 
 plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
-static const char *rules_description(dd_ns(NodeTypeWrapper_table_t) node);
 
 /**
  * The leaf conditions that justify the current policy's result: those that
@@ -315,35 +314,6 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
   return res;
 }
 
-/**
- * @brief A composite node's description, or NULL for any other node.
- *
- * Used below the root, where leaves are excluded on purpose: their descriptions
- * restate the condition, which the action already receives as the evaluator,
- * comparator and values, so letting one stand in as a rule name would report noise
- * where a policy names its own rule.
- */
-static const char *composite_description(dd_ns(NodeTypeWrapper_table_t) node) {
-  if (!node || dd_ns(NodeTypeWrapper_node_type)(node) != dd_ns(NodeType_CompositeNode)) {
-    return NULL;
-  }
-
-  dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-  const char *description = dd_ns(CompositeNode_description)(composite_node);
-  return (description && *description) ? description : NULL;
-}
-
-/**
- * @brief The root's description, whichever node kind the root is.
- *
- * A single-condition policy has a leaf for a root, and that leaf is then the whole
- * rule rather than one condition of it, so its description does name the rule.
- */
-static const char *root_description(dd_ns(NodeTypeWrapper_table_t) node) {
-  const char *description = rules_description(node);
-  return (description && *description) ? description : NULL;
-}
-
 static plcs_evaluation_result evaluate_node(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
   switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
     case dd_ns(NodeType_EvaluatorNode):
@@ -382,44 +352,7 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
     return res;
   }
 
-  // Name the rule each surviving condition belongs to, preferring the most specific
-  // name available. Unwinding overwrites what inner nodes set, so among the nodes
-  // below the root the outermost wins - a rule's own node rather than a grouping
-  // node inside it. The root only fills in what is still unnamed, so a policy that
-  // bundles rules reports the rule while a policy that is itself one rule reports
-  // itself instead of leaving the condition unnamed.
-  const char *description = depth > 0 ? composite_description(node) : root_description(node);
-  if (description) {
-    for (size_t ix = mark; ix < g_matched_conditions_len; ++ix) {
-      if (depth > 0 || !g_matched_conditions[ix].rule_description) {
-        g_matched_conditions[ix].rule_description = description;
-      }
-    }
-  }
-
   return res;
-}
-
-/**
- * @brief The description of a policy's root rule node, whichever node kind it is.
- */
-static const char *rules_description(dd_ns(NodeTypeWrapper_table_t) node) {
-  if (!node) {
-    return NULL;
-  }
-
-  switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
-    case dd_ns(NodeType_EvaluatorNode):
-      dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
-      return dd_ns(EvaluatorNode_description)(evaluator_node);
-
-    case dd_ns(NodeType_CompositeNode):
-      dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-      return dd_ns(CompositeNode_description)(composite_node);
-
-    default:
-      return NULL;
-  }
 }
 
 static inline plcs_errors perform_actions(

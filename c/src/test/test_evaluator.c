@@ -1581,16 +1581,6 @@ UTEST(evaluator_integration, rc_orgwide_policy_reports_only_the_conditions_that_
   ASSERT_STREQ(g_rc_allow.policy_description, "Workload Selection Policy / default");
   ASSERT_EQ(g_rc_allow.matched_len, (size_t)0);
 
-  /* Nothing below this policy's root is described, so each condition falls back to
-   * naming the root rather than reporting the condition as unnamed. */
-  for (size_t ix = 0; ix < g_rc_deny.matched_len; ++ix) {
-    ASSERT_STREQ(
-        g_rc_deny.matched[ix].rule_description,
-        "Language equals python or jvm AND Operating System equals windows or linux AND Executable "
-        "prefix asdb"
-    );
-  }
-
   /* The list is reset between policies: the deny policy's three entries did not
    * leak into the allow policy's report, and vice versa. */
 
@@ -1701,76 +1691,6 @@ UTEST(evaluator_integration, failed_branches_do_not_report_the_conditions_they_s
   ASSERT_EQ(g_rc_deny.matched[1].evaluator_id, (int)PLCS_STR_EVAL_PROCESS_ARGV);
   ASSERT_EQ(g_rc_deny.matched[1].comparator, (int)PLCS_STR_CMP_EXACT);
   ASSERT_STREQ(g_rc_deny.matched[1].policy_value.str, "org.apache.cassandra.transport.Client");
-
-  /* Both conditions name the branch they came from, not the policy - which is what
-   * identifies one rule inside a bundle like a converted requirements.bin. */
-  ASSERT_STREQ(
-      g_rc_deny.matched[0].rule_description,
-      "Instrumentation rule excludes Apache Cassandra debug-cql"
-  );
-  ASSERT_STREQ(
-      g_rc_deny.matched[1].rule_description,
-      "Instrumentation rule excludes Apache Cassandra debug-cql"
-  );
-
-  flatcc_builder_free(buf);
-  plcs_eval_ctx_reset();
-}
-
-/* -------------------------------------------------------------------------- */
-/* A policy whose root is a bare leaf still names its matched condition.       */
-/*                                                                            */
-/* This is the shape dd-requirements-converter emits for a single-condition    */
-/* rule: the rule is one comparison, so there is no composite anywhere and the  */
-/* leaf itself carries the rule's name.                                       */
-/* -------------------------------------------------------------------------- */
-
-UTEST(evaluator_integration, leaf_rooted_policy_names_its_matched_condition) {
-  static const char *kRule = "Exclude Apache Cassandra debug-cql";
-
-  int rc = plcs_eval_ctx_init();
-  ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
-  plcs_eval_ctx_reset();
-
-  g_rc_deny = (rc_capture){0};
-
-  int prc = plcs_eval_ctx_register_action(rc_action_deny, PLCS_ACTION_INJECT_DENY);
-  ASSERT_EQ(prc, PLCS_ESUCCESS);
-  prc = plcs_eval_ctx_set_str_eval_param(
-      PLCS_STR_EVAL_PROCESS_ARGV, "org.apache.cassandra.transport.Client"
-  );
-  ASSERT_EQ(prc, PLCS_ESUCCESS);
-
-  flatcc_builder_t b;
-  flatcc_builder_init(&b);
-
-  /* The policy's rules are the leaf itself - no composite wraps it. */
-  dd_wls_NodeTypeWrapper_ref_t rules = rc_str_leaf(
-      &b, dd_wls_StringEvaluators_PROCESS_ARGV, dd_wls_CmpTypeSTR_CMP_EXACT,
-      "org.apache.cassandra.transport.Client", kRule
-  );
-  dd_wls_Policy_ref_t policy =
-      rc_policy(&b, kRule, rules, rc_single_action(&b, dd_wls_ActionId_INJECT_DENY, NULL));
-
-  dd_wls_Policy_vec_start(&b);
-  dd_wls_Policy_vec_push(&b, policy);
-  dd_wls_Policy_vec_ref_t policies = dd_wls_Policy_vec_end(&b);
-  dd_wls_Policies_create_as_root(&b, policies);
-
-  size_t sz = 0;
-  void *buf = flatcc_builder_finalize_buffer(&b, &sz);
-  flatcc_builder_clear(&b);
-
-  int eval_rc = plcs_evaluate_buffer((const uint8_t *)buf, sz);
-  ASSERT_EQ(eval_rc, PLCS_ESUCCESS);
-
-  ASSERT_EQ(g_rc_deny.called, 1);
-  ASSERT_EQ((int)g_rc_deny.res, (int)PLCS_EVAL_RESULT_TRUE);
-  ASSERT_EQ(g_rc_deny.matched_len, (size_t)1);
-
-  /* The rule name comes from the root even though the root is a leaf, so the
-   * condition is not reported as unnamed. */
-  ASSERT_STREQ(g_rc_deny.matched[0].rule_description, kRule);
 
   flatcc_builder_free(buf);
   plcs_eval_ctx_reset();
