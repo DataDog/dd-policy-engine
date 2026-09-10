@@ -282,6 +282,10 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
       }
       return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1, mc));
       break;
+
+    default:
+      res = PLCS_EVAL_RESULT_ABSTAIN;
+      break;
   }
 
   // keep iterating recursively over the tree
