@@ -68,17 +68,6 @@ typedef enum plcs_condition_value_kind {
  * that must outlive it.
  */
 typedef struct plcs_matched_condition {
-  /**
-   * The id of the rule this condition belongs to. Today every RC-generated policy
-   * corresponds to exactly one Instrumentation Rule, so this is the owning policy's
-   * `id` (see the `policy_id` action parameter) rather than a separate per-rule id.
-   */
-  plcs_uuid rule_id;
-  /**
-   * The version of the rule this condition belongs to (see the `policy_version`
-   * action parameter) — same one-rule-per-policy caveat as `rule_id`.
-   */
-  int64_t rule_version;
   /** Which member of `policy_value` and `process_value` is set. */
   plcs_condition_value_kind kind;
   /** A plcs_string_evaluators value when `kind` is PLCS_CONDITION_VALUE_STR, a

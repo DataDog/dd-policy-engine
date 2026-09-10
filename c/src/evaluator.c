@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include "eval_ctx.h"
+#include "matched_conditions.h"
 #include "policy.h"
 #include "wire/action.h"
 #include "wire/boolean_operation.h"
@@ -20,23 +21,7 @@
 #include "wire/evaluation_result.h"
 #define PLCS_MAX_EVAL_DEPTH 64
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
-
-/**
- * The leaf conditions that justify the current policy's result: those that
- * evaluated TRUE inside a subtree that also evaluated TRUE. Reset per policy by
- * evaluate_policy and handed to that policy's actions.
- *
- * A leaf appends itself as soon as it is TRUE, and evaluate_rules drops whatever
- * a subtree appended when that subtree does not evaluate TRUE - so a condition
- * satisfied inside a branch that ultimately failed is not reported.
- */
-static plcs_matched_condition g_matched_conditions[PLCS_MATCHED_CONDITIONS_MAX];
-static size_t g_matched_conditions_len;
-
-static void reset_matched_conditions(void) {
-  g_matched_conditions_len = 0;
-}
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, matched_conditions_buf *mc);
 
 /**
  * @brief Discards the matched conditions appended since `mark`.
@@ -44,23 +29,24 @@ static void reset_matched_conditions(void) {
  * Note that a truncation can lose matches that the PLCS_MATCHED_CONDITIONS_MAX cap
  * already dropped, so a truncated list stays a subset of the real one.
  */
-static void rollback_matched_conditions(size_t mark) {
-  if (mark < g_matched_conditions_len) {
-    g_matched_conditions_len = mark;
+static void rollback_matched_conditions(matched_conditions_buf *mc, size_t mark) {
+  if (mark < mc->len) {
+    mc->len = mark;
   }
 }
 
-static plcs_matched_condition *next_matched_condition(void) {
-  if (g_matched_conditions_len >= PLCS_MATCHED_CONDITIONS_MAX) {
+static plcs_matched_condition *next_matched_condition(matched_conditions_buf *mc) {
+  if (mc->len >= PLCS_MATCHED_CONDITIONS_MAX) {
     return NULL;
   }
 
-  plcs_matched_condition *condition = &g_matched_conditions[g_matched_conditions_len++];
+  plcs_matched_condition *condition = &mc->conditions[mc->len++];
   *condition = (plcs_matched_condition){0};
   return condition;
 }
 
-plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
+plcs_evaluation_result
+evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description, matched_conditions_buf *mc) {
   if (!eval_str) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -81,7 +67,7 @@ plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, con
 
     plcs_evaluation_result res = eval(value, cmp, param, description, eval_id);
     if (res == PLCS_EVAL_RESULT_TRUE) {
-      plcs_matched_condition *condition = next_matched_condition();
+      plcs_matched_condition *condition = next_matched_condition(mc);
       if (condition) {
         condition->kind = PLCS_CONDITION_VALUE_STR;
         condition->evaluator_id = eval_id;
@@ -101,7 +87,8 @@ plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, con
   return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
-plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, const char *description) {
+plcs_evaluation_result
+evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, const char *description, matched_conditions_buf *mc) {
   if (!eval_num) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -126,7 +113,7 @@ plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, co
 
     plcs_evaluation_result res = eval(value, cmp, param, description, eval_id);
     if (res == PLCS_EVAL_RESULT_TRUE) {
-      plcs_matched_condition *condition = next_matched_condition();
+      plcs_matched_condition *condition = next_matched_condition(mc);
       if (condition) {
         condition->kind = PLCS_CONDITION_VALUE_NUM;
         condition->evaluator_id = eval_id;
@@ -142,7 +129,8 @@ plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, co
   return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
-plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum, const char *description) {
+plcs_evaluation_result
+evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum, const char *description, matched_conditions_buf *mc) {
   if (!eval_unum) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -167,7 +155,7 @@ plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum,
 
     plcs_evaluation_result res = eval(value, cmp, param, description, eval_id);
     if (res == PLCS_EVAL_RESULT_TRUE) {
-      plcs_matched_condition *condition = next_matched_condition();
+      plcs_matched_condition *condition = next_matched_condition(mc);
       if (condition) {
         condition->kind = PLCS_CONDITION_VALUE_UNUM;
         condition->evaluator_id = eval_id;
@@ -183,7 +171,7 @@ plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum,
   return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
-plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
+plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node, matched_conditions_buf *mc) {
   plcs_evaluation_result result = PLCS_EVAL_RESULT_ABSTAIN;
   if (!node) {
     return result;  // log error?
@@ -193,13 +181,13 @@ plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
 
   switch (evaluator.type) {
     case dd_ns(EvaluatorType_StrEvaluator):
-      return evaluate_string(evaluator.value, dd_ns(EvaluatorNode_description)(node));
+      return evaluate_string(evaluator.value, dd_ns(EvaluatorNode_description)(node), mc);
 
     case dd_ns(EvaluatorType_NumEvaluator):
-      return evaluate_numeric(evaluator.value, dd_ns(EvaluatorNode_description)(node));
+      return evaluate_numeric(evaluator.value, dd_ns(EvaluatorNode_description)(node), mc);
 
     case dd_ns(EvaluatorType_UNumEvaluator):
-      return evaluate_unumeric(evaluator.value, dd_ns(EvaluatorNode_description)(node));
+      return evaluate_unumeric(evaluator.value, dd_ns(EvaluatorNode_description)(node), mc);
   }
 
   plcs_eval_ctx_set_error(PLCS_EUNKNOWN_EVAL_IX);
@@ -261,7 +249,7 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
-plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
+plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, matched_conditions_buf *mc) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -292,13 +280,13 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
         // log error
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
-      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1));
+      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1, mc));
       break;
   }
 
   // keep iterating recursively over the tree
   for (size_t ix = 0; ix < children_len; ++ix) {
-    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1));
+    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1, mc));
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
@@ -314,16 +302,17 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
   return res;
 }
 
-static plcs_evaluation_result evaluate_node(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+static plcs_evaluation_result
+evaluate_node(dd_ns(NodeTypeWrapper_table_t) node, int depth, matched_conditions_buf *mc) {
   switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
     case dd_ns(NodeType_EvaluatorNode):
       dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
-      return node_evaluator(evaluator_node);
+      return node_evaluator(evaluator_node, mc);
       break;
 
     case dd_ns(NodeType_CompositeNode):
       dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-      return composite_evaluator(composite_node, depth);
+      return composite_evaluator(composite_node, depth, mc);
       break;
 
     default:
@@ -335,7 +324,7 @@ static plcs_evaluation_result evaluate_node(dd_ns(NodeTypeWrapper_table_t) node,
   return PLCS_EVAL_RESULT_ABSTAIN;
 }
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, matched_conditions_buf *mc) {
   if (depth > PLCS_MAX_EVAL_DEPTH) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -344,11 +333,11 @@ plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int d
   // justify the result: an AND that fails discards the conditions its earlier
   // children satisfied, an OR keeps only the branch that succeeded, and a NOT
   // discards the child it inverted.
-  size_t mark = g_matched_conditions_len;
+  size_t mark = mc->len;
 
-  plcs_evaluation_result res = evaluate_node(node, depth);
+  plcs_evaluation_result res = evaluate_node(node, depth, mc);
   if (res != PLCS_EVAL_RESULT_TRUE) {
-    rollback_matched_conditions(mark);
+    rollback_matched_conditions(mc, mark);
     return res;
   }
 
@@ -360,7 +349,8 @@ static inline plcs_errors perform_actions(
     dd_ns(Action_vec_t) actions_vec,
     plcs_uuid policy_id,
     int64_t policy_version,
-    const char *policy_description
+    const char *policy_description,
+    const matched_conditions_buf *mc
 ) {
   plcs_errors res = PLCS_ESUCCESS;
 
@@ -386,7 +376,7 @@ static inline plcs_errors perform_actions(
     if (action_function) {
       res = action_function(
           eval_res, values, values_len, dd_ns(Action_description)(action), action_id, policy_id, policy_version,
-          policy_description, g_matched_conditions, g_matched_conditions_len
+          policy_description, mc->conditions, mc->len
       );
       plcs_eval_ctx_set_action_error(action_id, res);
     } else {
@@ -410,28 +400,18 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
   // the matched leaves are reported per policy, so start from a clean slate
-  reset_matched_conditions();
+  matched_conditions_buf mc = {0};
 
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
-  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
-
-  // every leaf matched above belongs to this policy, which today is itself the rule
-  // (see plcs_matched_condition.rule_id), so stamp them all with its id and version
-  int64_t policy_version = dd_ns(Policy_version)(policy);
-  for (size_t ix = 0; ix < g_matched_conditions_len; ++ix) {
-    g_matched_conditions[ix].rule_id = policy_id;
-    g_matched_conditions[ix].rule_version = policy_version;
-  }
+  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0, &mc) : PLCS_EVAL_RESULT_ABSTAIN;
 
   // perform actions given evaluation result
   return perform_actions(
-      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy)
+      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy), &mc
   );
 }
 
-plcs_errors plcs_evaluate_buffer_early_exit(
-    const uint8_t *buffer, size_t size, plcs_evaluate_stop_fn should_stop
-) {
+plcs_errors plcs_evaluate_buffer_early_exit(const uint8_t *buffer, size_t size, plcs_evaluate_stop_fn should_stop) {
   dd_ns(Policy_vec_t) policies = plcs_get_policies(buffer, size);
   if (!policies) {
     // not necessarily an error, could be empty policies

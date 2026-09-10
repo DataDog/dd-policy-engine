@@ -58,6 +58,7 @@
 
 /* Test-specific headers */
 #include "hardcoded_policies.h"
+#include "matched_conditions.h"
 
 // unexported functions
 extern plcs_evaluation_result string_evaluator_exact(const char *eval, const char *param);
@@ -71,16 +72,20 @@ extern void plcs_eval_ctx_set_num_eval_error(plcs_numeric_evaluators ix, plcs_er
 extern void plcs_eval_ctx_set_unum_eval_error(plcs_numeric_evaluators ix, plcs_errors error);
 
 // Additional extern declarations for evaluator functions
-extern plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description);
-extern plcs_evaluation_result evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, const char *description);
-extern plcs_evaluation_result evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum, const char *description);
-extern plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node);
+extern plcs_evaluation_result
+evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description, matched_conditions_buf *mc);
+extern plcs_evaluation_result
+evaluate_numeric(dd_ns(NumEvaluator_table_t) eval_num, const char *description, matched_conditions_buf *mc);
+extern plcs_evaluation_result
+evaluate_unumeric(dd_ns(UNumEvaluator_table_t) eval_unum, const char *description, matched_conditions_buf *mc);
+extern plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node, matched_conditions_buf *mc);
 extern plcs_evaluation_result DoAnd(plcs_evaluation_result a, plcs_evaluation_result b);
 extern plcs_evaluation_result DoOr(plcs_evaluation_result a, plcs_evaluation_result b);
 extern plcs_evaluation_result DoNot(plcs_evaluation_result res);
 extern plcs_evaluation_result
 DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_result a, plcs_evaluation_result b);
-extern plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node);
+extern plcs_evaluation_result
+composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, matched_conditions_buf *mc);
 
 extern void plcs_eval_ctx_reset(void);
 
@@ -428,7 +433,7 @@ UTEST(evaluator, default_string_eval_sanity) {
       (plcs_evaluation_result)PLCS_EVAL_RESULT_ABSTAIN
   );
 
-  ASSERT_EQ((int)evaluate_string(NULL, "d"), PLCS_EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)evaluate_string(NULL, "d", NULL), PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, default_numeric_eval_sanity) {
@@ -490,11 +495,13 @@ UTEST(evaluator, test_conversion_evalresult_to_wire) {
 
 UTEST(evaluator, test_evaluate_string_null_input) {
   /* Test with NULL evaluator */
-  int res = evaluate_string(NULL, "test description");
+  int res = evaluate_string(NULL, "test description", NULL);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_evaluate_string_basic_functionality) {
+  matched_conditions_buf mc = {0};
+
   /* Initialize context for numeric evaluation */
   int rc = plcs_eval_ctx_init();
   ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
@@ -519,15 +526,15 @@ UTEST(evaluator, test_evaluate_string_basic_functionality) {
   ASSERT_TRUE(dd_wls_StrEvaluator_verify_as_root(buf, sz) == 0);
   dd_wls_StrEvaluator_table_t eval = dd_wls_StrEvaluator_as_root(buf);
 
-  int res = evaluate_string(eval, "d");
+  int res = evaluate_string(eval, "d", &mc);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
-  res = evaluate_string(NULL, "d");
+  res = evaluate_string(NULL, "d", &mc);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 
   // reset all ctx:
   plcs_eval_ctx_reset();
-  res = evaluate_string(eval, "d");
+  res = evaluate_string(eval, "d", &mc);
   // shouldn't be any value
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   flatcc_builder_free(buf);
@@ -535,6 +542,8 @@ UTEST(evaluator, test_evaluate_string_basic_functionality) {
 }
 
 UTEST(evaluator, test_evaluate_string_pod_label_key_value_match) {
+  matched_conditions_buf mc = {0};
+
   /* POD_LABEL follows the "KEY=VALUE" convention: the caller-supplied fact is the
    * whole "key=value" string, matched with CMP_EXACT against the policy's expected value. */
   int rc = plcs_eval_ctx_init();
@@ -558,7 +567,7 @@ UTEST(evaluator, test_evaluate_string_pod_label_key_value_match) {
   ASSERT_TRUE(dd_wls_StrEvaluator_verify_as_root(buf, sz) == 0);
   dd_wls_StrEvaluator_table_t eval = dd_wls_StrEvaluator_as_root(buf);
 
-  int res = evaluate_string(eval, "d");
+  int res = evaluate_string(eval, "d", &mc);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
   flatcc_builder_free(buf);
@@ -567,6 +576,7 @@ UTEST(evaluator, test_evaluate_string_pod_label_key_value_match) {
 }
 
 UTEST(evaluator, test_evaluate_string_namespace_label_existence_check) {
+  matched_conditions_buf mc = {0};
   /* "KEY=" with CMP_PREFIX expresses an existence check for the label, regardless of value. */
   int rc = plcs_eval_ctx_init();
   ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
@@ -590,7 +600,7 @@ UTEST(evaluator, test_evaluate_string_namespace_label_existence_check) {
   ASSERT_TRUE(dd_wls_StrEvaluator_verify_as_root(buf, sz) == 0);
   dd_wls_StrEvaluator_table_t eval = dd_wls_StrEvaluator_as_root(buf);
 
-  int res = evaluate_string(eval, "d");
+  int res = evaluate_string(eval, "d", &mc);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
   flatcc_builder_free(buf);
@@ -604,11 +614,13 @@ UTEST(evaluator, test_evaluate_string_namespace_label_existence_check) {
 
 UTEST(evaluator, test_evaluate_numeric_null_input) {
   /* Test with NULL evaluator */
-  int res = evaluate_numeric(NULL, "test description");
+  int res = evaluate_numeric(NULL, "test description", NULL);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
+  matched_conditions_buf mc = {0};
+
   /* Initialize context for numeric evaluation */
   int rc = plcs_eval_ctx_init();
   ASSERT_TRUE(rc == PLCS_ESUCCESS || rc == PLCS_EINITIZLIED);
@@ -624,13 +636,13 @@ UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
   void *buf = flatcc_builder_finalize_buffer(&b, &sz);
   ASSERT_TRUE(dd_wls_NumEvaluator_verify_as_root(buf, sz) == 0);
   dd_wls_NumEvaluator_table_t eval = dd_wls_NumEvaluator_as_root(buf);
-  int res = evaluate_numeric(eval, "d");
+  int res = evaluate_numeric(eval, "d", &mc);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
-  res = evaluate_numeric(NULL, "d");
+  res = evaluate_numeric(NULL, "d", &mc);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   // force reset all ctx (init will return because of it's implementation)
   plcs_eval_ctx_reset();
-  res = evaluate_numeric(eval, "d");
+  res = evaluate_numeric(eval, "d", &mc);
   // shouldn't be any value
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   flatcc_builder_free(buf);
@@ -643,13 +655,14 @@ UTEST(evaluator, test_evaluate_numeric_basic_functionality) {
 
 UTEST(evaluator, test_evaluate_unumeric_null_input) {
   /* Test with NULL evaluator */
-  int res = evaluate_unumeric(NULL, "test description");
+  int res = evaluate_unumeric(NULL, "test description", NULL);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
   /* Mock a UNumEvaluator with basic values */
   /* Note: This test requires proper mocking of FlatCC objects */
+  matched_conditions_buf mc = {0};
 
   /* Initialize context for unumeric evaluation */
   int rc = plcs_eval_ctx_init();
@@ -670,11 +683,11 @@ UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
   ASSERT_TRUE(dd_wls_UNumEvaluator_verify_as_root(buf, sz) == 0);
   dd_wls_UNumEvaluator_table_t eval = dd_wls_UNumEvaluator_as_root(buf);
 
-  int res = evaluate_unumeric(eval, "d");
+  int res = evaluate_unumeric(eval, "d", &mc);
   flatcc_builder_free(buf);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_TRUE);
 
-  res = evaluate_unumeric(NULL, "d");
+  res = evaluate_unumeric(NULL, "d", &mc);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
   flatcc_builder_reset(&b);
 }
@@ -685,13 +698,14 @@ UTEST(evaluator, test_evaluate_unumeric_basic_functionality) {
 
 UTEST(evaluator, test_node_evaluator_null_input) {
   /* Test with NULL node */
-  int res = node_evaluator(NULL);
+  int res = node_evaluator(NULL, NULL);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
 UTEST(evaluator, test_node_evaluator_basic_functionality) {
   /* Mock an EvaluatorNode with basic values */
   /* Note: This test requires proper mocking of FlatCC objects */
+  matched_conditions_buf mc = {0};
 
 #include <stdio.h>
   printf("hi?!\n");
@@ -716,7 +730,7 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   void *buf = flatcc_builder_finalize_buffer(&b, &sz);
   dd_wls_EvaluatorNode_table_t eval = dd_wls_EvaluatorNode_as_root(buf);
 
-  rc = node_evaluator(eval);
+  rc = node_evaluator(eval, &mc);
   flatcc_builder_free(buf);
   flatcc_builder_clear(&b);
   ASSERT_EQ(rc, PLCS_EVAL_RESULT_TRUE);
@@ -737,7 +751,7 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   buf = flatcc_builder_finalize_buffer(&b, &sz);
   eval = dd_wls_EvaluatorNode_as_root(buf);
 
-  rc = node_evaluator(eval);
+  rc = node_evaluator(eval, &mc);
   flatcc_builder_free(buf);
   flatcc_builder_clear(&b);
   ASSERT_EQ(rc, PLCS_EVAL_RESULT_TRUE);
@@ -756,7 +770,7 @@ UTEST(evaluator, test_node_evaluator_basic_functionality) {
   buf = flatcc_builder_finalize_buffer(&b, &sz);
   eval = dd_wls_EvaluatorNode_as_root(buf);
 
-  rc = node_evaluator(eval);
+  rc = node_evaluator(eval, &mc);
   flatcc_builder_free(buf);
   ASSERT_EQ(rc, PLCS_EVAL_RESULT_TRUE);
 }
@@ -873,7 +887,7 @@ UTEST(evaluator, test_DoOper_basic_operations) {
 
 UTEST(evaluator, test_composite_evaluator_null_input) {
   /* Test with NULL node */
-  int res = composite_evaluator(NULL);
+  int res = composite_evaluator(NULL, 0, NULL);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 
@@ -1346,27 +1360,20 @@ static void rc_capture_action(
   }
 }
 
-#define RC_CAPTURE_ACTION(name, target)                                                            \
-  static plcs_errors name(                                                                         \
-      plcs_evaluation_result res,                                                                  \
-      char *values[],                                                                              \
-      size_t value_len,                                                                            \
-      const char *description,                                                                     \
-      int action_id,                                                                               \
-      plcs_uuid policy_id,                                                                         \
-      int64_t policy_version,                                                                      \
-      const char *policy_description,                                                              \
-      const plcs_matched_condition *matched_conditions,                                                      \
-      size_t matched_conditions_len                                                                     \
-  ) {                                                                                              \
-    (void)values;                                                                                  \
-    (void)value_len;                                                                               \
-    (void)description;                                                                             \
-    (void)action_id;                                                                               \
-    (void)policy_id;                                                                               \
-    (void)policy_version;                                                                          \
-    rc_capture_action((target), res, policy_description, matched_conditions, matched_conditions_len);        \
-    return PLCS_ESUCCESS;                                                                          \
+#define RC_CAPTURE_ACTION(name, target)                                                                                \
+  static plcs_errors name(                                                                                             \
+      plcs_evaluation_result res, char *values[], size_t value_len, const char *description, int action_id,            \
+      plcs_uuid policy_id, int64_t policy_version, const char *policy_description,                                     \
+      const plcs_matched_condition *matched_conditions, size_t matched_conditions_len                                  \
+  ) {                                                                                                                  \
+    (void)values;                                                                                                      \
+    (void)value_len;                                                                                                   \
+    (void)description;                                                                                                 \
+    (void)action_id;                                                                                                   \
+    (void)policy_id;                                                                                                   \
+    (void)policy_version;                                                                                              \
+    rc_capture_action((target), res, policy_description, matched_conditions, matched_conditions_len);                  \
+    return PLCS_ESUCCESS;                                                                                              \
   }
 
 RC_CAPTURE_ACTION(rc_action_allow, &g_rc_allow)
@@ -1385,8 +1392,7 @@ static dd_wls_NodeTypeWrapper_ref_t rc_str_leaf(
     const char *value,
     const char *description
 ) {
-  dd_wls_StrEvaluator_ref_t str =
-      dd_wls_StrEvaluator_create(b, id, cmp, flatbuffers_string_create_str(b, value));
+  dd_wls_StrEvaluator_ref_t str = dd_wls_StrEvaluator_create(b, id, cmp, flatbuffers_string_create_str(b, value));
   flatbuffers_string_ref_t desc = description ? flatbuffers_string_create_str(b, description) : 0;
 
   dd_wls_EvaluatorNode_start(b);
@@ -1444,9 +1450,8 @@ static dd_wls_Policy_ref_t rc_policy(
   return dd_wls_Policy_end(b);
 }
 
-static dd_wls_Action_vec_ref_t rc_single_action(
-    flatcc_builder_t *b, dd_wls_ActionId_enum_t id, const char *description
-) {
+static dd_wls_Action_vec_ref_t
+rc_single_action(flatcc_builder_t *b, dd_wls_ActionId_enum_t id, const char *description) {
   flatbuffers_string_ref_t desc = description ? flatbuffers_string_create_str(b, description) : 0;
 
   dd_wls_Action_start(b);
@@ -1474,11 +1479,9 @@ static void build_rc_orgwide_policy_buffer(void **out_buf, size_t *out_sz) {
   flatcc_builder_init(&b);
 
   /* policy[0]: NOT(RUNTIME_LANGUAGE contains '') -> the catch-all allow. */
-  dd_wls_NodeTypeWrapper_ref_t catch_all = rc_str_leaf(
-      &b, dd_wls_StringEvaluators_RUNTIME_LANGUAGE, dd_wls_CmpTypeSTR_CMP_CONTAINS, "", "catch-all"
-  );
-  dd_wls_NodeTypeWrapper_ref_t default_rules =
-      rc_composite(&b, dd_wls_BoolOperation_BOOL_NOT, NULL, &catch_all, 1);
+  dd_wls_NodeTypeWrapper_ref_t catch_all =
+      rc_str_leaf(&b, dd_wls_StringEvaluators_RUNTIME_LANGUAGE, dd_wls_CmpTypeSTR_CMP_CONTAINS, "", "catch-all");
+  dd_wls_NodeTypeWrapper_ref_t default_rules = rc_composite(&b, dd_wls_BoolOperation_BOOL_NOT, NULL, &catch_all, 1);
   dd_wls_Policy_ref_t default_policy = rc_policy(
       &b, "Workload Selection Policy / default", default_rules,
       rc_single_action(&b, dd_wls_ActionId_INJECT_ALLOW, "default")
@@ -1500,9 +1503,8 @@ static void build_rc_orgwide_policy_buffer(void **out_buf, size_t *out_sz) {
   };
   dd_wls_NodeTypeWrapper_ref_t exclude_rules =
       rc_composite(&b, dd_wls_BoolOperation_BOOL_AND, kExcludeRule, children, 3);
-  dd_wls_Policy_ref_t exclude_policy = rc_policy(
-      &b, kExcludePolicy, exclude_rules, rc_single_action(&b, dd_wls_ActionId_INJECT_DENY, NULL)
-  );
+  dd_wls_Policy_ref_t exclude_policy =
+      rc_policy(&b, kExcludePolicy, exclude_rules, rc_single_action(&b, dd_wls_ActionId_INJECT_DENY, NULL));
 
   dd_wls_Policy_vec_start(&b);
   dd_wls_Policy_vec_push(&b, default_policy);
@@ -1620,23 +1622,16 @@ static void build_or_of_ands_policy_buffer(void **out_buf, size_t *out_sz) {
   dd_wls_NodeTypeWrapper_ref_t branches[3];
   for (size_t ix = 0; ix < 3; ++ix) {
     dd_wls_NodeTypeWrapper_ref_t pair[] = {
-        rc_str_leaf(
-            &b, dd_wls_StringEvaluators_PROCESS_EXE_FULL_PATH, dd_wls_CmpTypeSTR_CMP_WILDCARD,
-            "**/java", NULL
-        ),
-        rc_str_leaf(
-            &b, dd_wls_StringEvaluators_PROCESS_ARGV, dd_wls_CmpTypeSTR_CMP_EXACT, kArgvs[ix], NULL
-        ),
+        rc_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_EXE_FULL_PATH, dd_wls_CmpTypeSTR_CMP_WILDCARD, "**/java", NULL),
+        rc_str_leaf(&b, dd_wls_StringEvaluators_PROCESS_ARGV, dd_wls_CmpTypeSTR_CMP_EXACT, kArgvs[ix], NULL),
     };
     branches[ix] = rc_composite(&b, dd_wls_BoolOperation_BOOL_AND, kRuleNames[ix], pair, 2);
   }
 
-  dd_wls_NodeTypeWrapper_ref_t rules =
-      rc_composite(&b, dd_wls_BoolOperation_BOOL_OR, "requirements", branches, 3);
+  dd_wls_NodeTypeWrapper_ref_t rules = rc_composite(&b, dd_wls_BoolOperation_BOOL_OR, "requirements", branches, 3);
 
-  dd_wls_Policy_ref_t policy = rc_policy(
-      &b, "All requirements", rules, rc_single_action(&b, dd_wls_ActionId_INJECT_DENY, NULL)
-  );
+  dd_wls_Policy_ref_t policy =
+      rc_policy(&b, "All requirements", rules, rc_single_action(&b, dd_wls_ActionId_INJECT_DENY, NULL));
 
   dd_wls_Policy_vec_start(&b);
   dd_wls_Policy_vec_push(&b, policy);
@@ -1662,9 +1657,7 @@ UTEST(evaluator_integration, failed_branches_do_not_report_the_conditions_they_s
       PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH, "/usr/lib/jvm/java-21-openjdk-arm64/bin/java"
   );
   ASSERT_EQ(prc, PLCS_ESUCCESS);
-  prc = plcs_eval_ctx_set_str_eval_param(
-      PLCS_STR_EVAL_PROCESS_ARGV, "org.apache.cassandra.transport.Client"
-  );
+  prc = plcs_eval_ctx_set_str_eval_param(PLCS_STR_EVAL_PROCESS_ARGV, "org.apache.cassandra.transport.Client");
   ASSERT_EQ(prc, PLCS_ESUCCESS);
 
   void *buf = NULL;
@@ -1684,9 +1677,7 @@ UTEST(evaluator_integration, failed_branches_do_not_report_the_conditions_they_s
   ASSERT_EQ(g_rc_deny.matched[0].evaluator_id, (int)PLCS_STR_EVAL_PROCESS_EXE_FULL_PATH);
   ASSERT_EQ(g_rc_deny.matched[0].comparator, (int)PLCS_STR_CMP_WILDCARD);
   ASSERT_STREQ(g_rc_deny.matched[0].policy_value.str, "**/java");
-  ASSERT_STREQ(
-      g_rc_deny.matched[0].process_value.str, "/usr/lib/jvm/java-21-openjdk-arm64/bin/java"
-  );
+  ASSERT_STREQ(g_rc_deny.matched[0].process_value.str, "/usr/lib/jvm/java-21-openjdk-arm64/bin/java");
 
   ASSERT_EQ(g_rc_deny.matched[1].evaluator_id, (int)PLCS_STR_EVAL_PROCESS_ARGV);
   ASSERT_EQ(g_rc_deny.matched[1].comparator, (int)PLCS_STR_CMP_EXACT);
