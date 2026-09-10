@@ -83,6 +83,9 @@ func (l JSONlibc) RuleDescription(flavor string) string {
 	}
 
 	if !l.IsSupported {
+		if l.RequiredMinVersion != nil {
+			return fmt.Sprintf("Exclude %s at or above %s on %s", flavor, l.RequiredMinVersion.String(), l.Arch)
+		}
 		return fmt.Sprintf("Exclude unsupported %s on %s", flavor, l.Arch)
 	}
 
