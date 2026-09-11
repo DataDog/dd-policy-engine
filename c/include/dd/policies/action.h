@@ -40,13 +40,9 @@ typedef struct {
 } plcs_uuid;
 
 /**
- * @brief The maximum number of matched rules reported to an action.
- *
- * A policy tree may contain more leaves than this; any matches beyond the limit
- * are dropped rather than reported, so an action must treat the reported list as
- * potentially truncated.
+ * @brief The maximum number of matched conditions reported to an action.
  */
-#define PLCS_MATCHED_CONDITIONS_MAX 64
+#define PLCS_MATCHED_CONDITIONS_MAX 8
 
 /**
  * @brief Selects the active member of the value unions in plcs_matched_condition.
