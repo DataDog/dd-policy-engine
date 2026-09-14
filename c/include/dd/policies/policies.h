@@ -40,6 +40,4 @@ typedef bool (*plcs_evaluate_stop_fn)(void);
  * @param should_stop Checked after every policy; a NULL callback never stops early.
  * @return int Returns the total number of errors encountered during evaluation.
  */
-plcs_errors plcs_evaluate_buffer_early_exit(
-    const uint8_t *buffer, size_t size, plcs_evaluate_stop_fn should_stop
-);
+plcs_errors plcs_evaluate_buffer_early_exit(const uint8_t *buffer, size_t size, plcs_evaluate_stop_fn should_stop);

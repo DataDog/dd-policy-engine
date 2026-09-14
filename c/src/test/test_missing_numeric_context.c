@@ -99,7 +99,9 @@ static plcs_errors observing_action(
     int action_id,
     plcs_uuid policy_id,
     int64_t policy_version,
-    const char *policy_description
+    const char *policy_description,
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 ) {
   (void)values;
   (void)value_count;
@@ -108,6 +110,8 @@ static plcs_errors observing_action(
   (void)policy_id;
   (void)policy_version;
   (void)policy_description;
+  (void)matched_conditions;
+  (void)matched_conditions_len;
   observed_result = result;
   return PLCS_ESUCCESS;
 }

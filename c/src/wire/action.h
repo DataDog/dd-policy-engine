@@ -71,6 +71,8 @@ static inline dd_ns(ActionId_enum_t) dd_action_to_wire(enum plcs_actions v) {
  * @param policy_id           Policy ID that produced this action.
  * @param policy_version      Policy version that produced this action.
  * @param policy_description  Policy description that produced this action.
+ * @param matched_conditions       Leaf conditions justifying the policy's result, in order.
+ * @param matched_conditions_len   Length of the `matched_conditions` array.
  *
  * @return A `plcs_errors` status code.
  */
@@ -82,7 +84,9 @@ typedef plcs_errors (*plcs_action_function_ptr)(
     int action_id,
     plcs_uuid policy_id,
     int64_t policy_version,
-    const char *policy_description
+    const char *policy_description,
+    const plcs_matched_condition *matched_conditions,
+    size_t matched_conditions_len
 );
 
 #ifdef __cplusplus
