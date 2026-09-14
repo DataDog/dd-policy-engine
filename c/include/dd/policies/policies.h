@@ -16,6 +16,7 @@
 #include "eval_ctx.h"           // evaluation context (evaluator setters/getters, value setters, action setters, etc.)
 #include "evaluator_default.h"  // default evaluators (str, num, unum)
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "error_codes.h"
 
@@ -25,3 +26,20 @@
  * @return int Returns the total number of errors encountered during evaluation.
  */
 plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size);
+
+/**
+ * @brief Called after each policy in the buffer is evaluated. Return true to stop
+ * evaluating the remaining policies in this buffer.
+ */
+typedef bool (*plcs_evaluate_stop_fn)(void);
+
+/**
+ * @brief Like plcs_evaluate_buffer, but stops evaluating the buffer's remaining
+ * policies as soon as `should_stop` returns true.
+ * @param buffer The buffer containing the policies to evaluate.
+ * @param should_stop Checked after every policy; a NULL callback never stops early.
+ * @return int Returns the total number of errors encountered during evaluation.
+ */
+plcs_errors plcs_evaluate_buffer_early_exit(
+    const uint8_t *buffer, size_t size, plcs_evaluate_stop_fn should_stop
+);
