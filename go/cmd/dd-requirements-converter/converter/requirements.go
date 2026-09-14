@@ -21,8 +21,23 @@ type JSONNativeDeps struct {
 	Musl  []JSONlibc `json:"musl"`
 }
 
+func ActionDescription(ruleName string) string {
+	if ruleName == "" {
+		return "Instrumentation rule is applied."
+	}
+
+	return fmt.Sprintf("Instrumentation rule %q is applied.", ruleName)
+}
+
+// denyPolicy gives one rule its own policy, so the rule's name is the policy
+// description.
+func denyPolicy(builder *flatbuffers.Builder, node flatbuffers.UOffsetT, description string) flatbuffers.UOffsetT {
+	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, ActionDescription(description), nil)
+	return schema.PolicyCreate(builder, description, node, []flatbuffers.UOffsetT{action})
+}
+
 func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
-	var rules []flatbuffers.UOffsetT
+	var policies []flatbuffers.UOffsetT
 
 	fmt.Printf("Converting %d deny rules\n", len(r.Deny))
 	for _, denyRule := range r.Deny {
@@ -30,7 +45,7 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 		if err != nil {
 			return 0, err
 		}
-		rules = append(rules, denyNode)
+		policies = append(policies, denyPolicy(builder, denyNode, denyRule.Description))
 	}
 
 	fmt.Printf("Converting %d glibc requirements\n", len(r.NativeDeps.Glibc))
@@ -40,7 +55,7 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 			return 0, err
 		}
 		if glibcNode != 0 {
-			rules = append(rules, glibcNode)
+			policies = append(policies, denyPolicy(builder, glibcNode, glibc.RuleDescription("glibc")))
 		}
 	}
 
@@ -51,14 +66,9 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 			return 0, err
 		}
 		if muslNode != 0 {
-			rules = append(rules, muslNode)
+			policies = append(policies, denyPolicy(builder, muslNode, musl.RuleDescription("musl")))
 		}
 	}
 
-	composite := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "requirements", rules)
-	compositeNode := schema.NodeTypeWrapperCreate(builder, composite, wls.NodeTypeCompositeNode)
-
-	action := schema.ActionCreate(builder, wls.ActionIdINJECT_DENY, "requirements", nil)
-	policy := schema.PolicyCreate(builder, "All requirements", compositeNode, []flatbuffers.UOffsetT{action})
-	return schema.PoliciesCreate(builder, []flatbuffers.UOffsetT{policy}), nil
+	return schema.PoliciesCreate(builder, policies), nil
 }
