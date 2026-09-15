@@ -11,6 +11,7 @@
 #include <dd/policies/evaluator_default.h>
 #include <dd/policies/policies.h>
 
+#include <stdbool.h>
 #include <stdio.h>
 #include "eval_ctx.h"
 #include "policy.h"
@@ -20,7 +21,7 @@
 #include "wire/evaluation_result.h"
 #define PLCS_MAX_EVAL_DEPTH 64
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, const plcs_observer *observer);
 
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
   if (!eval_str) {
@@ -176,7 +177,8 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
-plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
+plcs_evaluation_result
+composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, const plcs_observer *observer) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -207,13 +209,13 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
         // log error
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
-      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1));
+      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1, observer));
       break;
   }
 
   // keep iterating recursively over the tree
   for (size_t ix = 0; ix < children_len; ++ix) {
-    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1));
+    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1, observer));
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
@@ -229,29 +231,101 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
   return res;
 }
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+// Describes an evaluator node: what it compared, and the two values it compared. The process
+// value is read from the context after the evaluation, because an evaluator that
+// scans a collection (e.g. one matching any argv element) only knows which value
+// matched once it has found one, and reports it back through its context entry.
+static plcs_evaluation_record describe_evaluator_node(dd_ns(EvaluatorNode_table_t) node) {
+  dd_ns(EvaluatorType_union_t) evaluator = dd_ns(EvaluatorNode_eval_union)(node);
+  plcs_evaluation_record record = {.description = dd_ns(EvaluatorNode_description)(node)};
+
+  switch (evaluator.type) {
+    case dd_ns(EvaluatorType_StrEvaluator): {
+      dd_ns(StrEvaluator_table_t) eval_str = evaluator.value;
+      plcs_string_evaluators eval_id = dd_ns(StrEvaluator_id)(eval_str);
+      record.kind = PLCS_NODE_STR_EVAL;
+      record.evaluator_id = eval_id;
+      record.comparator = dd_ns(StrEvaluator_cmp)(eval_str);
+      record.policy_value.str = dd_ns(StrEvaluator_value)(eval_str);
+      record.process_value.str = plcs_eval_ctx_get_string_param(eval_id);
+      break;
+    }
+
+    case dd_ns(EvaluatorType_NumEvaluator): {
+      dd_ns(NumEvaluator_table_t) eval_num = evaluator.value;
+      plcs_numeric_evaluators eval_id = dd_ns(NumEvaluator_id)(eval_num);
+      record.kind = PLCS_NODE_NUM_EVAL;
+      record.evaluator_id = eval_id;
+      record.comparator = dd_ns(NumEvaluator_cmp)(eval_num);
+      record.policy_value.num = dd_ns(NumEvaluator_value)(eval_num);
+      record.process_value.num = plcs_eval_ctx_get_numeric_param(eval_id);
+      break;
+    }
+
+    case dd_ns(EvaluatorType_UNumEvaluator): {
+      dd_ns(UNumEvaluator_table_t) eval_unum = evaluator.value;
+      plcs_numeric_evaluators eval_id = dd_ns(UNumEvaluator_id)(eval_unum);
+      record.kind = PLCS_NODE_UNUM_EVAL;
+      record.evaluator_id = eval_id;
+      record.comparator = dd_ns(UNumEvaluator_cmp)(eval_unum);
+      record.policy_value.unum = dd_ns(UNumEvaluator_value)(eval_unum);
+      record.process_value.unum = plcs_eval_ctx_get_unumeric_param(eval_id);
+      break;
+    }
+  }
+
+  return record;
+}
+
+// Describes a composite: which boolean operator it applies.
+static plcs_evaluation_record describe_composite_node(dd_ns(CompositeNode_table_t) node) {
+  plcs_evaluation_record record = {.description = dd_ns(CompositeNode_description)(node)};
+
+  switch (dd_ns(CompositeNode_op)(node)) {
+    case dd_ns(BoolOperation_BOOL_OR):
+      record.kind = PLCS_NODE_OR;
+      break;
+
+    case dd_ns(BoolOperation_BOOL_NOT):
+      record.kind = PLCS_NODE_NOT;
+      break;
+
+    case dd_ns(BoolOperation_BOOL_AND):
+    case dd_ns(BoolOperation_BOOL_UNKNOWN):
+      record.kind = PLCS_NODE_AND;
+      break;
+  }
+
+  return record;
+}
+
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, const plcs_observer *observer) {
   if (depth > PLCS_MAX_EVAL_DEPTH) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
-  switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
-    case dd_ns(NodeType_EvaluatorNode):
-      dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
-      return node_evaluator(evaluator_node);
-      break;
-
-    case dd_ns(NodeType_CompositeNode):
-      dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-      return composite_evaluator(composite_node, depth);
-      break;
-
-    default:
-      // error, unknown node type!
-      break;
+  dd_ns(NodeType_union_type_t) node_type = dd_ns(NodeTypeWrapper_node_type)(node);
+  if (node_type != dd_ns(NodeType_EvaluatorNode) && node_type != dd_ns(NodeType_CompositeNode)) {
+    // error, unknown node type!
+    // log error
+    return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
-  // log error
-  return PLCS_EVAL_RESULT_ABSTAIN;
+  bool is_evaluator_node = node_type == dd_ns(NodeType_EvaluatorNode);
+  const void *inner = dd_ns(NodeTypeWrapper_node)(node);
+
+  size_t handle = observer && observer->node_enter ? observer->node_enter(observer->user, depth) : 0;
+
+  plcs_evaluation_result res = is_evaluator_node ? node_evaluator(inner) : composite_evaluator(inner, depth, observer);
+
+  if (observer && observer->node_exit) {
+    plcs_evaluation_record record = is_evaluator_node ? describe_evaluator_node(inner) : describe_composite_node(inner);
+    record.result = res;
+    record.depth = depth;
+    observer->node_exit(observer->user, handle, &record);
+  }
+
+  return res;
 }
 
 static inline plcs_errors perform_actions(
@@ -308,8 +382,19 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
+  // everything the observer sees from here on belongs to this policy
+  const plcs_observer *observer = plcs_eval_ctx_get_observer();
+  if (observer && observer->policy_enter) {
+    observer->policy_enter(observer->user, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy));
+  }
+
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
-  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
+  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0, observer) : PLCS_EVAL_RESULT_ABSTAIN;
+
+  // the policy has its answer, so the observer can explain it before anything acts on it
+  if (observer && observer->policy_exit) {
+    observer->policy_exit(observer->user, eval_res);
+  }
 
   // perform actions given evaluation result
   return perform_actions(

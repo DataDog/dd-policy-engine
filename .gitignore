@@ -1,3 +1,6 @@
+# Go build caches, mounted into the build container
+.docker/
+
 # Files generated on make
 go/examples/example_generate_c_header_buffer/out/
 go/examples/example_json_to_hardcoded_injector_policies/out/

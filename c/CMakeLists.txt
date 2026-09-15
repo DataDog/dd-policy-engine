@@ -24,6 +24,7 @@ target_sources(dd-policy-engine.objects
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluation_result.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_default.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/evaluator_types.h
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/observer.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/policies.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dd/policies/value_sets.h
   PUBLIC
