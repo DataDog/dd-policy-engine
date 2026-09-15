@@ -33,6 +33,7 @@ target_sources(dd-policy-engine.objects
     ${CMAKE_CURRENT_SOURCE_DIR}/src/eval_ctx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/evaluator_default.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/observer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/policy.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/value_sets.c
 )
