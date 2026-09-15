@@ -51,6 +51,12 @@ static plcs_evaluation_record describe_evaluator_node(dd_ns(EvaluatorNode_table_
       record.process_value.unum = plcs_eval_ctx_get_unumeric_param(eval_id);
       break;
     }
+
+    // No evaluator set, or one added by a newer schema. The evaluation abstains on
+    // it, so there is nothing to describe beyond the node being there.
+    default:
+      record.kind = PLCS_NODE_UNKNOWN;
+      break;
   }
 
   return record;
@@ -70,8 +76,14 @@ static plcs_evaluation_record describe_composite_node(dd_ns(CompositeNode_table_
       break;
 
     case dd_ns(BoolOperation_BOOL_AND):
-    case dd_ns(BoolOperation_BOOL_UNKNOWN):
       record.kind = PLCS_NODE_AND;
+      break;
+
+    // BOOL_UNKNOWN is what a failed parse leaves behind, and the evaluation
+    // abstains on it rather than treating it as any operator, so it is not
+    // reported as one either.
+    default:
+      record.kind = PLCS_NODE_UNKNOWN;
       break;
   }
 

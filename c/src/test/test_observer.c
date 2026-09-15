@@ -115,6 +115,14 @@ build_os_evaluator_node(flatcc_builder_t *b, const char *description, const char
   return dd_wls_NodeTypeWrapper_create(b, dd_wls_NodeType_as_EvaluatorNode(evaluator_node));
 }
 
+// An evaluator node holding no evaluator, which is what a malformed policy carries.
+static dd_wls_NodeTypeWrapper_ref_t
+build_evaluator_node_without_evaluator(flatcc_builder_t *b, const char *description) {
+  dd_wls_EvaluatorNode_ref_t evaluator_node =
+      dd_wls_EvaluatorNode_create(b, flatbuffers_string_create_str(b, description), dd_wls_EvaluatorType_as_NONE());
+  return dd_wls_NodeTypeWrapper_create(b, dd_wls_NodeType_as_EvaluatorNode(evaluator_node));
+}
+
 static dd_wls_NodeTypeWrapper_ref_t build_composite(
     flatcc_builder_t *b,
     const char *description,
@@ -250,6 +258,37 @@ UTEST(observer, evaluator_nodes_report_both_compared_values) {
   ASSERT_STREQ(composite->description, "root");
   ASSERT_EQ(composite->evaluator_id, 0);
   ASSERT_EQ(composite->comparator, 0);
+
+  flatcc_builder_free(buffer);
+}
+
+// A failed parse leaves BOOL_UNKNOWN behind, and a malformed policy can hold an
+// evaluator node with no evaluator. The evaluation abstains on both, so neither is
+// reported as one of the kinds it knows how to evaluate.
+UTEST(observer, reports_nodes_it_cannot_interpret_as_unknown) {
+  flatcc_builder_t b;
+  flatcc_builder_init(&b);
+
+  dd_wls_NodeTypeWrapper_ref_t children[] = {build_evaluator_node_without_evaluator(&b, "no evaluator")};
+  void *buffer = NULL;
+  size_t buffer_len = 0;
+  finish_policy_buffer(
+      &b, build_composite(&b, "unparsed operator", dd_wls_BoolOperation_BOOL_UNKNOWN, children, 1), &buffer, &buffer_len
+  );
+  ASSERT_TRUE(buffer != NULL);
+
+  reset_ctx_with_observer(&g_observer);
+  ASSERT_EQ((int)plcs_evaluate_buffer(buffer, buffer_len), (int)PLCS_ESUCCESS);
+
+  ASSERT_EQ(g_observed.len, (size_t)2);
+  ASSERT_EQ((int)g_observed.records[0].kind, (int)PLCS_NODE_UNKNOWN);
+  ASSERT_EQ((int)g_observed.records[1].kind, (int)PLCS_NODE_UNKNOWN);
+  ASSERT_EQ((int)g_observed.records[0].result, (int)PLCS_EVAL_RESULT_ABSTAIN);
+  ASSERT_EQ((int)g_observed.records[1].result, (int)PLCS_EVAL_RESULT_ABSTAIN);
+
+  // the description belongs to the node, not to what it holds, so it still comes through
+  ASSERT_STREQ(g_observed.records[0].description, "unparsed operator");
+  ASSERT_STREQ(g_observed.records[1].description, "no evaluator");
 
   flatcc_builder_free(buffer);
 }

@@ -18,8 +18,12 @@
  * @brief What a visited node is, and which value union member to read.
  */
 typedef enum plcs_node_kind {
+  /** The node holds an operator or an evaluator this version does not know, or
+   * none at all. It is first, so that a record left zeroed says nothing rather
+   * than claiming to be one of the kinds below. */
+  PLCS_NODE_UNKNOWN = 0,
   /** Composite node: all children must hold. */
-  PLCS_NODE_AND = 0,
+  PLCS_NODE_AND,
   /** Composite node: any child must hold. */
   PLCS_NODE_OR,
   /** Composite node: its single child must not hold. */

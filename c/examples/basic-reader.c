@@ -101,6 +101,12 @@ static void print_evaluation_trace(const demo_trace *trace) {
     printf("%*s[%s] ", 2 + record->depth * 2, "", result_name(record->result));
 
     switch (record->kind) {
+      // Printed rather than skipped: the node was part of the evaluation, even
+      // though this build cannot say what it held.
+      case PLCS_NODE_UNKNOWN:
+        printf("unknown node\n");
+        break;
+
       case PLCS_NODE_AND:
         printf("AND (\n");
         open++;
