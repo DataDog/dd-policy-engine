@@ -45,7 +45,8 @@ package conformance
 // evaluate_rules is internal to the engine (not part of the public API) but is
 // exported from the static library; declaring it here lets the harness drive
 // the tree-walk directly and read back the tri-state result.
-extern plcs_evaluation_result evaluate_rules(dd_wls_NodeTypeWrapper_table_t node, int depth);
+extern plcs_evaluation_result
+evaluate_rules(dd_wls_NodeTypeWrapper_table_t node, int depth, const plcs_observer *observer);
 
 #define CONF_MAX_LABELS 32
 #define CONF_STR_MAX 256
@@ -223,7 +224,8 @@ static int conf_eval(const uint8_t *buf, size_t len) {
   if (!root) {
     return (int)PLCS_EVAL_RESULT_ABSTAIN;
   }
-  return (int)evaluate_rules(root, 0);
+  // the harness only needs the result, so it evaluates without an observer
+  return (int)evaluate_rules(root, 0, NULL);
 }
 */
 import "C"

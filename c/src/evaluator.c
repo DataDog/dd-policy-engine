@@ -11,8 +11,10 @@
 #include <dd/policies/evaluator_default.h>
 #include <dd/policies/policies.h>
 
+#include <stdbool.h>
 #include <stdio.h>
 #include "eval_ctx.h"
+#include "observer.h"
 #include "policy.h"
 #include "wire/action.h"
 #include "wire/boolean_operation.h"
@@ -20,7 +22,7 @@
 #include "wire/evaluation_result.h"
 #define PLCS_MAX_EVAL_DEPTH 64
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, const plcs_observer *observer);
 
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
   if (!eval_str) {
@@ -176,7 +178,8 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
-plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
+plcs_evaluation_result
+composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, const plcs_observer *observer) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -207,13 +210,13 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
         // log error
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
-      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1));
+      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1, observer));
       break;
   }
 
   // keep iterating recursively over the tree
   for (size_t ix = 0; ix < children_len; ++ix) {
-    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1));
+    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1, observer));
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
@@ -229,29 +232,31 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
   return res;
 }
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, const plcs_observer *observer) {
   if (depth > PLCS_MAX_EVAL_DEPTH) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
-  switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
-    case dd_ns(NodeType_EvaluatorNode):
-      dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
-      return node_evaluator(evaluator_node);
-      break;
-
-    case dd_ns(NodeType_CompositeNode):
-      dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-      return composite_evaluator(composite_node, depth);
-      break;
-
-    default:
-      // error, unknown node type!
-      break;
+  dd_ns(NodeType_union_type_t) node_type = dd_ns(NodeTypeWrapper_node_type)(node);
+  if (node_type != dd_ns(NodeType_EvaluatorNode) && node_type != dd_ns(NodeType_CompositeNode)) {
+    // error, unknown node type!
+    // log error
+    return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
-  // log error
-  return PLCS_EVAL_RESULT_ABSTAIN;
+  bool is_evaluator_node = node_type == dd_ns(NodeType_EvaluatorNode);
+  const void *inner = dd_ns(NodeTypeWrapper_node)(node);
+
+  size_t handle = observer && observer->node_enter ? observer->node_enter(observer->user, depth) : 0;
+
+  plcs_evaluation_result res = is_evaluator_node ? node_evaluator(inner) : composite_evaluator(inner, depth, observer);
+
+  if (observer && observer->node_exit) {
+    plcs_evaluation_record record = plcs_describe_node(node, res, depth);
+    observer->node_exit(observer->user, handle, &record);
+  }
+
+  return res;
 }
 
 static inline plcs_errors perform_actions(
@@ -308,8 +313,19 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
+  // everything the observer sees from here on belongs to this policy
+  const plcs_observer *observer = plcs_eval_ctx_get_observer();
+  if (observer && observer->policy_enter) {
+    observer->policy_enter(observer->user, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy));
+  }
+
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
-  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
+  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0, observer) : PLCS_EVAL_RESULT_ABSTAIN;
+
+  // the policy has its answer, so the observer can explain it before anything acts on it
+  if (observer && observer->policy_exit) {
+    observer->policy_exit(observer->user, eval_res);
+  }
 
   // perform actions given evaluation result
   return perform_actions(

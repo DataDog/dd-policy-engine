@@ -51,8 +51,143 @@
 #include <dd/policies/eval_ctx.h>
 #include <dd/policies/evaluator_types.h>
 #include <dd/policies/policies.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+static const char *result_name(plcs_evaluation_result res) {
+  return res == PLCS_EVAL_RESULT_TRUE ? "TRUE" : res == PLCS_EVAL_RESULT_FALSE ? "FALSE" : "ABSTAIN";
+}
+
+// Closes the composites that are done, down to the given depth.
+static int close_composites(int open, int down_to) {
+  while (open > down_to) {
+    open--;
+    printf("%*s)\n", 2 + open * 2, "");
+  }
+
+  return open;
+}
+
+#define DEMO_MAX_RECORDS 64
+
+// An observer that keeps one policy's records, then prints them as a tree.
+typedef struct {
+  const char *policy;
+  plcs_evaluation_record records[DEMO_MAX_RECORDS];
+  size_t len;
+  bool truncated;
+} demo_trace;
+
+// Prints how the policy reached its result. Records already come in tree order,
+// so printing them as-is and indenting by depth redraws the part of the tree
+// that was evaluated.
+static void print_evaluation_trace(const demo_trace *trace) {
+  if (!trace->policy) {
+    return;
+  }
+
+  printf("Policy '%s': evaluated %zu nodes%s\n", trace->policy, trace->len, trace->truncated ? " (truncated)" : "");
+
+  // only a composite has children, so every ancestor of a node is one: the number
+  // of parentheses left open is just the depth the next record sits at
+  int open = 0;
+
+  for (size_t ix = 0; ix < trace->len; ++ix) {
+    const plcs_evaluation_record *record = &trace->records[ix];
+
+    open = close_composites(open, record->depth);
+
+    printf("%*s[%s] ", 2 + record->depth * 2, "", result_name(record->result));
+
+    switch (record->kind) {
+      // Printed rather than skipped: the node was part of the evaluation, even
+      // though this build cannot say what it held.
+      case PLCS_NODE_UNKNOWN:
+        printf("unknown node\n");
+        break;
+
+      case PLCS_NODE_AND:
+        printf("AND (\n");
+        open++;
+        break;
+
+      case PLCS_NODE_OR:
+        printf("OR (\n");
+        open++;
+        break;
+
+      case PLCS_NODE_NOT:
+        printf("NOT (\n");
+        open++;
+        break;
+
+      case PLCS_NODE_STR_EVAL:
+        printf(
+            "%s %s '%s', process has '%s'\n", plcs_string_evaluators_to_string(record->evaluator_id),
+            plcs_string_comparator_to_string(record->comparator), record->policy_value.str,
+            record->process_value.str ? record->process_value.str : ""
+        );
+        break;
+
+      case PLCS_NODE_NUM_EVAL:
+        printf(
+            "%s %s %ld, process has %ld\n", plcs_numeric_evaluators_to_string(record->evaluator_id),
+            plcs_numeric_comparator_to_string(record->comparator), record->policy_value.num, record->process_value.num
+        );
+        break;
+
+      case PLCS_NODE_UNUM_EVAL:
+        printf(
+            "%s %s %lu, process has %lu\n", plcs_numeric_evaluators_to_string(record->evaluator_id),
+            plcs_numeric_comparator_to_string(record->comparator), record->policy_value.unum, record->process_value.unum
+        );
+        break;
+    }
+  }
+
+  close_composites(open, 0);
+}
+
+// A node takes its place on the way in, so that it lands before the children it
+// is built from. Once the buffer is full there is no place left to hand out.
+static size_t demo_node_enter(void *user, int depth) {
+  (void)depth;
+  demo_trace *trace = user;
+
+  if (trace->len >= DEMO_MAX_RECORDS) {
+    trace->truncated = true;
+    return DEMO_MAX_RECORDS;
+  }
+
+  return trace->len++;
+}
+
+static void demo_node_exit(void *user, size_t handle, const plcs_evaluation_record *record) {
+  demo_trace *trace = user;
+
+  if (handle < DEMO_MAX_RECORDS) {
+    trace->records[handle] = *record;
+  }
+}
+
+// A new policy starts, so nothing collected so far belongs to it.
+static void demo_policy_enter(void *user, plcs_uuid policy_id, int64_t policy_version, const char *description) {
+  (void)policy_id;
+  (void)policy_version;
+  demo_trace *trace = user;
+
+  trace->policy = description;
+  trace->len = 0;
+  trace->truncated = false;
+}
+
+// The policy is done, so its tree can be printed before its actions run.
+static void demo_policy_exit(void *user, plcs_evaluation_result result) {
+  (void)result;
+
+  print_evaluation_trace(user);
+}
 
 // Demo action handler for INJECT_DENY action
 plcs_errors ACTION_INJECT_DENY(
@@ -149,6 +284,17 @@ int main(int argc, char *argv[]) {
   // Register action handlers
   plcs_eval_ctx_register_action(ACTION_INJECT_DENY, PLCS_ACTION_INJECT_DENY);
   plcs_eval_ctx_register_action(ACTION_INJECT_ALLOW, PLCS_ACTION_INJECT_ALLOW);
+
+  // Watch every policy evaluation, whether or not it fires an action
+  demo_trace collected = {0};
+  plcs_observer observer = {
+      .policy_enter = demo_policy_enter,
+      .policy_exit = demo_policy_exit,
+      .node_enter = demo_node_enter,
+      .node_exit = demo_node_exit,
+      .user = &collected,
+  };
+  plcs_eval_ctx_set_observer(&observer);
 
   // Evaluate policy
   printf("Evaluating policies...\n");

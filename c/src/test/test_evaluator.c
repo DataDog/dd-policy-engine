@@ -80,7 +80,8 @@ extern plcs_evaluation_result DoOr(plcs_evaluation_result a, plcs_evaluation_res
 extern plcs_evaluation_result DoNot(plcs_evaluation_result res);
 extern plcs_evaluation_result
 DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_result a, plcs_evaluation_result b);
-extern plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node);
+extern plcs_evaluation_result
+composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, const plcs_observer *observer);
 
 extern void plcs_eval_ctx_reset(void);
 
@@ -865,7 +866,7 @@ UTEST(evaluator, test_DoOper_basic_operations) {
 
 UTEST(evaluator, test_composite_evaluator_null_input) {
   /* Test with NULL node */
-  int res = composite_evaluator(NULL);
+  int res = composite_evaluator(NULL, 0, NULL);
   ASSERT_EQ(res, PLCS_EVAL_RESULT_ABSTAIN);
 }
 

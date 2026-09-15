@@ -94,6 +94,14 @@ plcs_errors plcs_eval_ctx_register_action(plcs_action_function_ptr action, plcs_
   return PLCS_ESUCCESS;
 }
 
+void plcs_eval_ctx_set_observer(const plcs_observer *observer) {
+  ctx.observer = observer;
+}
+
+const plcs_observer *plcs_eval_ctx_get_observer(void) {
+  return ctx.observer;
+}
+
 plcs_action_function_ptr plcs_eval_ctx_get_action(plcs_actions ix) {
   if (ix < 0 || ix >= PLCS_ACTIONS__COUNT) {
     ctx.error = PLCS_EIX_OVERFLOW;
@@ -243,6 +251,7 @@ void plcs_eval_ctx_reset(void) {
     ctx.actions[i].error = PLCS_ESUCCESS;
   }
 
+  ctx.observer = NULL;
   ctx.error = PLCS_ESUCCESS;
 }
 

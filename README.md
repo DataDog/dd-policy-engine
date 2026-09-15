@@ -94,7 +94,7 @@ High-level steps:
 4) Register action handlers using:
    - `plcs_eval_ctx_register_action(plcs_action_function_ptr, plcs_actions id)`
    Action signature:
-   - `plcs_errors (*plcs_action_function_ptr)(plcs_evaluation_result res, char* values[], size_t value_len, const char* description, int action_id)`
+   - `plcs_errors (*plcs_action_function_ptr)(plcs_evaluation_result res, char* values[], size_t value_len, const char* description, int action_id, plcs_uuid policy_id, int64_t policy_version, const char* policy_description)`
 5) Load a policy buffer (from disk, mmap, or embedded array) and call:
    - `plcs_errors plcs_evaluate_buffer(const uint8_t* buffer)`
 
@@ -166,6 +166,33 @@ plcs_actions:
 
 ---
 
+## Observing an evaluation
+
+Actions tell you what a policy decided. An observer tells you how it got there, for
+every policy, whether or not it ended up firing an action.
+
+Fill in a `plcs_observer` and register it before evaluating:
+
+```c
+static size_t on_node_enter(void *user, int depth) { ... }
+static void on_node_exit(void *user, size_t handle, const plcs_evaluation_record *record) { ... }
+
+plcs_observer observer = {.node_enter = on_node_enter, .node_exit = on_node_exit, .user = &my_state};
+plcs_eval_ctx_set_observer(&observer);
+```
+
+Each policy is framed by `policy_enter` and `policy_exit`, and in between the engine
+walks the rule tree: it enters a node, evaluates it, and leaves it. So a node is
+reported before the children it is built from, `record.depth` says how deep it sits,
+and a node a short-circuit never reached is never reported. Every callback is
+optional, and the library keeps no trace buffer of its own — `c/examples/basic-reader.c`
+shows one way to collect the records and print the tree.
+
+Without a registered observer the engine skips all of this, including reading back
+the values each node compared, so leaving it unset costs nothing.
+
+---
+
 ## C API overview
 
 Key public headers (under c/include/policies):
@@ -174,6 +201,7 @@ Key public headers (under c/include/policies):
   - Register evals/actions: `plcs_eval_ctx_register_*`
   - Set parameters: `plcs_eval_ctx_set_*_eval_param`
   - Accessors: `plcs_eval_ctx_get_*` (primarily used by the engine and your custom evals)
+  - Watch evaluations: `plcs_eval_ctx_set_observer`, `plcs_eval_ctx_get_observer`
   - Error tracking: `plcs_eval_ctx_get_last_error`, `plcs_eval_ctx_peek_last_error`, per-evaluator/action error setters
 - `evaluator.h`
   - `plcs_evaluate_buffer(const uint8_t *buffer)` — evaluate all policies from a FlatBuffers buffer
@@ -181,6 +209,8 @@ Key public headers (under c/include/policies):
   - Enums for comparator types and evaluator IDs
 - `action.h`
   - `plcs_actions` enum, `plcs_action_function_ptr`
+- `observer.h`
+  - `plcs_observer` callbacks and the `plcs_evaluation_record` they report
 - `evaluation_result.h`
   - `plcs_evaluation_result` enum and `plcs_evaluation_result_to_string(...)`
 - `error_codes.h`
