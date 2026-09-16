@@ -70,7 +70,8 @@ static inline dd_ns(ActionId_enum_t) dd_action_to_wire(enum plcs_actions v) {
  * @param action_id           Integer ID of the action.
  * @param policy_id           Policy ID that produced this action.
  * @param policy_version      Policy version that produced this action.
- * @param policy_description  Policy description that produced this action.
+ * @param policy_description  Description of the rule that triggered this action, falling back
+ *                            to the policy's own description when no rule matched.
  *
  * @return A `plcs_errors` status code.
  */

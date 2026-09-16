@@ -47,7 +47,7 @@ extern "C" {
 
 static inline dd_ns(CmpTypeSTR_enum_t) dd_strcmp_to_wire(enum plcs_string_comparator v) {
 /* Map your public enum -> vendor numeric value. */
-#define ENUM_VAL(ID, X) [PLCS_STR_CMP_##ID] = dd_ns(CmpTypeSTR_CMP_##ID),
+#define ENUM_VAL(ID, X, LABEL) [PLCS_STR_CMP_##ID] = dd_ns(CmpTypeSTR_CMP_##ID),
   static const int map[PLCS_STR_CMP__COUNT] = {PLCS_LIST_STRING_COMPARATORS(ENUM_VAL)};
 #undef ENUM_VAL
   _Static_assert(
@@ -58,7 +58,7 @@ static inline dd_ns(CmpTypeSTR_enum_t) dd_strcmp_to_wire(enum plcs_string_compar
 }
 
 static inline dd_ns(CmpTypeNUM_enum_t) dd_numcmp_to_wire(enum plcs_numeric_comparator v) {
-#define ENUM_VAL(ID, X) [PLCS_NUM_CMP_##ID] = dd_ns(CmpTypeNUM_CMP_##ID),
+#define ENUM_VAL(ID, X, LABEL) [PLCS_NUM_CMP_##ID] = dd_ns(CmpTypeNUM_CMP_##ID),
   static const int map[PLCS_NUM_CMP__COUNT] = {PLCS_LIST_NUMERIC_COMPARATOR(ENUM_VAL)};
 #undef ENUM_VAL
   _Static_assert(
@@ -70,7 +70,7 @@ static inline dd_ns(CmpTypeNUM_enum_t) dd_numcmp_to_wire(enum plcs_numeric_compa
 
 static inline dd_ns(StringEvaluators_enum_t) dd_streval_to_wire(enum plcs_string_evaluators v) {
   /* Keep indices aligned with your public enum order. */
-#define ENUM_VAL(ID, X) [PLCS_STR_EVAL_##ID] = dd_ns(StringEvaluators_##ID),
+#define ENUM_VAL(ID, X, LABEL) [PLCS_STR_EVAL_##ID] = dd_ns(StringEvaluators_##ID),
   static const int map[PLCS_STR_EVAL__COUNT] = {PLCS_LIST_STRING_EVALUATORS(ENUM_VAL)};
 #undef ENUM_VAL
   _Static_assert(
@@ -81,7 +81,7 @@ static inline dd_ns(StringEvaluators_enum_t) dd_streval_to_wire(enum plcs_string
 }
 
 static inline dd_ns(NumericEvaluators_enum_t) dd_numeval_to_wire(enum plcs_numeric_evaluators v) {
-#define ENUM_VAL(ID, X) [PLCS_NUM_EVAL_##ID] = dd_ns(NumericEvaluators_##ID),
+#define ENUM_VAL(ID, X, LABEL) [PLCS_NUM_EVAL_##ID] = dd_ns(NumericEvaluators_##ID),
   static const int map[PLCS_NUM_EVAL__COUNT] = {PLCS_LIST_NUMERIC_EVALUATORS(ENUM_VAL)};
 #undef ENUM_VAL
   _Static_assert(

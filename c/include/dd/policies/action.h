@@ -48,7 +48,10 @@ typedef struct {
  * @param action_id           Integer ID of the action (a plcs_actions value).
  * @param policy_id           The id of the policy that produced this action.
  * @param policy_version      The version of the policy that produced this action.
- * @param policy_description  The description of the policy that produced this action.
+ * @param policy_description  The description of the rule that triggered this action: the
+ *                            descriptions of every condition of the matching AND node joined
+ *                            with " AND ", or the first matching condition of an OR node.
+ *                            Falls back to the policy's own description when no rule matched.
  *
  */
 typedef plcs_errors (*plcs_action_function_ptr)(
