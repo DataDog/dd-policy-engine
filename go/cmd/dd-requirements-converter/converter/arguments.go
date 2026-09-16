@@ -52,7 +52,7 @@ func getArgvEvaluatorForPosition(position *int) wls.StringEvaluators {
 
 // wildcardMatchToEvaluators returns one StrEvaluator per argument pattern: EXACT if there are no
 // glob metacharacters, CMP_WILDCARD if the pattern contains * or ?. A pattern that is only "*" or "?" matches any value and returns offset 0.
-func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string, position *int) (flatbuffers.UOffsetT, error) {
+func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string, position *int, description string) (flatbuffers.UOffsetT, error) {
 	if pattern == "*" || pattern == "?" {
 		return 0, nil
 	}
@@ -66,12 +66,12 @@ func wildcardMatchToEvaluators(builder *flatbuffers.Builder, pattern string, pos
 	}
 
 	strEvaluator := schema.StrEvaluatorCreate(builder, ev, pattern, cmp)
-	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Argument matching: "+pattern, strEvaluator)
+	node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, description, strEvaluator)
 	return schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode), nil
 }
 
 // return a NodeTypeWrapper with an evaluator node or a composite node with the argument patterns
-func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffsetT, error) {
+func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder, description string) (flatbuffers.UOffsetT, error) {
 	if len(a.Arguments) == 0 {
 		return 0, errors.New("no arguments provided")
 	}
@@ -85,6 +85,18 @@ func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UO
 		pos = &localPos
 	}
 
+	matchable := 0
+	for _, argument := range a.Arguments {
+		if argument != "" && argument != "*" && argument != "?" {
+			matchable++
+		}
+	}
+
+	leafDescription := ""
+	if matchable == 1 {
+		leafDescription = description
+	}
+
 	for i, argument := range a.Arguments {
 		if argument == "" {
 			continue
@@ -93,7 +105,7 @@ func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UO
 			*pos++
 		}
 
-		argNode, err := wildcardMatchToEvaluators(builder, argument, pos)
+		argNode, err := wildcardMatchToEvaluators(builder, argument, pos, leafDescription)
 		if err != nil {
 			return 0, err
 		}
@@ -117,6 +129,6 @@ func (a ArgumentList) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UO
 	// EvaluatorNode: arg matches "-version" at position 1
 	// EvaluatorNode: arg matches "1.*" at position 2
 	// )
-	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match argument pattern: "+strings.Join(a.Arguments, " "), nodes)
+	andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, description, nodes)
 	return schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode), nil
 }
