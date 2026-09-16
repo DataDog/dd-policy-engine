@@ -386,7 +386,7 @@ UTEST(observer, a_partially_filled_observer_is_fine) {
   ASSERT_TRUE(buffer != NULL);
 
   // only interested in results, so nothing tracks handles
-  const plcs_observer results_only = {.node_exit = observe_node_exit, .user = &g_observed};
+  static const plcs_observer results_only = {.node_exit = observe_node_exit, .user = &g_observed};
   reset_ctx_with_observer(&results_only);
   ASSERT_EQ((int)plcs_evaluate_buffer(buffer, buffer_len), (int)PLCS_ESUCCESS);
 
