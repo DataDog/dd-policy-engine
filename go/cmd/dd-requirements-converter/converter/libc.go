@@ -73,25 +73,6 @@ func hasMajorMinor(versionStr string) bool {
 //   - supported: true + version → DENY if arch+flavor match AND version < min
 //   - supported: false + no version → DENY if arch+flavor match
 //   - supported: false + version → DENY if arch+flavor match AND version >= min
-//
-// RuleDescription names this native-dependency rule. These entries describe a
-// requirement rather than a named exclusion and often carry no description, so one
-// is derived from what the entry actually denies.
-func (l JSONlibc) RuleDescription(flavor string) string {
-	if l.Description != "" {
-		return l.Description
-	}
-
-	if !l.IsSupported {
-		return fmt.Sprintf("Exclude unsupported %s on %s", flavor, l.Arch)
-	}
-
-	if l.RequiredMinVersion != nil {
-		return fmt.Sprintf("Exclude %s below %s on %s", flavor, l.RequiredMinVersion.String(), l.Arch)
-	}
-
-	return fmt.Sprintf("Exclude %s on %s", flavor, l.Arch)
-}
 
 func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (flatbuffers.UOffsetT, error) {
 	// If supported and no version requirement, no policy needed (allowed by default)

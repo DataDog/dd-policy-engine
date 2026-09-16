@@ -55,7 +55,7 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 			return 0, err
 		}
 		if glibcNode != 0 {
-			policies = append(policies, denyPolicy(builder, glibcNode, glibc.RuleDescription("glibc")))
+			policies = append(policies, denyPolicy(builder, glibcNode, glibc.Description))
 		}
 	}
 
@@ -66,7 +66,7 @@ func (r JSONRequirements) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffer
 			return 0, err
 		}
 		if muslNode != 0 {
-			policies = append(policies, denyPolicy(builder, muslNode, musl.RuleDescription("musl")))
+			policies = append(policies, denyPolicy(builder, muslNode, musl.Description))
 		}
 	}
 

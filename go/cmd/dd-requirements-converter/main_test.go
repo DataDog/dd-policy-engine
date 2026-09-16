@@ -694,8 +694,8 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 				"version": 1,
 				"deny": [{"os": "windows", "description": "no windows"}],
 				"native_deps": {
-					"glibc": [{"arch": "x64", "supported": true, "min": "2.17"}],
-					"musl": [{"arch": "arm64", "supported": false}]
+					"glibc": [{"arch": "x64", "supported": true, "min": "2.17", "description": "glibc below 2.17"}],
+					"musl": [{"arch": "arm64", "supported": false, "description": "unsupported musl arm64"}]
 				}
 			}`,
 			expectedRuleCount: 3, // 1 deny + 1 glibc + 1 musl, each its own policy
