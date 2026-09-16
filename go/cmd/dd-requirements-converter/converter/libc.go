@@ -73,6 +73,7 @@ func hasMajorMinor(versionStr string) bool {
 //   - supported: true + version → DENY if arch+flavor match AND version < min
 //   - supported: false + no version → DENY if arch+flavor match
 //   - supported: false + version → DENY if arch+flavor match AND version >= min
+
 func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (flatbuffers.UOffsetT, error) {
 	// If supported and no version requirement, no policy needed (allowed by default)
 	if l.IsSupported && l.RequiredMinVersion == nil {

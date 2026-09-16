@@ -333,7 +333,7 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   );
 }
 
-plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
+plcs_errors plcs_evaluate_buffer_early_exit(const uint8_t *buffer, size_t size, plcs_evaluate_stop_fn should_stop) {
   dd_ns(Policy_vec_t) policies = plcs_get_policies(buffer, size);
   if (!policies) {
     // not necessarily an error, could be empty policies
@@ -349,9 +349,16 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
       continue;
     }
     total_errors += evaluate_policy(policy);
+    if (should_stop && should_stop()) {
+      break;
+    }
   }
 
   return total_errors;
+}
+
+plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
+  return plcs_evaluate_buffer_early_exit(buffer, size, NULL);
 }
 
 const char *plcs_string_evaluators_to_string(enum plcs_string_evaluators v) {
