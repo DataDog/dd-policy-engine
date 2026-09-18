@@ -70,31 +70,41 @@ static int close_composites(int open, int down_to) {
 }
 
 #define DEMO_MAX_RECORDS 64
+#define DEMO_STRING_MAX 128
+
+typedef struct {
+  plcs_evaluation_record record;
+  char description[DEMO_STRING_MAX];
+  char policy_str[DEMO_STRING_MAX];
+  char process_str[DEMO_STRING_MAX];
+} demo_record;
 
 // An observer that keeps one policy's records, then prints them as a tree.
 typedef struct {
   const char *policy;
-  plcs_evaluation_record records[DEMO_MAX_RECORDS];
+  demo_record records[DEMO_MAX_RECORDS];
   size_t len;
   bool truncated;
 } demo_trace;
+
+static void copy_bounded(char *dst, size_t dst_size, const char *src) {
+  snprintf(dst, dst_size, "%s", src ? src : "");
+}
 
 // Prints how the policy reached its result. Records already come in tree order,
 // so printing them as-is and indenting by depth redraws the part of the tree
 // that was evaluated.
 static void print_evaluation_trace(const demo_trace *trace) {
-  if (!trace->policy) {
-    return;
-  }
+  const char *policy = trace->policy ? trace->policy : "<no description>";
 
-  printf("Policy '%s': evaluated %zu nodes%s\n", trace->policy, trace->len, trace->truncated ? " (truncated)" : "");
+  printf("Policy '%s': evaluated %zu nodes%s\n", policy, trace->len, trace->truncated ? " (truncated)" : "");
 
   // only a composite has children, so every ancestor of a node is one: the number
   // of parentheses left open is just the depth the next record sits at
   int open = 0;
 
   for (size_t ix = 0; ix < trace->len; ++ix) {
-    const plcs_evaluation_record *record = &trace->records[ix];
+    const plcs_evaluation_record *record = &trace->records[ix].record;
 
     open = close_composites(open, record->depth);
 
@@ -125,8 +135,7 @@ static void print_evaluation_trace(const demo_trace *trace) {
       case PLCS_NODE_STR_EVAL:
         printf(
             "%s %s '%s', process has '%s'\n", plcs_string_evaluators_to_string(record->evaluator_id),
-            plcs_string_comparator_to_string(record->comparator), record->policy_value.str,
-            record->process_value.str ? record->process_value.str : ""
+            plcs_string_comparator_to_string(record->comparator), record->policy_value.str, record->process_value.str
         );
         break;
 
@@ -163,11 +172,27 @@ static size_t demo_node_enter(void *user, int depth) {
   return trace->len++;
 }
 
+// Every pointer in *record is only valid for the duration of this call, but the
+// trace is printed later, from policy_exit - so the strings it points to are
+// copied into storage this demo owns before returning.
 static void demo_node_exit(void *user, size_t handle, const plcs_evaluation_record *record) {
   demo_trace *trace = user;
 
-  if (handle < DEMO_MAX_RECORDS) {
-    trace->records[handle] = *record;
+  if (handle >= DEMO_MAX_RECORDS) {
+    return;
+  }
+
+  demo_record *stored = &trace->records[handle];
+  stored->record = *record;
+
+  copy_bounded(stored->description, sizeof(stored->description), record->description);
+  stored->record.description = stored->description;
+
+  if (record->kind == PLCS_NODE_STR_EVAL) {
+    copy_bounded(stored->policy_str, sizeof(stored->policy_str), record->policy_value.str);
+    copy_bounded(stored->process_str, sizeof(stored->process_str), record->process_value.str);
+    stored->record.policy_value.str = stored->policy_str;
+    stored->record.process_value.str = stored->process_str;
   }
 }
 

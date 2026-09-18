@@ -119,7 +119,6 @@ plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
       return evaluate_unumeric(evaluator.value, dd_ns(EvaluatorNode_description)(node));
   }
 
-  plcs_eval_ctx_set_error(PLCS_EUNKNOWN_EVAL_IX);
   return result;
 }
 
@@ -205,9 +204,7 @@ composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, const plcs_obs
 
     case dd_ns(BoolOperation_BOOL_NOT):
       // CAN ONLY HAVE ONE CHILD!
-      // otherwise this is a non valid boolean operation
       if (children_len != 1) {
-        // log error
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
       return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1, observer));
@@ -233,14 +230,20 @@ composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, const plcs_obs
 }
 
 plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, const plcs_observer *observer) {
+  // a node this deep is never evaluated, same as a node a short-circuit never
+  // reached, so it is not reported either
   if (depth > PLCS_MAX_EVAL_DEPTH) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
   dd_ns(NodeType_union_type_t) node_type = dd_ns(NodeTypeWrapper_node_type)(node);
   if (node_type != dd_ns(NodeType_EvaluatorNode) && node_type != dd_ns(NodeType_CompositeNode)) {
-    // error, unknown node type!
-    // log error
+    size_t handle = observer && observer->node_enter ? observer->node_enter(observer->user, depth) : 0;
+    if (observer && observer->node_exit) {
+      plcs_evaluation_record record = {.kind = PLCS_NODE_UNKNOWN, .result = PLCS_EVAL_RESULT_ABSTAIN, .depth = depth};
+      observer->node_exit(observer->user, handle, &record);
+    }
+
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
@@ -312,6 +315,10 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
 
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
+
+  // a malformed node in a previous policy must not leak its error into this
+  // one and cause every evaluator here to silently abstain
+  plcs_eval_ctx_set_error(PLCS_ESUCCESS);
 
   // everything the observer sees from here on belongs to this policy
   const plcs_observer *observer = plcs_eval_ctx_get_observer();
