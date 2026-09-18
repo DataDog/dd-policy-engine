@@ -12,6 +12,20 @@
 #include "cxxopts.hpp"
 #include "policy_schema_bfbs.h" // Contains `schema_policy_bfbs` and `schema_policy_bfbs_len`
 
+// dd-compile-policy ships bundled inside the Agent, which pins it
+// to a specific version, so its baked-in schema can lag newly added
+// string/numeric evaluators. The datadog-apm-inject package updates on a
+// separate cadence and can drop a newer schema at this fixed path to unblock
+// new evaluators without an Agent/compiler version bump.
+#if defined(_WIN32)
+constexpr char kInjectorSchemaPath[] =
+    "C:\\ProgramData\\Datadog\\Installer\\packages\\datadog-apm-"
+    "inject\\stable\\dll\\policy.bfbs";
+#else
+constexpr char kInjectorSchemaPath[] =
+    "/opt/datadog-packages/datadog-apm-inject/stable/inject/policy.bfbs";
+#endif
+
 int main(int argc, char *argv[]) {
   std::string json_str;
   std::string json_file;
@@ -79,8 +93,11 @@ int main(int argc, char *argv[]) {
   // (`*_UNKNOWN`), which the engine treats as "abstain".
   parser.opts.skip_unexpected_fields_in_json = true;
 
-  // Load binary schema (.bfbs): a custom schema file if provided, otherwise
-  // the schema built into this binary.
+  // Load binary schema (.bfbs), in order of preference:
+  //   1. an explicit --schema-file, if provided (hard error if unreadable);
+  //   2. the schema at kInjectorSchemaPath, updated independently of this
+  //      binary by the injector (silently skipped if absent/unreadable);
+  //   3. the schema built into this binary.
   const uint8_t *schema_bytes =
       reinterpret_cast<const uint8_t *>(schema_policy_bfbs);
   size_t schema_len = schema_policy_bfbs_len;
@@ -94,6 +111,16 @@ int main(int argc, char *argv[]) {
     }
     schema_bytes = reinterpret_cast<const uint8_t *>(schema_file_buf.data());
     schema_len = schema_file_buf.size();
+    std::cout << "using schema from --schema-file: " << schema_path
+               << std::endl;
+  } else if (flatbuffers::LoadFile(kInjectorSchemaPath, true,
+                                   &schema_file_buf)) {
+    schema_bytes = reinterpret_cast<const uint8_t *>(schema_file_buf.data());
+    schema_len = schema_file_buf.size();
+    std::cout << "using schema from injector path: " << kInjectorSchemaPath
+               << std::endl;
+  } else {
+    std::cout << "using built-in schema" << std::endl;
   }
 
   if (!parser.Deserialize(schema_bytes, schema_len)) {
