@@ -74,4 +74,7 @@ UTEST(policy_reader, null_policices) {
   /* Now your function should return NULL for the vector, covering the branch. */
   dd_ns(Policy_vec_t) v = plcs_get_policies(buf, sz);
   ASSERT_TRUE(v == NULL);
+
+  flatcc_builder_free(buf);
+  flatcc_builder_clear(&b);
 }
