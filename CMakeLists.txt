@@ -3,7 +3,7 @@
 # Datadog (https://www.datadoghq.com/).
 #
 # Copyright 2025-Present Datadog, Inc.
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 3.31...4.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
@@ -25,6 +25,9 @@ project(
   LANGUAGES C CXX
   DESCRIPTION "Policy Engine"
 )
+
+include(CheckSymbolExists)
+check_symbol_exists("strdup" "string.h" HAVE_STRDUP)
 
 option(DD_POLICY_BUILD_TESTS "Enable building tests" ${PROJECT_IS_TOP_LEVEL})
 option(DD_POLICY_BUILD_EXAMPLES "Enable building examples" ${PROJECT_IS_TOP_LEVEL})
