@@ -28,7 +28,7 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Configure
         run: make docker-run "cmake -B build --preset gcc-release ."
       - name: Build libpolicies
@@ -42,7 +42,7 @@ jobs:
       - name: Package dd-requirements-converter
         run: tar -czf dd-requirements-converter-linux-${{ matrix.arch }}.tar.gz go/dd-requirements-converter
       - name: Export library
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: libpolicies-linux-${{ matrix.arch }}
           path: |
@@ -66,13 +66,18 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Build dd-compile-policy
         run: make build-dd-compile-policy
+      # Gate packaging on the forward-compat checks: whether flatbuffers.patch
+      # applied is a property of the build environment, not of the source, so the
+      # artifact that ships has to be the one that was tested.
+      - name: Test dd-compile-policy
+        run: make test-dd-compile-policy
       - name: Package dd-compile-policy
         run: tar -czf dd-compile-policy-linux-${{ matrix.arch }}.tar.gz -C dd-compile-policy/bin dd-compile-policy
       - name: Upload test artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
           path: dd-compile-policy-linux-${{ matrix.arch }}.tar.gz
@@ -92,7 +97,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
@@ -106,10 +111,12 @@ jobs:
         run: scoop install main/cmake@4.0.1 main/make@4.4.1
       - name: Build dd-compile-policy
         run: make -C dd-compile-policy build CMAKE_ARCH=${{ matrix.arch }}
+      - name: Test dd-compile-policy
+        run: make -C dd-compile-policy test CMAKE_ARCH=${{ matrix.arch }}
       - name: Package dd-compile-policy
         run: Compress-Archive -Path ./dd-compile-policy/bin/dd-compile-policy.exe -DestinationPath dd-compile-policy-windows-${{ matrix.arch }}.zip
       - name: Upload dd-compile-policy
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dd-compile-policy-windows-${{ matrix.arch }}.zip
           path: dd-compile-policy-windows-${{ matrix.arch }}.zip
@@ -130,7 +137,7 @@ jobs:
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
@@ -156,7 +163,7 @@ jobs:
       - name: Package dd-requirements-converter
         run: Compress-Archive -Path ./go/dd-requirements-converter.exe -DestinationPath dd-requirements-converter-win-${{ matrix.arch }}.zip
       - name: Export library
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: libpolicies-win-${{ matrix.arch }}
           path: |
@@ -174,8 +181,8 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: artifacts
           merge-multiple: true

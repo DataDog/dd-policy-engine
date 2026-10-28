@@ -37,6 +37,17 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		return 0, errors.New("no conditions to match")
 	}
 
+	groups := 0
+	for _, present := range []bool{d.Os != "", len(d.Cmds) > 0, len(d.Args) > 0, len(d.Envs) > 0} {
+		if present {
+			groups++
+		}
+	}
+	soleGroupDescription := ""
+	if groups == 1 {
+		soleGroupDescription = d.Description
+	}
+
 	if d.Os != "" {
 		os, ok := normalizeOS(d.Os)
 		if !ok {
@@ -44,14 +55,18 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		}
 
 		osEval := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsOS, os, wls.CmpTypeSTRCMP_EXACT)
-		osNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "OS matching", osEval)
+		osNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, soleGroupDescription, osEval)
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, osNode, wls.NodeTypeEvaluatorNode))
 	}
 
 	// convert cmd patterns to evaluator nodes
 	var cmdNodes []flatbuffers.UOffsetT
+	cmdLeafDescription := ""
+	if len(d.Cmds) == 1 {
+		cmdLeafDescription = soleGroupDescription
+	}
 	for _, cmd := range d.Cmds {
-		cmdNode, err := cmd.ConvertToWLS(builder)
+		cmdNode, err := cmd.ConvertToWLS(builder, cmdLeafDescription)
 		if err != nil {
 			return 0, err
 		}
@@ -61,14 +76,18 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 	if len(cmdNodes) == 1 {
 		nodes = append(nodes, cmdNodes[0])
 	} else if len(cmdNodes) > 1 {
-		orNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, "Match any cmd pattern", cmdNodes)
+		orNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_OR, soleGroupDescription, cmdNodes)
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, orNode, wls.NodeTypeCompositeNode))
 	}
 
 	// convert argument lists to evaluator nodes
 	var argNodes []flatbuffers.UOffsetT
+	argListDescription := ""
+	if len(d.Args) == 1 {
+		argListDescription = soleGroupDescription
+	}
 	for _, argumentList := range d.Args {
-		argNode, err := argumentList.ConvertToWLS(builder)
+		argNode, err := argumentList.ConvertToWLS(builder, argListDescription)
 		if err != nil {
 			return 0, err
 		}
@@ -79,7 +98,7 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 	if len(argNodes) == 1 {
 		nodes = append(nodes, argNodes[0])
 	} else if len(argNodes) > 1 {
-		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "Match all argument patterns", argNodes)
+		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, soleGroupDescription, argNodes)
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
 	}
 
@@ -101,14 +120,18 @@ func (d JSONDeny) ConvertToWLS(builder *flatbuffers.Builder) (flatbuffers.UOffse
 		}
 
 		strEvaluator := schema.StrEvaluatorCreate(builder, wls.StringEvaluatorsPROCESS_ENVAR, kv, comparator)
-		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, "Environment variable matching: "+kv, strEvaluator)
+		envDescription := ""
+		if len(d.Envs) == 1 {
+			envDescription = soleGroupDescription
+		}
+		node := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeStrEvaluator, envDescription, strEvaluator)
 		envNodes = append(envNodes, schema.NodeTypeWrapperCreate(builder, node, wls.NodeTypeEvaluatorNode))
 	}
 
 	if len(envNodes) == 1 {
 		nodes = append(nodes, envNodes[0])
 	} else if len(envNodes) > 1 {
-		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, d.Description, envNodes)
+		andNode := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, soleGroupDescription, envNodes)
 		nodes = append(nodes, schema.NodeTypeWrapperCreate(builder, andNode, wls.NodeTypeCompositeNode))
 	}
 

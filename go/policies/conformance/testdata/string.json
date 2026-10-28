@@ -1,0 +1,161 @@
+{
+  "_comment": "Plain string evaluators: the five comparators (exact/prefix/suffix/contains/wildcard) and ABSTAIN when the fact source is unavailable.",
+  "vectors": [
+    {
+      "name": "namespace_name_exact_match",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_NAME",
+            "cmp": "CMP_EXACT",
+            "value": "payments"
+          }
+        }
+      },
+      "facts": {
+        "strings": {
+          "NAMESPACE_NAME": "payments"
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_name_exact_mismatch",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_NAME",
+            "cmp": "CMP_EXACT",
+            "value": "billing"
+          }
+        }
+      },
+      "facts": {
+        "strings": {
+          "NAMESPACE_NAME": "payments"
+        }
+      },
+      "expect": "FALSE"
+    },
+    {
+      "name": "string_source_unavailable_abstains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_NAME",
+            "cmp": "CMP_EXACT",
+            "value": "payments"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "namespace_name_prefix",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_NAME",
+            "cmp": "CMP_PREFIX",
+            "value": "pay"
+          }
+        }
+      },
+      "facts": {
+        "strings": {
+          "NAMESPACE_NAME": "payments"
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_name_suffix",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_NAME",
+            "cmp": "CMP_SUFFIX",
+            "value": "ments"
+          }
+        }
+      },
+      "facts": {
+        "strings": {
+          "NAMESPACE_NAME": "payments"
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_name_contains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_NAME",
+            "cmp": "CMP_CONTAINS",
+            "value": "yme"
+          }
+        }
+      },
+      "facts": {
+        "strings": {
+          "NAMESPACE_NAME": "payments"
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_name_wildcard",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_NAME",
+            "cmp": "CMP_WILDCARD",
+            "value": "pay*"
+          }
+        }
+      },
+      "facts": {
+        "strings": {
+          "NAMESPACE_NAME": "payments"
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "generic_string_id_runtime_language",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "RUNTIME_LANGUAGE",
+            "cmp": "CMP_EXACT",
+            "value": "java"
+          }
+        }
+      },
+      "facts": {
+        "strings": {
+          "RUNTIME_LANGUAGE": "java"
+        }
+      },
+      "expect": "TRUE"
+    }
+  ]
+}

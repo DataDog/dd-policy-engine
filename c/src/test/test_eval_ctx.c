@@ -77,13 +77,19 @@ static plcs_errors dummy_action(
     const char *values[],
     size_t value_len,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
   (void)res;
   (void)values;
   (void)value_len;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   g_action_called++;
   return PLCS_ESUCCESS;
 }
@@ -250,7 +256,7 @@ UTEST(eval_ctx, register_and_invoke_action_pointer) {
 
   g_action_called = 0;
   const char *vals[] = {"v1", "v2"};
-  rc = act(PLCS_EVAL_RESULT_TRUE, vals, 2, "desc", PLCS_ACTION_INJECT_ALLOW);
+  rc = act(PLCS_EVAL_RESULT_TRUE, vals, 2, "desc", PLCS_ACTION_INJECT_ALLOW, (plcs_uuid){0}, 0, NULL);
   ASSERT_EQ(rc, PLCS_ESUCCESS);
   ASSERT_EQ(g_action_called, 1);
 }

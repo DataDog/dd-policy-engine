@@ -207,6 +207,30 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 			),
 		},
 		{
+			// JSON: {"arch": "x64", "supported": true, "min": "2.17.3"}
+			// Policy: DENY at 2.17.2, but not at 2.17.3 itself.
+			name:      "supported at patch boundary - deny if version < min",
+			inputJSON: `{"arch": "x64", "supported": true, "min": "2.17.3"}`,
+			flavor:    "glibc",
+			expectNil: false,
+			expectedRoot: andNode(
+				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "x86_64"),
+				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "glibc"),
+				orNode( // version < 2.17.3
+					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_GT, 2),
+					andNode( // major == 2 AND minor < 17
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_GT, 17),
+					),
+					andNode( // major == 2 AND minor == 17 AND patch < 3
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_EQ, 17),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_GT, 3),
+					),
+				),
+			),
+		},
+		{
 			// JSON: {"arch": "arm64", "supported": false}
 			// Policy: DENY if arch=aarch64 AND flavor=musl (entirely unsupported)
 			name:      "unsupported with no version - deny all matching arch+flavor",
@@ -243,6 +267,7 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 		{
 			// JSON: {"arch": "x64", "supported": false, "min": "2.30"}
 			// Policy: DENY if arch=x86_64 AND flavor=glibc AND version >= 2.30
+			// No patch in the requirement → the threshold defaults to patch 0.
 			name:      "unsupported with version - deny if version >= min",
 			inputJSON: `{"arch": "x64", "supported": false, "min": "2.30"}`,
 			flavor:    "glibc",
@@ -254,12 +279,36 @@ func TestJSONlibc_ConvertToWLS(t *testing.T) {
 					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_LT, 2),
 					andNode( // major == 2 AND minor > 30
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
-						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LTE, 30),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LT, 30),
 					),
 					andNode( // major == 2 AND minor == 30 AND patch >= 0
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_EQ, 30),
 						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_LTE, 0),
+					),
+				),
+			),
+		},
+		{
+			// JSON: {"arch": "x64", "supported": false, "min": "2.30.5"}
+			// Policy: DENY at 2.30.5, but not at the immediately preceding 2.30.4 patch.
+			name:      "unsupported at patch boundary - deny if version >= min",
+			inputJSON: `{"arch": "x64", "supported": false, "min": "2.30.5"}`,
+			flavor:    "glibc",
+			expectNil: false,
+			expectedRoot: andNode(
+				strEval(wls.StringEvaluatorsMACHINE_ARCHITECTURE, "x86_64"),
+				strEval(wls.StringEvaluatorsLIBC_FLAVOR, "glibc"),
+				orNode( // version >= 2.30.5
+					numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_LT, 2),
+					andNode( // major == 2 AND minor > 30
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_LT, 30),
+					),
+					andNode( // major == 2 AND minor == 30 AND patch >= 5
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MAJOR, wls.CmpTypeNUMCMP_EQ, 2),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_MINOR, wls.CmpTypeNUMCMP_EQ, 30),
+						numEval(wls.NumericEvaluatorsLIBC_VERSION_PATCH, wls.CmpTypeNUMCMP_LTE, 5),
 					),
 				),
 			),
@@ -360,7 +409,7 @@ func TestCmdPattern_ConvertToWLS(t *testing.T) {
 			cmd := converter.CmdPattern(tt.pattern)
 
 			builder := flatbuffers.NewBuilder(1024)
-			offset, err := cmd.ConvertToWLS(builder)
+			offset, err := cmd.ConvertToWLS(builder, "")
 			if err != nil {
 				t.Fatalf("ConvertToWLS failed: %v", err)
 			}
@@ -435,7 +484,7 @@ func TestArgumentList_ConvertToWLS(t *testing.T) {
 			}
 
 			builder := flatbuffers.NewBuilder(1024)
-			offset, err := argList.ConvertToWLS(builder)
+			offset, err := argList.ConvertToWLS(builder, "")
 			if err != nil {
 				t.Fatalf("ConvertToWLS failed: %v", err)
 			}
@@ -602,7 +651,7 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 		inputJSON         string
 		wantUnmarshalErr  bool
 		wantVersionErr    bool
-		expectedRuleCount int // when conversion runs: rules ORed together in the single policy
+		expectedRuleCount int // when conversion runs: one policy per rule
 	}{
 		{
 			name:              "version one only",
@@ -645,11 +694,11 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 				"version": 1,
 				"deny": [{"os": "windows", "description": "no windows"}],
 				"native_deps": {
-					"glibc": [{"arch": "x64", "supported": true, "min": "2.17"}],
-					"musl": [{"arch": "arm64", "supported": false}]
+					"glibc": [{"arch": "x64", "supported": true, "min": "2.17", "description": "glibc below 2.17"}],
+					"musl": [{"arch": "arm64", "supported": false, "description": "unsupported musl arm64"}]
 				}
 			}`,
-			expectedRuleCount: 3, // 1 deny + 1 glibc + 1 musl ORed together
+			expectedRuleCount: 3, // 1 deny + 1 glibc + 1 musl, each its own policy
 		},
 	}
 
@@ -687,41 +736,42 @@ func TestJSONRequirements_ConvertToWLS(t *testing.T) {
 			builder.Finish(offset)
 			policies := wls.GetRootAsPolicies(builder.FinishedBytes(), 0)
 
-			// Always 1 policy now (all rules ORed together)
-			if policies.PoliciesLength() != 1 {
-				t.Errorf("Expected 1 policy, got %d", policies.PoliciesLength())
+			// One policy per rule, so that each carries its own description and action.
+			if policies.PoliciesLength() != tt.expectedRuleCount {
+				t.Errorf("Expected %d policies, got %d", tt.expectedRuleCount, policies.PoliciesLength())
 				return
 			}
 
-			var policy wls.Policy
-			if !policies.Policies(&policy, 0) {
-				t.Fatal("Failed to get policy")
-			}
+			for ix := 0; ix < policies.PoliciesLength(); ix++ {
+				var policy wls.Policy
+				if !policies.Policies(&policy, ix) {
+					t.Fatalf("Failed to get policy %d", ix)
+				}
 
-			rules := policy.Rules(nil)
-			if rules == nil {
-				t.Fatal("Expected rules node, got nil")
-			}
+				if policy.Rules(nil) == nil {
+					t.Errorf("policy %d: expected rules node, got nil", ix)
+				}
 
-			// The root should be an OR node with the expected number of children
-			if rules.NodeType() != wls.NodeTypeCompositeNode {
-				t.Fatalf("Expected composite node, got %s", rules.NodeType().String())
-			}
+				if len(policy.Description()) == 0 {
+					t.Errorf("policy %d: expected a description naming the rule", ix)
+				}
 
-			var table flatbuffers.Table
-			if !rules.Node(&table) {
-				t.Fatal("Failed to get node table")
-			}
+				// Exactly one deny action, describing the rule that produced it.
+				if policy.ActionsLength() != 1 {
+					t.Errorf("policy %d: expected 1 action, got %d", ix, policy.ActionsLength())
+					continue
+				}
 
-			var composite wls.CompositeNode
-			composite.Init(table.Bytes, table.Pos)
-
-			if composite.Op() != wls.BoolOperationBOOL_OR {
-				t.Errorf("Expected OR operation, got %s", composite.Op().String())
-			}
-
-			if composite.ChildrenLength() != tt.expectedRuleCount {
-				t.Errorf("Expected %d rules, got %d", tt.expectedRuleCount, composite.ChildrenLength())
+				var action wls.Action
+				if !policy.Actions(&action, 0) {
+					t.Fatalf("policy %d: failed to get action", ix)
+				}
+				if action.Action() != wls.ActionIdINJECT_DENY {
+					t.Errorf("policy %d: expected INJECT_DENY, got %s", ix, action.Action().String())
+				}
+				if want := converter.ActionDescription(string(policy.Description())); string(action.Description()) != want {
+					t.Errorf("policy %d: action description = %q, want %q", ix, action.Description(), want)
+				}
 			}
 		})
 	}

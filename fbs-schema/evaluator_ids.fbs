@@ -100,7 +100,18 @@ enum StringEvaluators : byte {
     CONTAINER_NAME,
     /// A container label as "KEY=VALUE", with CMP_WILDCARD can check wildcards too
     CONTAINER_LABEL,
-    
+
+    /// Kubernetes Single Step Instrumentation targeting evaluators.
+    /// The name of the Kubernetes namespace the workload belongs to.
+    NAMESPACE_NAME,
+    /// A Kubernetes namespace label as "KEY=VALUE"; with CMP_WILDCARD can check
+    /// wildcards too, and "KEY=" with CMP_PREFIX expresses an existence check.
+    NAMESPACE_LABEL,
+    /// A Kubernetes pod label as "KEY=VALUE"; same "KEY=VALUE" convention as NAMESPACE_LABEL.
+    POD_LABEL,
+    /// A Kubernetes pod annotation as "KEY=VALUE"; same convention as POD_LABEL.
+    POD_ANNOTATION,
+
     /// Represents the count of String evaluators.
     /// This is used to ensure that the enum is always in sync with the number of evaluators.
     /// IMPORTANT! When adding a new evaluator make sure you add it BEFORE this entry.

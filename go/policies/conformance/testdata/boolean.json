@@ -1,0 +1,465 @@
+{
+  "_comment": "Tri-state AND/OR/NOT composition and short-circuit over the ALWAYS_* constant leaves.",
+  "vectors": [
+    {
+      "name": "always_true",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "ALWAYS_TRUE"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "always_false",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "ALWAYS_FALSE"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "always_abstain",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "ALWAYS_ABSTAIN"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "and_true_true",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_TRUE"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_TRUE"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "and_true_false",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_TRUE"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_FALSE"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "and_true_abstain",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_TRUE"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_ABSTAIN"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "and_false_abstain_false_dominates",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_FALSE"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_ABSTAIN"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "or_false_false",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_OR",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_FALSE"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_FALSE"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "or_false_true",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_OR",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_FALSE"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_TRUE"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "or_false_abstain",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_OR",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_FALSE"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_ABSTAIN"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "or_true_abstain_true_dominates",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_OR",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_TRUE"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_ABSTAIN"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "not_true",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_NOT",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_TRUE"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "FALSE"
+    },
+    {
+      "name": "not_false",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_NOT",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_FALSE"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "not_abstain",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_NOT",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_ABSTAIN"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "nested_tree",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "CompositeNode",
+              "node": {
+                "op": "BOOL_OR",
+                "children": [
+                  {
+                    "node_type": "EvaluatorNode",
+                    "node": {
+                      "eval_type": "StrEvaluator",
+                      "eval": {
+                        "id": "ALWAYS_FALSE"
+                      }
+                    }
+                  },
+                  {
+                    "node_type": "EvaluatorNode",
+                    "node": {
+                      "eval_type": "StrEvaluator",
+                      "eval": {
+                        "id": "ALWAYS_TRUE"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "node_type": "CompositeNode",
+              "node": {
+                "op": "BOOL_NOT",
+                "children": [
+                  {
+                    "node_type": "EvaluatorNode",
+                    "node": {
+                      "eval_type": "StrEvaluator",
+                      "eval": {
+                        "id": "ALWAYS_FALSE"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "TRUE"
+    },
+    {
+      "name": "nested_abstain_propagation",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "ALWAYS_TRUE"
+                }
+              }
+            },
+            {
+              "node_type": "CompositeNode",
+              "node": {
+                "op": "BOOL_OR",
+                "children": [
+                  {
+                    "node_type": "EvaluatorNode",
+                    "node": {
+                      "eval_type": "StrEvaluator",
+                      "eval": {
+                        "id": "ALWAYS_ABSTAIN"
+                      }
+                    }
+                  },
+                  {
+                    "node_type": "EvaluatorNode",
+                    "node": {
+                      "eval_type": "StrEvaluator",
+                      "eval": {
+                        "id": "ALWAYS_FALSE"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "facts": {},
+      "expect": "ABSTAIN"
+    }
+  ]
+}

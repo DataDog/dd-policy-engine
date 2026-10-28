@@ -6,9 +6,9 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-/// unfortunetly flatbuffers doesnt support fixed size arrays in go so we can't use it
-/// the solution is to split it into two unsigned longs :(
-/// this should be populate after caculation, and removed prior to verification.
+// / unfortunetly flatbuffers doesnt support fixed size arrays in go so we can't use it
+// / the solution is to split it into two unsigned longs :(
+// / this should be populate after caculation, and removed prior to verification.
 type UUID struct {
 	_tab flatbuffers.Struct
 }

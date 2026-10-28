@@ -72,6 +72,13 @@ int main(int argc, char *argv[]) {
 
   flatbuffers::Parser parser;
 
+  // Forward compatibility: a newer remote config payload may carry fields this
+  // (older) compiler's schema doesn't know about. Ignore them instead of
+  // rejecting the whole policy set, so an old agent still applies the parts it
+  // understands. Unknown enum values already degrade to the schema default
+  // (`*_UNKNOWN`), which the engine treats as "abstain".
+  parser.opts.skip_unexpected_fields_in_json = true;
+
   // Load binary schema (.bfbs): a custom schema file if provided, otherwise
   // the schema built into this binary.
   const uint8_t *schema_bytes =

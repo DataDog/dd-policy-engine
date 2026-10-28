@@ -3,7 +3,8 @@ package converter
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
+	"strings"
 
 	"github.com/DataDog/dd-policy-engine/go/schema"
 	"github.com/DataDog/dd-policy-engine/go/schema/dd/wls"
@@ -30,17 +31,39 @@ func (rv *RequiredVersion) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if versionStr == "" {
-		return nil
-	}
-
+	versionStr = strings.TrimSpace(versionStr)
 	v, err := version.NewVersion(versionStr)
 	if err != nil {
 		return err
 	}
+	if !hasMajorMinor(versionStr) {
+		return fmt.Errorf("invalid libc version %q: expected at least major.minor", versionStr)
+	}
 
 	*rv = RequiredVersion{Version: *v}
 	return nil
+}
+
+func hasMajorMinor(versionStr string) bool {
+	versionStr = strings.TrimPrefix(strings.TrimPrefix(versionStr, "v"), "V")
+	position := 0
+	for component := 0; component < 2; component++ {
+		start := position
+		for position < len(versionStr) && versionStr[position] >= '0' && versionStr[position] <= '9' {
+			position++
+		}
+		if position == start {
+			return false
+		}
+		if component == 1 {
+			return true
+		}
+		if position >= len(versionStr) || versionStr[position] != '.' {
+			return false
+		}
+		position++
+	}
+	return false
 }
 
 // ConvertToWLS converts a JSONlibc requirement to a WLS DENY policy.
@@ -50,6 +73,7 @@ func (rv *RequiredVersion) UnmarshalJSON(data []byte) error {
 //   - supported: true + version → DENY if arch+flavor match AND version < min
 //   - supported: false + no version → DENY if arch+flavor match
 //   - supported: false + version → DENY if arch+flavor match AND version >= min
+
 func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (flatbuffers.UOffsetT, error) {
 	// If supported and no version requirement, no policy needed (allowed by default)
 	if l.IsSupported && l.RequiredMinVersion == nil {
@@ -73,10 +97,6 @@ func (l JSONlibc) ConvertToWLS(builder *flatbuffers.Builder, flavor string) (fla
 
 	if l.RequiredMinVersion != nil {
 		segments := l.RequiredMinVersion.Segments()
-
-		if len(segments) < 2 {
-			log.Fatalf("Invalid version: %v", l.RequiredMinVersion)
-		}
 
 		major := segments[0]
 		minor := segments[1]
@@ -121,11 +141,11 @@ func buildVersionLessThanOrEqual(builder *flatbuffers.Builder, major, minor, pat
 	majorEqWrapper := schema.NodeTypeWrapperCreate(builder, majorEqNode, wls.NodeTypeEvaluatorNode)
 
 	// case 2: major == minMajor AND minor < minMinor
-	minorLteEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MINOR, int64(minor), wls.CmpTypeNUMCMP_LTE)
-	minorLteNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "minor version <=", minorLteEval)
-	minorLteWrapper := schema.NodeTypeWrapperCreate(builder, minorLteNode, wls.NodeTypeEvaluatorNode)
+	minorLtEval := schema.NumEvaluatorCreate(builder, wls.NumericEvaluatorsLIBC_VERSION_MINOR, int64(minor), wls.CmpTypeNUMCMP_LT)
+	minorLtNode := schema.EvaluatorNodeCreate(builder, wls.EvaluatorTypeNumEvaluator, "minor version <", minorLtEval)
+	minorLtWrapper := schema.NodeTypeWrapperCreate(builder, minorLtNode, wls.NodeTypeEvaluatorNode)
 
-	case2And := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "major == && minor <=", []flatbuffers.UOffsetT{majorEqWrapper, minorLteWrapper})
+	case2And := schema.CompositeNodeCreate(builder, wls.BoolOperationBOOL_AND, "major == && minor <", []flatbuffers.UOffsetT{majorEqWrapper, minorLtWrapper})
 	case2 := schema.NodeTypeWrapperCreate(builder, case2And, wls.NodeTypeCompositeNode)
 
 	// case 3: major == minMajor AND minor == minMinor AND patch < minPatch

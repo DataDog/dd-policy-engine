@@ -70,11 +70,17 @@ static plcs_errors inspect_action_values(
     const char *values[],
     size_t value_count,
     const char *description,
-    int action_id
+    int action_id,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
 ) {
   (void)result;
   (void)description;
   (void)action_id;
+  (void)policy_id;
+  (void)policy_version;
+  (void)policy_description;
   received_expected_value = value_count == 1 && values[0] != NULL && strcmp(values[0], "value") == 0;
   return PLCS_ESUCCESS;
 }

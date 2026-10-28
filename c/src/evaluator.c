@@ -11,8 +11,10 @@
 #include <dd/policies/evaluator_default.h>
 #include <dd/policies/policies.h>
 
+#include <stdbool.h>
 #include <stdio.h>
 #include "eval_ctx.h"
+#include "observer.h"
 #include "policy.h"
 #include "wire/action.h"
 #include "wire/boolean_operation.h"
@@ -20,7 +22,7 @@
 #include "wire/evaluation_result.h"
 #define PLCS_MAX_EVAL_DEPTH 64
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth);
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, const plcs_observer *observer);
 
 plcs_evaluation_result evaluate_string(dd_ns(StrEvaluator_table_t) eval_str, const char *description) {
   if (!eval_str) {
@@ -117,7 +119,6 @@ plcs_evaluation_result node_evaluator(dd_ns(EvaluatorNode_table_t) node) {
       return evaluate_unumeric(evaluator.value, dd_ns(EvaluatorNode_description)(node));
   }
 
-  plcs_eval_ctx_set_error(PLCS_EUNKNOWN_EVAL_IX);
   return result;
 }
 
@@ -176,7 +177,8 @@ plcs_evaluation_result DoOper(dd_ns(BoolOperation_enum_t) oper, plcs_evaluation_
   }
 }
 
-plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth) {
+plcs_evaluation_result
+composite_evaluator(dd_ns(CompositeNode_table_t) node, int depth, const plcs_observer *observer) {
   if (!node) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
@@ -202,18 +204,16 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
 
     case dd_ns(BoolOperation_BOOL_NOT):
       // CAN ONLY HAVE ONE CHILD!
-      // otherwise this is a non valid boolean operation
       if (children_len != 1) {
-        // log error
         return PLCS_EVAL_RESULT_ABSTAIN;
       }
-      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1));
+      return DoNot(evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, 0), depth + 1, observer));
       break;
   }
 
   // keep iterating recursively over the tree
   for (size_t ix = 0; ix < children_len; ++ix) {
-    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1));
+    res = DoOper(oper, res, evaluate_rules(dd_ns(NodeTypeWrapper_vec_at)(children, ix), depth + 1, observer));
 
     // short circuit
     if (oper == dd_ns(BoolOperation_BOOL_OR) && res == PLCS_EVAL_RESULT_TRUE) {
@@ -229,32 +229,46 @@ plcs_evaluation_result composite_evaluator(dd_ns(CompositeNode_table_t) node, in
   return res;
 }
 
-plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth) {
+plcs_evaluation_result evaluate_rules(dd_ns(NodeTypeWrapper_table_t) node, int depth, const plcs_observer *observer) {
+  // a node this deep is never evaluated, same as a node a short-circuit never
+  // reached, so it is not reported either
   if (depth > PLCS_MAX_EVAL_DEPTH) {
     return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
-  switch (dd_ns(NodeTypeWrapper_node_type)(node)) {
-    case dd_ns(NodeType_EvaluatorNode):
-      dd_ns(EvaluatorNode_table_t) evaluator_node = dd_ns(NodeTypeWrapper_node)(node);
-      return node_evaluator(evaluator_node);
-      break;
+  dd_ns(NodeType_union_type_t) node_type = dd_ns(NodeTypeWrapper_node_type)(node);
+  if (node_type != dd_ns(NodeType_EvaluatorNode) && node_type != dd_ns(NodeType_CompositeNode)) {
+    size_t handle = observer && observer->node_enter ? observer->node_enter(observer->user, depth) : 0;
+    if (observer && observer->node_exit) {
+      plcs_evaluation_record record = {.kind = PLCS_NODE_UNKNOWN, .result = PLCS_EVAL_RESULT_ABSTAIN, .depth = depth};
+      observer->node_exit(observer->user, handle, &record);
+    }
 
-    case dd_ns(NodeType_CompositeNode):
-      dd_ns(CompositeNode_table_t) composite_node = dd_ns(NodeTypeWrapper_node)(node);
-      return composite_evaluator(composite_node, depth);
-      break;
-
-    default:
-      // error, unknown node type!
-      break;
+    return PLCS_EVAL_RESULT_ABSTAIN;
   }
 
-  // log error
-  return PLCS_EVAL_RESULT_ABSTAIN;
+  bool is_evaluator_node = node_type == dd_ns(NodeType_EvaluatorNode);
+  const void *inner = dd_ns(NodeTypeWrapper_node)(node);
+
+  size_t handle = observer && observer->node_enter ? observer->node_enter(observer->user, depth) : 0;
+
+  plcs_evaluation_result res = is_evaluator_node ? node_evaluator(inner) : composite_evaluator(inner, depth, observer);
+
+  if (observer && observer->node_exit) {
+    plcs_evaluation_record record = plcs_describe_node(node, res, depth);
+    observer->node_exit(observer->user, handle, &record);
+  }
+
+  return res;
 }
 
-static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns(Action_vec_t) actions_vec) {
+static inline plcs_errors perform_actions(
+    plcs_evaluation_result eval_res,
+    dd_ns(Action_vec_t) actions_vec,
+    plcs_uuid policy_id,
+    int64_t policy_version,
+    const char *policy_description
+) {
   plcs_errors res = PLCS_ESUCCESS;
 
   // iterate
@@ -262,7 +276,7 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
   for (size_t ix = 0; ix < len; ++ix) {
     dd_ns(Action_table_t) action = dd_ns(Action_vec_at)(actions_vec, ix);
     int action_id = dd_ns(Action_action)(action);
-    if (action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
+    if (action_id < 0 || action_id >= dd_ns(ActionId_ACTIONS_COUNT) || !plcs_eval_ctx_get_action(action_id)) {
       continue;
     }
     size_t values_len = flatbuffers_vec_len(dd_ns(Action_values(action)));
@@ -277,7 +291,10 @@ static inline plcs_errors perform_actions(plcs_evaluation_result eval_res, dd_ns
     }
     plcs_action_function_ptr action_function = plcs_eval_ctx_get_action(action_id);
     if (action_function) {
-      res = action_function(eval_res, values, values_len, dd_ns(Action_description)(action), action_id);
+      res = action_function(
+          eval_res, values, values_len, dd_ns(Action_description)(action), action_id, policy_id, policy_version,
+          policy_description
+      );
       plcs_eval_ctx_set_action_error(action_id, res);
     } else {
       res = PLCS_EACTIONS_EVAL;
@@ -291,17 +308,39 @@ plcs_errors evaluate_policy(dd_ns(Policy_table_t) policy) {
   // extract actions
   dd_ns(Action_vec_t) actions = dd_ns(Policy_actions)(policy);
 
+  dd_wls_UUID_struct_t raw_policy_id = dd_ns(Policy_id)(policy);
+  plcs_uuid policy_id = raw_policy_id
+                            ? (plcs_uuid){.hi = dd_wls_UUID_hi(raw_policy_id), .lo = dd_wls_UUID_lo(raw_policy_id)}
+                            : (plcs_uuid){0};
+
   // extract rules
   dd_ns(NodeTypeWrapper_table_t) rules = dd_ns(Policy_rules)(policy);
 
+  // a malformed node in a previous policy must not leak its error into this
+  // one and cause every evaluator here to silently abstain
+  plcs_eval_ctx_set_error(PLCS_ESUCCESS);
+
+  // everything the observer sees from here on belongs to this policy
+  const plcs_observer *observer = plcs_eval_ctx_get_observer();
+  if (observer && observer->policy_enter) {
+    observer->policy_enter(observer->user, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy));
+  }
+
   // // evaluate rules if they exist, otherwise return EVAL_RESULT_ABSTAIN
-  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0) : PLCS_EVAL_RESULT_ABSTAIN;
+  plcs_evaluation_result eval_res = rules ? evaluate_rules(rules, 0, observer) : PLCS_EVAL_RESULT_ABSTAIN;
+
+  // the policy has its answer, so the observer can explain it before anything acts on it
+  if (observer && observer->policy_exit) {
+    observer->policy_exit(observer->user, eval_res);
+  }
 
   // perform actions given evaluation result
-  return perform_actions(eval_res, actions);
+  return perform_actions(
+      eval_res, actions, policy_id, dd_ns(Policy_version)(policy), dd_ns(Policy_description)(policy)
+  );
 }
 
-plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
+plcs_errors plcs_evaluate_buffer_early_exit(const uint8_t *buffer, size_t size, plcs_evaluate_stop_fn should_stop) {
   dd_ns(Policy_vec_t) policies = plcs_get_policies(buffer, size);
   if (!policies) {
     // not necessarily an error, could be empty policies
@@ -309,21 +348,24 @@ plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
   }
 
   size_t policies_count = dd_ns(Policy_vec_len)(policies);
-  plcs_errors total_errors = 0;
+  plcs_errors total_errors = PLCS_ESUCCESS;
   for (size_t ix = 0; ix < policies_count; ++ix) {
     dd_ns(Policy_table_t) policy = dd_ns(Policy_vec_at)(policies, ix);
     if (!policy) {
       // not necessarily an error, could be empty policy
       continue;
     }
-    plcs_errors res = evaluate_policy(policy);
-    // success is 0, errors are > 0, if total_errors is > 0, it means there was
-    // an error
-    // TODO: track these errors using an errono style map in the eval_ctx
-    total_errors += res;
+    total_errors += evaluate_policy(policy);
+    if (should_stop && should_stop()) {
+      break;
+    }
   }
 
   return total_errors;
+}
+
+plcs_errors plcs_evaluate_buffer(const uint8_t *buffer, size_t size) {
+  return plcs_evaluate_buffer_early_exit(buffer, size, NULL);
 }
 
 const char *plcs_string_evaluators_to_string(enum plcs_string_evaluators v) {

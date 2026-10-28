@@ -78,7 +78,11 @@ __flatbuffers_define_integer_type(dd_wls_StringEvaluators, dd_wls_StringEvaluato
 #define dd_wls_StringEvaluators_CONTAINER_IMAGE_DIGEST ((dd_wls_StringEvaluators_enum_t)INT8_C(49))
 #define dd_wls_StringEvaluators_CONTAINER_NAME ((dd_wls_StringEvaluators_enum_t)INT8_C(50))
 #define dd_wls_StringEvaluators_CONTAINER_LABEL ((dd_wls_StringEvaluators_enum_t)INT8_C(51))
-#define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(52))
+#define dd_wls_StringEvaluators_NAMESPACE_NAME ((dd_wls_StringEvaluators_enum_t)INT8_C(52))
+#define dd_wls_StringEvaluators_NAMESPACE_LABEL ((dd_wls_StringEvaluators_enum_t)INT8_C(53))
+#define dd_wls_StringEvaluators_POD_LABEL ((dd_wls_StringEvaluators_enum_t)INT8_C(54))
+#define dd_wls_StringEvaluators_POD_ANNOTATION ((dd_wls_StringEvaluators_enum_t)INT8_C(55))
+#define dd_wls_StringEvaluators_STR_EVAL_COUNT ((dd_wls_StringEvaluators_enum_t)INT8_C(56))
 
 static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_enum_t value)
 {
@@ -135,6 +139,10 @@ static inline const char *dd_wls_StringEvaluators_name(dd_wls_StringEvaluators_e
     case dd_wls_StringEvaluators_CONTAINER_IMAGE_DIGEST: return "CONTAINER_IMAGE_DIGEST";
     case dd_wls_StringEvaluators_CONTAINER_NAME: return "CONTAINER_NAME";
     case dd_wls_StringEvaluators_CONTAINER_LABEL: return "CONTAINER_LABEL";
+    case dd_wls_StringEvaluators_NAMESPACE_NAME: return "NAMESPACE_NAME";
+    case dd_wls_StringEvaluators_NAMESPACE_LABEL: return "NAMESPACE_LABEL";
+    case dd_wls_StringEvaluators_POD_LABEL: return "POD_LABEL";
+    case dd_wls_StringEvaluators_POD_ANNOTATION: return "POD_ANNOTATION";
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return "STR_EVAL_COUNT";
     default: return "";
     }
@@ -195,6 +203,10 @@ static inline int dd_wls_StringEvaluators_is_known_value(dd_wls_StringEvaluators
     case dd_wls_StringEvaluators_CONTAINER_IMAGE_DIGEST: return 1;
     case dd_wls_StringEvaluators_CONTAINER_NAME: return 1;
     case dd_wls_StringEvaluators_CONTAINER_LABEL: return 1;
+    case dd_wls_StringEvaluators_NAMESPACE_NAME: return 1;
+    case dd_wls_StringEvaluators_NAMESPACE_LABEL: return 1;
+    case dd_wls_StringEvaluators_POD_LABEL: return 1;
+    case dd_wls_StringEvaluators_POD_ANNOTATION: return 1;
     case dd_wls_StringEvaluators_STR_EVAL_COUNT: return 1;
     default: return 0;
     }

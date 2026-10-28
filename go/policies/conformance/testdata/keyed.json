@@ -1,0 +1,333 @@
+{
+  "_comment": "Keyed KEY=VALUE evaluators (labels, annotations, environment variables): value match, the KEY= existence convention, absent-key FALSE, and source-unavailable ABSTAIN.",
+  "vectors": [
+    {
+      "name": "pod_label_exact_match",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "POD_LABEL",
+            "cmp": "CMP_EXACT",
+            "value": "app=web"
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "POD_LABEL": {
+            "app": "web",
+            "tier": "frontend"
+          }
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "pod_label_exact_mismatch",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "POD_LABEL",
+            "cmp": "CMP_EXACT",
+            "value": "app=db"
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "POD_LABEL": {
+            "app": "web",
+            "tier": "frontend"
+          }
+        }
+      },
+      "expect": "FALSE"
+    },
+    {
+      "name": "pod_label_key_absent_is_false",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "POD_LABEL",
+            "cmp": "CMP_EXACT",
+            "value": "missing=x"
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "POD_LABEL": {
+            "app": "web"
+          }
+        }
+      },
+      "expect": "FALSE"
+    },
+    {
+      "name": "label_source_unavailable_abstains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "POD_LABEL",
+            "cmp": "CMP_EXACT",
+            "value": "app=web"
+          }
+        }
+      },
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "pod_label_exists",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "POD_LABEL",
+            "cmp": "CMP_PREFIX",
+            "value": "tier="
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "POD_LABEL": {
+            "app": "web",
+            "tier": "frontend"
+          }
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "pod_label_exists_absent",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "POD_LABEL",
+            "cmp": "CMP_PREFIX",
+            "value": "missing="
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "POD_LABEL": {
+            "app": "web"
+          }
+        }
+      },
+      "expect": "FALSE"
+    },
+    {
+      "name": "pod_label_wildcard",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "POD_LABEL",
+            "cmp": "CMP_WILDCARD",
+            "value": "app=w*"
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "POD_LABEL": {
+            "app": "web"
+          }
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_label_match",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_LABEL",
+            "cmp": "CMP_EXACT",
+            "value": "team=core"
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "NAMESPACE_LABEL": {
+            "team": "core"
+          }
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "namespace_label_key_absent_is_false",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "NAMESPACE_LABEL",
+            "cmp": "CMP_EXACT",
+            "value": "team=core"
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "NAMESPACE_LABEL": {}
+        }
+      },
+      "expect": "FALSE"
+    },
+    {
+      "name": "not_exists_matches_absent_label",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_NOT",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "POD_LABEL",
+                  "cmp": "CMP_PREFIX",
+                  "value": "deprecated="
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {
+        "labels": {
+          "POD_LABEL": {
+            "app": "web"
+          }
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "label_without_equals_abstains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "StrEvaluator",
+          "eval": {
+            "id": "POD_LABEL",
+            "cmp": "CMP_EXACT",
+            "value": "app"
+          }
+        }
+      },
+      "facts": {
+        "labels": {
+          "POD_LABEL": {
+            "app": "web"
+          }
+        }
+      },
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "process_envar_multi_key_match",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "PROCESS_ENVAR",
+                  "cmp": "CMP_EXACT",
+                  "value": "DD_ENV=prod"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "PROCESS_ENVAR",
+                  "cmp": "CMP_EXACT",
+                  "value": "DD_SERVICE=web"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {
+        "labels": {
+          "PROCESS_ENVAR": {
+            "DD_ENV": "prod",
+            "DD_SERVICE": "web"
+          }
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "process_envar_second_key_absent_false",
+      "rules": {
+        "node_type": "CompositeNode",
+        "node": {
+          "op": "BOOL_AND",
+          "children": [
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "PROCESS_ENVAR",
+                  "cmp": "CMP_EXACT",
+                  "value": "DD_ENV=prod"
+                }
+              }
+            },
+            {
+              "node_type": "EvaluatorNode",
+              "node": {
+                "eval_type": "StrEvaluator",
+                "eval": {
+                  "id": "PROCESS_ENVAR",
+                  "cmp": "CMP_EXACT",
+                  "value": "DD_SERVICE=web"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "facts": {
+        "labels": {
+          "PROCESS_ENVAR": {
+            "DD_ENV": "prod"
+          }
+        }
+      },
+      "expect": "FALSE"
+    }
+  ]
+}

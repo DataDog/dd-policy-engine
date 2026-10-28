@@ -108,6 +108,9 @@ typedef struct plcs_eval_ctx {
   /**< (a simple map action id (enum):func_ptr) */
   action_entry actions[PLCS_ACTIONS__COUNT];
 
+  /**< watches every evaluation, NULL when nobody is observing */
+  const plcs_observer *observer;
+
   /**< TODO: consider implementing this as a stack to preserve history of errors */
   plcs_errors error;
 

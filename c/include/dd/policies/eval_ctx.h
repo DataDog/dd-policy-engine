@@ -24,6 +24,7 @@
 #include "action.h"
 #include "error_codes.h"
 #include "evaluator_types.h"
+#include "observer.h"
 
 #include <limits.h>
 
@@ -78,6 +79,18 @@ plcs_eval_ctx_register_unum_evaluator(plcs_unumeric_evaluator_function_ptr func_
  * @return int on success DD_ESUCCESS(0), on error > 0 plcs_errors code
  */
 plcs_errors plcs_eval_ctx_register_action(plcs_action_function_ptr action, plcs_actions ix);
+
+/**
+ * @brief Sets the observer watching every evaluation, or NULL to stop observing.
+ *
+ * @param observer borrowed, and must outlive the evaluations it watches.
+ */
+void plcs_eval_ctx_set_observer(const plcs_observer *observer);
+
+/**
+ * @brief Returns the registered observer, or NULL when there is none.
+ */
+const plcs_observer *plcs_eval_ctx_get_observer(void);
 
 /**
  * @brief Sets the local string parameter for string evaluator ix

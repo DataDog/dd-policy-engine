@@ -20,7 +20,7 @@ else
 DOCKER_RUN :=
 endif
 
-.PHONY: all build build-container test examples clean $(LANGUAGES)
+.PHONY: all build build-container test test-dd-compile-policy examples clean $(LANGUAGES)
 
 %-all: 
 	$(DOCKER_RUN) make -C $(patsubst %-all,%,$@) all
@@ -28,6 +28,9 @@ all: build-container build-dd-compile-policy $(addsuffix -all,$(LANGUAGES)) exam
 
 build-dd-compile-policy:
 	$(DOCKER_RUN) make -C dd-compile-policy build
+
+test-dd-compile-policy:
+	$(DOCKER_RUN) make -C dd-compile-policy test
 
 clean-dd-compile-policy:
 	$(DOCKER_RUN) make -C dd-compile-policy clean

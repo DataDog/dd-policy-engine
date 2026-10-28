@@ -1,0 +1,462 @@
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache 2.0 License. This product includes software developed at
+// Datadog (https://www.datadoghq.com/).
+//
+// Copyright 2025-Present Datadog, Inc.
+
+package policies
+
+import (
+	"encoding/binary"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// dd-wls JSON identifiers, matching the policy.schema.json enums (the JSON
+// projection of the FlatBuffers policy schema shared with the C engine).
+const (
+	nodeEvaluator = "EvaluatorNode"
+	nodeComposite = "CompositeNode"
+
+	evalString   = "StrEvaluator"
+	evalNumeric  = "NumEvaluator"
+	evalUNumeric = "UNumEvaluator"
+
+	opAnd = "BOOL_AND"
+	opOr  = "BOOL_OR"
+	opNot = "BOOL_NOT"
+
+	cmpExact    = "CMP_EXACT"
+	cmpPrefix   = "CMP_PREFIX"
+	cmpSuffix   = "CMP_SUFFIX"
+	cmpContains = "CMP_CONTAINS"
+	cmpWildcard = "CMP_WILDCARD"
+
+	cmpEq  = "CMP_EQ"
+	cmpGt  = "CMP_GT"
+	cmpGte = "CMP_GTE"
+	cmpLt  = "CMP_LT"
+	cmpLte = "CMP_LTE"
+
+	actionInjectAllow    = "INJECT_ALLOW"
+	actionInjectDeny     = "INJECT_DENY"
+	actionEnableSDK      = "ENABLE_SDK"
+	actionEnableProfiler = "ENABLE_PROFILER"
+	actionSetEnvVar      = "SET_ENVAR"
+)
+
+// actionValuesMax mirrors PLCS_ACTION_VALUES_MAX (ActionMax_ACTION_VALUES_MAX =
+// 255). An action the engine handles that carries this many values or more
+// aborts the policy's remaining actions, matching perform_actions in
+// c/src/evaluator.c.
+const actionValuesMax = 255
+
+// wlsPolicies keeps each policy as a raw message so a single malformed policy
+// can be skipped without failing the whole document (see ParsePolicies).
+type wlsPolicies struct {
+	Policies []json.RawMessage `json:"policies"`
+}
+
+type wlsPolicy struct {
+	Description string      `json:"description"`
+	Rules       wlsNodeWrap `json:"rules"`
+	Actions     []wlsAction `json:"actions"`
+	ID          *wlsUUID    `json:"id"`
+	Version     int64       `json:"version"`
+}
+
+// wlsUUID is the dd-wls 128-bit identifier, split into two unsigned longs
+// because FlatBuffers cannot represent fixed-size byte arrays in Go.
+type wlsUUID struct {
+	Hi uint64 `json:"hi"`
+	Lo uint64 `json:"lo"`
+}
+
+type wlsNodeWrap struct {
+	NodeType string          `json:"node_type"`
+	Node     json.RawMessage `json:"node"`
+}
+
+type wlsComposite struct {
+	Description string `json:"description"`
+	Op          string `json:"op"`
+	// Children is a raw message so an explicit "children": null (a dd-wls shape
+	// violation) is distinguishable from an omitted field and an empty array [],
+	// which decode to the same nil slice with encoding/json. See decodeComposite.
+	Children json.RawMessage `json:"children"`
+}
+
+type wlsEvaluatorNode struct {
+	Description string          `json:"description"`
+	EvalType    string          `json:"eval_type"`
+	Eval        json.RawMessage `json:"eval"`
+}
+
+type wlsStrEval struct {
+	ID  string `json:"id"`
+	Cmp string `json:"cmp"`
+	// Value is a pointer so an omitted/null value is distinguishable from an
+	// explicit empty string: the former is rejected for non-constant evaluators
+	// (see decodeStrEval), the latter is a legal exact-empty match.
+	Value *string `json:"value"`
+}
+
+// Value is a raw message (not int64/uint64) so an explicit JSON null is
+// distinguishable from both an omitted value and a real 0: null decodes to "" =
+// 0 with encoding/json, which would let CMP_EQ false-match a zero fact. See
+// numValue.
+type wlsNumEval struct {
+	ID    string          `json:"id"`
+	Cmp   string          `json:"cmp"`
+	Value json.RawMessage `json:"value"`
+}
+
+type wlsUNumEval struct {
+	ID    string          `json:"id"`
+	Cmp   string          `json:"cmp"`
+	Value json.RawMessage `json:"value"`
+}
+
+type wlsAction struct {
+	Action      string   `json:"action"`
+	Description string   `json:"description"`
+	Values      []string `json:"values"`
+}
+
+// ParsePolicies decodes a dd-wls policies document into the native policy model.
+// Label evaluators encode their key as "key=value" in the StrEvaluator value; a
+// CMP_PREFIX on "key=" (empty value part) is decoded as an existence check.
+//
+// Decoding is best-effort and isolated per policy, so a newer config never
+// leaves an older agent with no policies at all:
+//   - rule decoding is total (see decodeNodeWrap): an unrecognized or malformed
+//     rule construct decodes to an ABSTAIN leaf rather than failing;
+//   - a policy that still cannot be decoded (a structurally invalid policy
+//     object, or a malformed value for an action the engine implements) is
+//     skipped, not fatal, so the remaining policies still load.
+//
+// The returned slice holds every policy that decoded. The error is non-nil when
+// the document itself is not valid JSON (the slice is then nil) or when one or
+// more individual policies were skipped (the slice still holds the rest); a
+// best-effort caller should use the returned policies regardless of the error.
+func ParsePolicies(raw []byte) ([]Policy, error) {
+	var doc wlsPolicies
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil, fmt.Errorf("invalid policies document: %w", err)
+	}
+
+	out := make([]Policy, 0, len(doc.Policies))
+	var skipped []error
+	for i, rawPolicy := range doc.Policies {
+		var p wlsPolicy
+		if err := json.Unmarshal(rawPolicy, &p); err != nil {
+			skipped = append(skipped, fmt.Errorf("policy[%d]: %w", i, err))
+			continue
+		}
+		outcome, err := decodeActions(p.Actions)
+		if err != nil {
+			skipped = append(skipped, fmt.Errorf("policy[%d] %q: %w", i, p.Description, err))
+			continue
+		}
+		out = append(out, Policy{
+			Name:    p.Description,
+			ID:      decodeUUID(p.ID),
+			Version: p.Version,
+			Rules:   decodeNodeWrap(p.Rules, 0),
+			Outcome: outcome,
+		})
+	}
+	return out, errors.Join(skipped...)
+}
+
+// decodeNodeWrap decodes one rule node. It is total, mirroring the C engine's
+// evaluate_rules, which always yields a tri-state and never fails: any node it
+// cannot recognize or parse -- an unknown node_type, a malformed body, or a
+// construct from a newer schema -- decodes to an ABSTAIN leaf rather than an
+// error. This keeps a newer policy evaluatable by an older agent (forward
+// compatibility, since policies can reach agents older than the schema that
+// produced them) and stops one unrecognized node from sinking the whole
+// document. Genuine correctness of a well-formed policy is enforced upstream
+// (the compiler and the cross-engine conformance corpus), not by rejecting at
+// runtime.
+func decodeNodeWrap(w wlsNodeWrap, depth int) *Node {
+	// Bound decode recursion at the same depth as evaluation (maxEvalDepth). A
+	// node deeper than that abstains at eval time anyway, so capping here changes
+	// no result while keeping a pathologically deep document (a malformed or
+	// hostile config) from overflowing the stack during parsing -- rather than
+	// relying on encoding/json's internal nesting limit to save us.
+	if depth > maxEvalDepth {
+		return AlwaysAbstain()
+	}
+	switch w.NodeType {
+	case nodeComposite:
+		var c wlsComposite
+		if err := json.Unmarshal(w.Node, &c); err != nil {
+			return AlwaysAbstain()
+		}
+		return decodeComposite(c, depth)
+	case nodeEvaluator:
+		var e wlsEvaluatorNode
+		if err := json.Unmarshal(w.Node, &e); err != nil {
+			return AlwaysAbstain()
+		}
+		return decodeEvaluatorNode(e)
+	default:
+		return AlwaysAbstain()
+	}
+}
+
+func decodeComposite(c wlsComposite, depth int) *Node {
+	// An explicit "children": null violates the dd-wls shape (children is an
+	// array), so it is malformed -> abstain. An omitted field and an empty array
+	// [] both mean "no children" and keep the identity behavior (empty AND -> TRUE,
+	// empty OR -> FALSE), matching the C engine's treatment of an absent or empty
+	// children vector. The pointer distinguishes explicit null (nil) from [] and a
+	// populated array (both non-nil).
+	var children []*Node
+	if len(c.Children) > 0 {
+		var raw *[]wlsNodeWrap
+		if err := json.Unmarshal(c.Children, &raw); err != nil || raw == nil {
+			return AlwaysAbstain() // malformed array or explicit null
+		}
+		children = make([]*Node, 0, len(*raw))
+		for _, child := range *raw {
+			children = append(children, decodeNodeWrap(child, depth+1))
+		}
+	}
+	switch c.Op {
+	case opAnd:
+		return &Node{Op: OpAnd, Children: children}
+	case opOr:
+		return &Node{Op: OpOr, Children: children}
+	case opNot:
+		// C abstains on a BOOL_NOT without exactly one child.
+		if len(children) != 1 {
+			return AlwaysAbstain()
+		}
+		return &Node{Op: OpNot, Children: children}
+	default:
+		return AlwaysAbstain()
+	}
+}
+
+// decodeEvaluatorNode dispatches on the wire union member. The Go engine is a
+// faithful, generic reimplementation of the C engine: it accepts any evaluator
+// id and resolves it against the Context at evaluation time (an id with no
+// matching fact abstains, like the C engine's NULL context), so it is not
+// restricted to a Kubernetes subset. An unrecognized eval_type or comparator
+// (e.g. from a newer schema) abstains rather than failing the parse.
+func decodeEvaluatorNode(e wlsEvaluatorNode) *Node {
+	switch e.EvalType {
+	case evalString:
+		var se wlsStrEval
+		if err := json.Unmarshal(e.Eval, &se); err != nil {
+			return AlwaysAbstain()
+		}
+		return decodeStrEval(se)
+	case evalNumeric:
+		var ne wlsNumEval
+		if err := json.Unmarshal(e.Eval, &ne); err != nil {
+			return AlwaysAbstain()
+		}
+		cmp, ok := decodeNumCmp(ne.Cmp)
+		if !ok {
+			return AlwaysAbstain()
+		}
+		value, ok := numValue[int64](ne.Value)
+		if !ok {
+			return AlwaysAbstain()
+		}
+		return NumericLeaf(ne.ID, cmp, value)
+	case evalUNumeric:
+		var ue wlsUNumEval
+		if err := json.Unmarshal(e.Eval, &ue); err != nil {
+			return AlwaysAbstain()
+		}
+		cmp, ok := decodeNumCmp(ue.Cmp)
+		if !ok {
+			return AlwaysAbstain()
+		}
+		value, ok := numValue[uint64](ue.Value)
+		if !ok {
+			return AlwaysAbstain()
+		}
+		return UNumericLeaf(ue.ID, cmp, value)
+	default:
+		return AlwaysAbstain()
+	}
+}
+
+func decodeStrEval(e wlsStrEval) *Node {
+	switch e.ID {
+	case IDAlwaysTrue:
+		return AlwaysTrue()
+	case IDAlwaysFalse:
+		return AlwaysFalse()
+	case IDAlwaysAbstain:
+		return AlwaysAbstain()
+	}
+	// A missing/null value decodes to "" under encoding/json, which for
+	// CMP_PREFIX/CMP_CONTAINS would match every present fact; the C engine reads a
+	// NULL policy string and abstains, so mirror that. An explicit empty string
+	// is kept (a legal exact-empty comparison, matching C's non-NULL "").
+	if e.Value == nil {
+		return AlwaysAbstain()
+	}
+	cmp, ok := decodeStrCmp(e.Cmp)
+	if !ok {
+		return AlwaysAbstain()
+	}
+	if IsLabelID(e.ID) {
+		return decodeLabel(e.ID, cmp, *e.Value)
+	}
+	return StringLeaf(e.ID, cmp, *e.Value)
+}
+
+func decodeLabel(id string, cmp StringCmp, raw string) *Node {
+	key, value, found := strings.Cut(raw, "=")
+	if !found {
+		// Malformed label value (no "="): nothing meaningful to compare, abstain.
+		return AlwaysAbstain()
+	}
+	// "key=" with a prefix comparison is the existence convention.
+	if cmp == CmpPrefix && value == "" {
+		return LabelLeaf(id, key, CmpExists, "")
+	}
+	return LabelLeaf(id, key, cmp, value)
+}
+
+func decodeStrCmp(cmp string) (StringCmp, bool) {
+	switch cmp {
+	case cmpExact:
+		return CmpExact, true
+	case cmpPrefix:
+		return CmpPrefix, true
+	case cmpSuffix:
+		return CmpSuffix, true
+	case cmpContains:
+		return CmpContains, true
+	case cmpWildcard:
+		return CmpWildcard, true
+	default:
+		return CmpExact, false
+	}
+}
+
+// numValue decodes a numeric evaluator's value field. It distinguishes the three
+// JSON states a plain int64/uint64 would collapse to 0:
+//   - omitted -> the FlatBuffers scalar default 0, ok (a valid "compare against 0",
+//     since default-omitting JSON serializes value 0 as an absent field);
+//   - explicit null (or any non-number) -> ok=false, so the leaf abstains rather
+//     than false-matching a zero fact -- honoring the decoder's abstain-on-malformed
+//     contract;
+//   - a number -> its value, ok.
+func numValue[T int64 | uint64](raw json.RawMessage) (T, bool) {
+	if len(raw) == 0 {
+		return 0, true // omitted: FlatBuffers scalar default
+	}
+	var p *T
+	if err := json.Unmarshal(raw, &p); err != nil || p == nil {
+		return 0, false // explicit null or a malformed number: abstain
+	}
+	return *p, true
+}
+
+func decodeNumCmp(cmp string) (NumericCmp, bool) {
+	switch cmp {
+	case cmpEq:
+		return NumEq, true
+	case cmpGt:
+		return NumGt, true
+	case cmpGte:
+		return NumGte, true
+	case cmpLt:
+		return NumLt, true
+	case cmpLte:
+		return NumLte, true
+	default:
+		return NumEq, false
+	}
+}
+
+// decodeUUID renders the dd-wls hi/lo pair as a canonical UUID string. It
+// returns an empty string when the document carries no id.
+func decodeUUID(id *wlsUUID) string {
+	if id == nil {
+		return ""
+	}
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[0:8], id.Hi)
+	binary.BigEndian.PutUint64(b[8:16], id.Lo)
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
+
+func decodeActions(actions []wlsAction) (Outcome, error) {
+	out := Outcome{}
+	for _, a := range actions {
+		// Mirror perform_actions in c/src/evaluator.c: for an action the engine
+		// handles, a value count of actionValuesMax (255) or more aborts the
+		// policy's remaining actions -- and the over-limit action itself is not
+		// applied. Return the Outcome accumulated from earlier actions (no error,
+		// so the policy is still evaluated) so both engines produce the same
+		// outcome. Unhandled actions (the default case) are ignored and never
+		// trigger this, matching C's `continue` before its count check.
+		tooMany := len(a.Values) >= actionValuesMax
+		switch a.Action {
+		case actionInjectAllow:
+			if tooMany {
+				return out, nil
+			}
+			out.Inject = true
+			out.InjectSet = true
+		case actionInjectDeny:
+			if tooMany {
+				return out, nil
+			}
+			out.Inject = false
+			out.InjectSet = true
+		case actionEnableSDK:
+			if tooMany {
+				return out, nil
+			}
+			for _, v := range a.Values {
+				lang, version, found := strings.Cut(v, "=")
+				if !found || lang == "" {
+					return Outcome{}, fmt.Errorf("ENABLE_SDK value %q must be encoded as lang=version", v)
+				}
+				if out.TracerVersions == nil {
+					out.TracerVersions = map[string]string{}
+				}
+				out.TracerVersions[lang] = version
+			}
+		case actionEnableProfiler:
+			if tooMany {
+				return out, nil
+			}
+			out.TracerConfigs = upsertEnvVar(out.TracerConfigs, "DD_PROFILING_ENABLED", "true")
+		case actionSetEnvVar:
+			if tooMany {
+				return out, nil
+			}
+			for _, v := range a.Values {
+				name, value, found := strings.Cut(v, "=")
+				if !found || name == "" {
+					return Outcome{}, fmt.Errorf("SET_ENVAR value %q must be encoded as NAME=value", v)
+				}
+				out.TracerConfigs = upsertEnvVar(out.TracerConfigs, name, value)
+			}
+		default:
+			// An action the engine does not implement (e.g. REEXEC, or a future
+			// ActionId). Ignore it for forward compatibility, mirroring the C
+			// engine, whose perform_actions skips actions with no registered
+			// handler rather than failing. This keeps a newer policy evaluatable by
+			// an older agent instead of dropping the whole document. Note: this is
+			// only about unhandled action *ids*; malformed values of actions we do
+			// handle (e.g. ENABLE_SDK, SET_ENVAR) are still rejected above. Add a
+			// case here when support for a new action lands.
+		}
+	}
+	return out, nil
+}

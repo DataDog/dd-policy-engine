@@ -1,0 +1,161 @@
+{
+  "_comment": "Signed and unsigned numeric comparators (evaluator value <cmp> workload value) and ABSTAIN when the fact source is unavailable.",
+  "vectors": [
+    {
+      "name": "numeric_eq_true",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "NumEvaluator",
+          "eval": {
+            "id": "RUNTIME_VERSION_MAJOR",
+            "cmp": "CMP_EQ",
+            "value": 17
+          }
+        }
+      },
+      "facts": {
+        "numbers": {
+          "RUNTIME_VERSION_MAJOR": 17
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "numeric_gt_true_policy_greater_than_workload",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "NumEvaluator",
+          "eval": {
+            "id": "RUNTIME_VERSION_MAJOR",
+            "cmp": "CMP_GT",
+            "value": 21
+          }
+        }
+      },
+      "facts": {
+        "numbers": {
+          "RUNTIME_VERSION_MAJOR": 17
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "numeric_lte_false_policy_greater_than_workload",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "NumEvaluator",
+          "eval": {
+            "id": "RUNTIME_VERSION_MAJOR",
+            "cmp": "CMP_LTE",
+            "value": 21
+          }
+        }
+      },
+      "facts": {
+        "numbers": {
+          "RUNTIME_VERSION_MAJOR": 17
+        }
+      },
+      "expect": "FALSE"
+    },
+    {
+      "name": "numeric_source_unavailable_abstains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "NumEvaluator",
+          "eval": {
+            "id": "RUNTIME_VERSION_MAJOR",
+            "cmp": "CMP_EQ",
+            "value": 17
+          }
+        }
+      },
+      "facts": {},
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "unumeric_gte_true",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "UNumEvaluator",
+          "eval": {
+            "id": "JAVA_HEAP",
+            "cmp": "CMP_GTE",
+            "value": 2048
+          }
+        }
+      },
+      "facts": {
+        "unumbers": {
+          "JAVA_HEAP": 1024
+        }
+      },
+      "expect": "TRUE"
+    },
+    {
+      "name": "unumeric_lt_false",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "UNumEvaluator",
+          "eval": {
+            "id": "JAVA_HEAP",
+            "cmp": "CMP_LT",
+            "value": 4096
+          }
+        }
+      },
+      "facts": {
+        "unumbers": {
+          "JAVA_HEAP": 1024
+        }
+      },
+      "expect": "FALSE"
+    },
+    {
+      "name": "numeric_sentinel_not_set_abstains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "NumEvaluator",
+          "eval": {
+            "id": "RUNTIME_VERSION_MAJOR",
+            "cmp": "CMP_LT",
+            "value": 0
+          }
+        }
+      },
+      "facts": {
+        "numbers": {
+          "RUNTIME_VERSION_MAJOR": 9223372036854775807
+        }
+      },
+      "expect": "ABSTAIN"
+    },
+    {
+      "name": "unumeric_sentinel_not_set_abstains",
+      "rules": {
+        "node_type": "EvaluatorNode",
+        "node": {
+          "eval_type": "UNumEvaluator",
+          "eval": {
+            "id": "JAVA_HEAP",
+            "cmp": "CMP_LT",
+            "value": 0
+          }
+        }
+      },
+      "facts": {
+        "unumbers": {
+          "JAVA_HEAP": 18446744073709551615
+        }
+      },
+      "expect": "ABSTAIN"
+    }
+  ]
+}
