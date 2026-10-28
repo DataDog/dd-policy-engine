@@ -83,7 +83,7 @@ static const plcs_observer g_observer = {
 
 static plcs_errors recording_action(
     plcs_evaluation_result res,
-    char *values[],
+    const char *values[],
     size_t value_len,
     const char *description,
     int action_id,
